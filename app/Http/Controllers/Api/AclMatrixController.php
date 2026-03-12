@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Expense;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Support\Permissions\AreaPlanPermissionMap;
@@ -11,7 +11,7 @@ use App\Support\Permissions\SettingPermissionMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ExpenseAclController extends Controller
+class AclMatrixController extends Controller
 {
     public function matrix(Request $request): JsonResponse
     {

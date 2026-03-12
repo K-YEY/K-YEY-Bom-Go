@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Api\Area\GovernorateController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\Expense\ExpenseAclController;
+use App\Http\Controllers\Api\AclMatrixController;
 use App\Http\Controllers\Api\Expense\ExpenseCategoryController;
 use App\Http\Controllers\Api\Expense\ExpenseController;
 use App\Http\Controllers\Api\Plan\PlanController;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum', UpdateLoginSessionLastSeen::class])->group(function (): void {
-    Route::get('acl/expenses', [ExpenseAclController::class, 'matrix']);
+    Route::get('acl', [AclMatrixController::class, 'matrix']);
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
     Route::apiResource('expenses', ExpenseController::class);
     Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
