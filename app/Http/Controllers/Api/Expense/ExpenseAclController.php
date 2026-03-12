@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Expense;
 
 use App\Http\Controllers\Controller;
+use App\Support\Permissions\AreaPlanPermissionMap;
 use App\Support\Permissions\AccountPermissionMap;
 use App\Support\Permissions\ContentPermissionMap;
 use App\Support\Permissions\ExpensePermissionMap;
+use App\Support\Permissions\SettingPermissionMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -25,12 +27,17 @@ class ExpenseAclController extends Controller
                 'client.page' => $user->can('client.page'),
                 'shipper.page' => $user->can('shipper.page'),
                 'content.page' => $user->can('content.page'),
+                'setting.page' => $user->can('setting.page'),
+                'governorate.page' => $user->can('governorate.page'),
+                'plan.page' => $user->can('plan.page'),
             ],
             'actions' => [
                 ...$this->permissionState($user, array_column(ExpensePermissionMap::ACTION_PERMISSIONS, 'name')),
                 ...$this->permissionState($user, array_column(AccountPermissionMap::ACTION_PERMISSIONS, 'name')),
                 ...$this->permissionState($user, array_column(ContentPermissionMap::ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(AreaPlanPermissionMap::ACTION_PERMISSIONS, 'name')),
             ],
+            'setting_pages' => $this->permissionState($user, array_column(SettingPermissionMap::PAGE_PERMISSIONS, 'name')),
             'expense_columns' => [
                 'view' => $this->permissionState($user, array_values(array_filter(ExpensePermissionMap::EXPENSE_VIEW_COLUMNS))),
                 'edit' => $this->permissionState($user, array_values(ExpensePermissionMap::EXPENSE_EDIT_COLUMNS)),
@@ -52,6 +59,22 @@ class ExpenseAclController extends Controller
             'content_columns' => [
                 'view' => $this->permissionState($user, array_values(array_filter(ContentPermissionMap::CONTENT_VIEW_COLUMNS))),
                 'edit' => $this->permissionState($user, array_values(ContentPermissionMap::CONTENT_EDIT_COLUMNS)),
+            ],
+            'governorate_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(AreaPlanPermissionMap::GOVERNORATE_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(AreaPlanPermissionMap::GOVERNORATE_EDIT_COLUMNS)),
+            ],
+            'city_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(AreaPlanPermissionMap::CITY_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(AreaPlanPermissionMap::CITY_EDIT_COLUMNS)),
+            ],
+            'plan_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(AreaPlanPermissionMap::PLAN_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(AreaPlanPermissionMap::PLAN_EDIT_COLUMNS)),
+            ],
+            'plan_price_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(AreaPlanPermissionMap::PLAN_PRICE_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(AreaPlanPermissionMap::PLAN_PRICE_EDIT_COLUMNS)),
             ],
         ]);
     }

@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             ExpenseAuthorizationSeeder::class,
+            SettingSeeder::class,
         ]);
 
         $admin = User::query()->firstOrCreate(

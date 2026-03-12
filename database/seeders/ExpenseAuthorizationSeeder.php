@@ -4,9 +4,11 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Support\Permissions\AreaPlanPermissionMap;
 use App\Support\Permissions\AccountPermissionMap;
 use App\Support\Permissions\ContentPermissionMap;
 use App\Support\Permissions\ExpensePermissionMap;
+use App\Support\Permissions\SettingPermissionMap;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -22,6 +24,8 @@ class ExpenseAuthorizationSeeder extends Seeder
             ...ExpensePermissionMap::allPermissionDefinitions(),
             ...AccountPermissionMap::allPermissionDefinitions(),
             ...ContentPermissionMap::allPermissionDefinitions(),
+            ...SettingPermissionMap::allPermissionDefinitions(),
+            ...AreaPlanPermissionMap::allPermissionDefinitions(),
         ];
 
         foreach ($definitions as $permissionData) {
@@ -82,6 +86,38 @@ class ExpenseAuthorizationSeeder extends Seeder
 
         $contentManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
             str_starts_with($name, 'content.')
+        ));
+
+        $areaViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
+            str_starts_with($name, 'governorate.')
+            || str_starts_with($name, 'city.')
+        ));
+
+        $areaViewerPermissions = array_values(array_filter($areaViewerPermissions, static fn (string $name): bool =>
+            str_ends_with($name, '.page')
+            || str_ends_with($name, '.view')
+            || str_contains($name, '.column.') && str_ends_with($name, '.view')
+        ));
+
+        $areaManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
+            str_starts_with($name, 'governorate.')
+            || str_starts_with($name, 'city.')
+        ));
+
+        $planViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
+            str_starts_with($name, 'plan.')
+            || str_starts_with($name, 'plan-price.')
+        ));
+
+        $planViewerPermissions = array_values(array_filter($planViewerPermissions, static fn (string $name): bool =>
+            str_ends_with($name, '.page')
+            || str_ends_with($name, '.view')
+            || str_contains($name, '.column.') && str_ends_with($name, '.view')
+        ));
+
+        $planManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
+            str_starts_with($name, 'plan.')
+            || str_starts_with($name, 'plan-price.')
         ));
 
         $superAdminRole = Role::query()->firstOrCreate([
@@ -146,6 +182,55 @@ class ExpenseAuthorizationSeeder extends Seeder
             'is_active' => true,
         ]);
         $contentViewerRole->syncPermissions($contentViewerPermissions);
+
+        $settingManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
+            str_starts_with($name, 'setting.')
+        ));
+
+        $settingManagerRole = Role::query()->firstOrCreate([
+            'name' => 'setting-manager',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Setting Manager',
+            'is_active' => true,
+        ]);
+        $settingManagerRole->syncPermissions($settingManagerPermissions);
+
+        $areaManagerRole = Role::query()->firstOrCreate([
+            'name' => 'area-manager',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Area Manager',
+            'is_active' => true,
+        ]);
+        $areaManagerRole->syncPermissions($areaManagerPermissions);
+
+        $areaViewerRole = Role::query()->firstOrCreate([
+            'name' => 'area-viewer',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Area Viewer',
+            'is_active' => true,
+        ]);
+        $areaViewerRole->syncPermissions($areaViewerPermissions);
+
+        $planManagerRole = Role::query()->firstOrCreate([
+            'name' => 'plan-manager',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Plan Manager',
+            'is_active' => true,
+        ]);
+        $planManagerRole->syncPermissions($planManagerPermissions);
+
+        $planViewerRole = Role::query()->firstOrCreate([
+            'name' => 'plan-viewer',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Plan Viewer',
+            'is_active' => true,
+        ]);
+        $planViewerRole->syncPermissions($planViewerPermissions);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
