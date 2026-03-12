@@ -34,6 +34,7 @@ class AccountPermissionMap
         'roles' => 'user.column.roles.view',
         'shipper' => 'user.column.shipper.view',
         'client' => 'user.column.client.view',
+        'login_sessions' => 'user.column.login_sessions.view',
         'created_at' => 'user.column.created_at.view',
         'updated_at' => 'user.column.updated_at.view',
     ];

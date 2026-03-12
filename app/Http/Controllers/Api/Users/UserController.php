@@ -20,7 +20,12 @@ class UserController extends Controller
         $this->authorizePermission($request, 'user.view');
 
         $users = User::query()
-            ->with(['roles:id,name,label', 'shipper', 'client'])
+            ->with([
+                'roles:id,name,label',
+                'shipper',
+                'client',
+                'loginSessions:id,user_id,session_id,ip_address,user_agent,device_name,device_type,browser,platform,country,city,login_at,last_seen_at,logout_at,is_active,is_current,created_at,updated_at',
+            ])
             ->orderByDesc('id')
             ->get();
 
@@ -94,7 +99,12 @@ class UserController extends Controller
             return $user;
         });
 
-        $user->load(['roles:id,name,label', 'shipper', 'client']);
+        $user->load([
+            'roles:id,name,label',
+            'shipper',
+            'client',
+            'loginSessions:id,user_id,session_id,ip_address,user_agent,device_name,device_type,browser,platform,country,city,login_at,last_seen_at,logout_at,is_active,is_current,created_at,updated_at',
+        ]);
 
         return response()->json([
             'message' => 'User created successfully.',
@@ -108,7 +118,12 @@ class UserController extends Controller
         $this->authorizePermission($request, 'user.page');
         $this->authorizePermission($request, 'user.view');
 
-        $user->load(['roles:id,name,label', 'shipper', 'client']);
+        $user->load([
+            'roles:id,name,label',
+            'shipper',
+            'client',
+            'loginSessions:id,user_id,session_id,ip_address,user_agent,device_name,device_type,browser,platform,country,city,login_at,last_seen_at,logout_at,is_active,is_current,created_at,updated_at',
+        ]);
 
         return response()->json($this->formatUserPayload($request, $user));
     }
@@ -166,7 +181,12 @@ class UserController extends Controller
             }
         });
 
-        $user->load(['roles:id,name,label', 'shipper', 'client']);
+        $user->load([
+            'roles:id,name,label',
+            'shipper',
+            'client',
+            'loginSessions:id,user_id,session_id,ip_address,user_agent,device_name,device_type,browser,platform,country,city,login_at,last_seen_at,logout_at,is_active,is_current,created_at,updated_at',
+        ]);
 
         return response()->json([
             'message' => 'User updated successfully.',
@@ -234,6 +254,10 @@ class UserController extends Controller
     private function formatUserPayload(Request $request, User $user): array
     {
         $payload = $user->toArray();
+        $payload['login_sessions'] = $user->loginSessions
+            ? $user->loginSessions->values()->toArray()
+            : [];
+
         $accountType = $user->shipper ? 'shipper' : ($user->client ? 'client' : 'user');
         $payload['account_type'] = $this->accountTypeToCode($accountType);
 
