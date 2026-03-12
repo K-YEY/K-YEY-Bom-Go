@@ -1,0 +1,202 @@
+# HTTPie API Commands
+# Base URL
+# export BASE_URL=http://127.0.0.1:8000/api
+# export TOKEN=<paste_token_here>
+
+# 1) Login
+http POST $BASE_URL/login login=admin password=12345678 device_name=web-chrome
+
+# 2) ACL
+http GET $BASE_URL/acl Authorization:"Bearer $TOKEN"
+
+# 3) Users
+http GET $BASE_URL/users Authorization:"Bearer $TOKEN"
+http GET $BASE_URL/users/1 Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/users Authorization:"Bearer $TOKEN" \
+  name="Ahmed Ali" username=ahmed phone=01000000000 password=12345678 account_type:=0 is_blocked:=false
+http PUT $BASE_URL/users/1 Authorization:"Bearer $TOKEN" \
+  name="Ahmed Updated" phone=01000000001
+http DELETE $BASE_URL/users/1 Authorization:"Bearer $TOKEN"
+
+# 3.1) Roles
+http GET $BASE_URL/roles Authorization:"Bearer $TOKEN"
+http GET $BASE_URL/roles/1 Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/roles Authorization:"Bearer $TOKEN" \
+  name="sales-manager" label="Sales Manager" is_active:=true \
+  permissions:='["user.page","user.view","content.page"]'
+http PUT $BASE_URL/roles/1 Authorization:"Bearer $TOKEN" \
+  label="Sales Manager Updated" is_active:=true \
+  permissions:='["user.page","user.view"]'
+http DELETE $BASE_URL/roles/1 Authorization:"Bearer $TOKEN"
+
+# 3.2) Permissions
+http GET "$BASE_URL/permissions?group=users&type=page" Authorization:"Bearer $TOKEN"
+http GET $BASE_URL/permissions/1 Authorization:"Bearer $TOKEN"
+
+# 4) Clients (read-only)
+http GET $BASE_URL/clients Authorization:"Bearer $TOKEN"
+http GET $BASE_URL/clients/1 Authorization:"Bearer $TOKEN"
+
+# 5) Shippers (read-only)
+http GET $BASE_URL/shippers Authorization:"Bearer $TOKEN"
+http GET $BASE_URL/shippers/1 Authorization:"Bearer $TOKEN"
+
+# 6) Expense Categories
+http GET $BASE_URL/expense-categories Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/expense-categories Authorization:"Bearer $TOKEN" \
+  name="Office" notes="monthly" is_active:=true
+http GET $BASE_URL/expense-categories/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/expense-categories/1 Authorization:"Bearer $TOKEN" \
+  name="Office Updated" notes="updated" is_active:=true
+http DELETE $BASE_URL/expense-categories/1 Authorization:"Bearer $TOKEN"
+
+# 7) Expenses
+http GET $BASE_URL/expenses Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/expenses Authorization:"Bearer $TOKEN" \
+  category_id:=1 amount:=1200.50 expense_date="2026-03-12" title="Fuel" notes="trip"
+http GET $BASE_URL/expenses/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/expenses/1 Authorization:"Bearer $TOKEN" \
+  category_id:=1 amount:=1300 expense_date="2026-03-13" title="Fuel Updated" notes="updated"
+http DELETE $BASE_URL/expenses/1 Authorization:"Bearer $TOKEN"
+
+# 8) Contents
+http GET $BASE_URL/contents Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/contents Authorization:"Bearer $TOKEN" name="Fragile"
+http GET $BASE_URL/contents/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/contents/1 Authorization:"Bearer $TOKEN" name="Very Fragile"
+http DELETE $BASE_URL/contents/1 Authorization:"Bearer $TOKEN"
+
+# 9) Settings
+http GET $BASE_URL/settings Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/settings Authorization:"Bearer $TOKEN" settings:='{"site_name":"Bom Go","currency":"EGP"}'
+
+# 10) Governorates + Cities
+http GET $BASE_URL/governorates Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/governorates Authorization:"Bearer $TOKEN" \
+  name="Cairo" follow_up_hours:=24 default_shipper_user_id:=5 \
+  cities:='["Nasr City","Heliopolis"]'
+http GET $BASE_URL/governorates/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/governorates/1 Authorization:"Bearer $TOKEN" \
+  name="Cairo Updated" follow_up_hours:=48 default_shipper_user_id:=5 \
+  cities:='["Nasr City","Maadi"]'
+http DELETE $BASE_URL/governorates/1 Authorization:"Bearer $TOKEN"
+
+# 11) Plans + Plan Prices
+http GET $BASE_URL/plans Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/plans Authorization:"Bearer $TOKEN" \
+  name="Basic Plan" order_count:=100 \
+  prices:='[{"governorate_id":1,"price":50.00},{"governorate_id":2,"price":60.00}]'
+http GET $BASE_URL/plans/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/plans/1 Authorization:"Bearer $TOKEN" \
+  name="Basic Plan Updated" order_count:=150 \
+  prices:='[{"governorate_id":1,"price":55.00},{"governorate_id":2,"price":65.00}]'
+http DELETE $BASE_URL/plans/1 Authorization:"Bearer $TOKEN"
+
+# 12) Materials
+http GET $BASE_URL/materials Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/materials Authorization:"Bearer $TOKEN" \
+  name="Flyer" code="FLY-001" cost_price:=2 sale_price:=3.5 stock:=200 is_active:=true notes="A5 flyer"
+http GET $BASE_URL/materials/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/materials/1 Authorization:"Bearer $TOKEN" \
+  sale_price:=4 stock:=250 notes="Updated"
+http DELETE $BASE_URL/materials/1 Authorization:"Bearer $TOKEN"
+
+# 13) Material Requests
+http GET $BASE_URL/material-requests Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/material-requests Authorization:"Bearer $TOKEN" \
+  client_id:=5 delivery_type="DELIVERY" shipping_cost:=50 status="PENDING" approval_status="PENDING"
+http GET $BASE_URL/material-requests/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/material-requests/1 Authorization:"Bearer $TOKEN" \
+  status="PROCESSING" approval_status="APPROVED"
+http DELETE $BASE_URL/material-requests/1 Authorization:"Bearer $TOKEN"
+
+# 14) Material Request Items
+http GET $BASE_URL/material-request-items Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/material-request-items Authorization:"Bearer $TOKEN" \
+  material_request_id:=1 material_id:=1 quantity:=10
+http GET $BASE_URL/material-request-items/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/material-request-items/1 Authorization:"Bearer $TOKEN" \
+  quantity:=15
+http DELETE $BASE_URL/material-request-items/1 Authorization:"Bearer $TOKEN"
+
+# 15) Pickup Requests
+http GET $BASE_URL/pickup-requests Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/pickup-requests Authorization:"Bearer $TOKEN" \
+  client_id:=5 shipper_id:=7 pickup_date="2026-03-12" pickup_cost:=50 status="ASSIGNED"
+http GET $BASE_URL/pickup-requests/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/pickup-requests/1 Authorization:"Bearer $TOKEN" \
+  shipper_id:=8 pickup_cost:=60 status="ASSIGNED"
+http DELETE $BASE_URL/pickup-requests/1 Authorization:"Bearer $TOKEN"
+
+# 16) Visits
+http GET $BASE_URL/visits Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/visits Authorization:"Bearer $TOKEN" \
+  shipper_id:=7 client_id:=5 pickup_request_id:=1 material_request_id:=1 visit_cost:=50
+http GET $BASE_URL/visits/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/visits/1 Authorization:"Bearer $TOKEN" \
+  visit_cost:=60
+http DELETE $BASE_URL/visits/1 Authorization:"Bearer $TOKEN"
+
+# 17) Orders
+http GET $BASE_URL/orders Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/orders Authorization:"Bearer $TOKEN" \
+  code="ORD001" receiver_name="Customer Name" phone=01000000000 address="Cairo, Egypt" \
+  governorate_id:=1 city_id:=1 total_amount:=500 shipping_fee:=50 \
+  client_user_id:=5 status="OUT_FOR_DELIVERY"
+http GET $BASE_URL/orders/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/orders/1 Authorization:"Bearer $TOKEN" \
+  status="DELIVERED" latest_status_note="Delivered successfully"
+http DELETE $BASE_URL/orders/1 Authorization:"Bearer $TOKEN"
+
+# 18) Shipper Collections
+http GET $BASE_URL/shipper-collections Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/shipper-collections Authorization:"Bearer $TOKEN" \
+  shipper_user_id:=7 collection_date="2026-03-12" total_amount:=5000 \
+  number_of_orders:=10 shipper_fees:=500
+http GET $BASE_URL/shipper-collections/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/shipper-collections/1 Authorization:"Bearer $TOKEN" \
+  status="COMPLETED"
+http DELETE $BASE_URL/shipper-collections/1 Authorization:"Bearer $TOKEN"
+
+# 19) Shipper Returns
+http GET $BASE_URL/shipper-returns Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/shipper-returns Authorization:"Bearer $TOKEN" \
+  shipper_user_id:=7 return_date="2026-03-12" number_of_orders:=3 \
+  notes="Items returned in good condition"
+http GET $BASE_URL/shipper-returns/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/shipper-returns/1 Authorization:"Bearer $TOKEN" \
+  status="COMPLETED"
+http DELETE $BASE_URL/shipper-returns/1 Authorization:"Bearer $TOKEN"
+
+# 20) Client Settlements
+http GET $BASE_URL/client-settlements Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/client-settlements Authorization:"Bearer $TOKEN" \
+  client_user_id:=5 settlement_date="2026-03-12" total_amount:=10000 \
+  number_of_orders:=20 fees:=1000
+http GET $BASE_URL/client-settlements/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/client-settlements/1 Authorization:"Bearer $TOKEN" \
+  status="COMPLETED"
+http DELETE $BASE_URL/client-settlements/1 Authorization:"Bearer $TOKEN"
+
+# 21) Client Returns
+http GET $BASE_URL/client-returns Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/client-returns Authorization:"Bearer $TOKEN" \
+  client_user_id:=5 return_date="2026-03-12" number_of_orders:=5 \
+  notes="Client returned items"
+http GET $BASE_URL/client-returns/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/client-returns/1 Authorization:"Bearer $TOKEN" \
+  status="COMPLETED"
+http DELETE $BASE_URL/client-returns/1 Authorization:"Bearer $TOKEN"
+
+# 22) Refused Reasons
+http GET $BASE_URL/refused-reasons Authorization:"Bearer $TOKEN"
+http POST $BASE_URL/refused-reasons Authorization:"Bearer $TOKEN" \
+  reason="Customer not available" status="OUT_FOR_DELIVERY" is_active:=true
+http GET $BASE_URL/refused-reasons/1 Authorization:"Bearer $TOKEN"
+http PUT $BASE_URL/refused-reasons/1 Authorization:"Bearer $TOKEN" \
+  reason="Customer not available - Updated"
+http DELETE $BASE_URL/refused-reasons/1 Authorization:"Bearer $TOKEN"
+
+# 23) Activity Logs (read-only)
+http GET $BASE_URL/activity-logs Authorization:"Bearer $TOKEN"
+http GET $BASE_URL/activity-logs/1 Authorization:"Bearer $TOKEN"

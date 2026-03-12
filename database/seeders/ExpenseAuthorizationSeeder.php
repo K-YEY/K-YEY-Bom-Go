@@ -4,10 +4,15 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
-use App\Support\Permissions\AreaPlanPermissionMap;
 use App\Support\Permissions\AccountPermissionMap;
+use App\Support\Permissions\ActivityLogPermissionMap;
+use App\Support\Permissions\AreaPlanPermissionMap;
+use App\Support\Permissions\CollectionsReturnsSettlementsPermissionMap;
 use App\Support\Permissions\ContentPermissionMap;
 use App\Support\Permissions\ExpensePermissionMap;
+use App\Support\Permissions\OperationsPermissionMap;
+use App\Support\Permissions\OrdersPermissionMap;
+use App\Support\Permissions\RefusedReasonPermissionMap;
 use App\Support\Permissions\SettingPermissionMap;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\PermissionRegistrar;
@@ -26,6 +31,11 @@ class ExpenseAuthorizationSeeder extends Seeder
             ...ContentPermissionMap::allPermissionDefinitions(),
             ...SettingPermissionMap::allPermissionDefinitions(),
             ...AreaPlanPermissionMap::allPermissionDefinitions(),
+            ...OperationsPermissionMap::allPermissionDefinitions(),
+            ...RefusedReasonPermissionMap::allPermissionDefinitions(),
+            ...OrdersPermissionMap::allPermissionDefinitions(),
+            ...CollectionsReturnsSettlementsPermissionMap::allPermissionDefinitions(),
+            ...ActivityLogPermissionMap::allPermissionDefinitions(),
         ];
 
         foreach ($definitions as $permissionData) {
@@ -46,78 +56,134 @@ class ExpenseAuthorizationSeeder extends Seeder
 
         $allPermissions = Permission::query()->whereIn('name', $permissionNames)->pluck('name')->all();
 
-        $viewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_ends_with($name, '.page')
+        $viewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
             || str_ends_with($name, '.view')
             || str_contains($name, '.column.') && str_ends_with($name, '.view')
         ));
 
-        $managerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'expense.') || str_starts_with($name, 'expense-category.')
+        $managerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'expense.') || str_starts_with($name, 'expense-category.')
         ));
 
-        $accountViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'user.')
+        $accountViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'user.')
             || str_starts_with($name, 'client.')
             || str_starts_with($name, 'shipper.')
         ));
 
-        $accountViewerPermissions = array_values(array_filter($accountViewerPermissions, static fn (string $name): bool =>
-            str_ends_with($name, '.page')
+        $accountViewerPermissions = array_values(array_filter($accountViewerPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
             || str_ends_with($name, '.view')
             || str_contains($name, '.column.') && str_ends_with($name, '.view')
         ));
 
-        $accountManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'user.')
+        $accountManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'user.')
             || str_starts_with($name, 'client.')
             || str_starts_with($name, 'shipper.')
         ));
 
-        $contentViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'content.')
+        $contentViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'content.')
         ));
 
-        $contentViewerPermissions = array_values(array_filter($contentViewerPermissions, static fn (string $name): bool =>
-            str_ends_with($name, '.page')
+        $contentViewerPermissions = array_values(array_filter($contentViewerPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
             || str_ends_with($name, '.view')
             || str_contains($name, '.column.') && str_ends_with($name, '.view')
         ));
 
-        $contentManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'content.')
+        $contentManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'content.')
         ));
 
-        $areaViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'governorate.')
+        $areaViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'governorate.')
             || str_starts_with($name, 'city.')
         ));
 
-        $areaViewerPermissions = array_values(array_filter($areaViewerPermissions, static fn (string $name): bool =>
-            str_ends_with($name, '.page')
+        $areaViewerPermissions = array_values(array_filter($areaViewerPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
             || str_ends_with($name, '.view')
             || str_contains($name, '.column.') && str_ends_with($name, '.view')
         ));
 
-        $areaManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'governorate.')
+        $areaManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'governorate.')
             || str_starts_with($name, 'city.')
         ));
 
-        $planViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'plan.')
+        $planViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'plan.')
             || str_starts_with($name, 'plan-price.')
         ));
 
-        $planViewerPermissions = array_values(array_filter($planViewerPermissions, static fn (string $name): bool =>
-            str_ends_with($name, '.page')
+        $planViewerPermissions = array_values(array_filter($planViewerPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
             || str_ends_with($name, '.view')
             || str_contains($name, '.column.') && str_ends_with($name, '.view')
         ));
 
-        $planManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'plan.')
+        $planManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'plan.')
             || str_starts_with($name, 'plan-price.')
+        ));
+
+        $operationsViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'material.')
+            || str_starts_with($name, 'material-request.')
+            || str_starts_with($name, 'material-request-item.')
+            || str_starts_with($name, 'pickup-request.')
+            || str_starts_with($name, 'visit.')
+        ));
+
+        $operationsViewerPermissions = array_values(array_filter($operationsViewerPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
+            || str_ends_with($name, '.view')
+            || str_contains($name, '.column.') && str_ends_with($name, '.view')
+        ));
+
+        $operationsManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'material.')
+            || str_starts_with($name, 'material-request.')
+            || str_starts_with($name, 'material-request-item.')
+            || str_starts_with($name, 'pickup-request.')
+            || str_starts_with($name, 'visit.')
+        ));
+
+        $refusedReasonViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'refused-reason.')
+        ));
+
+        $refusedReasonViewerPermissions = array_values(array_filter($refusedReasonViewerPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
+            || str_ends_with($name, '.view')
+            || str_contains($name, '.column.') && str_ends_with($name, '.view')
+        ));
+
+        $refusedReasonManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'refused-reason.')
+        ));
+
+        $orderViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'order.')
+        ));
+
+        $orderViewerPermissions = array_values(array_filter($orderViewerPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
+            || str_ends_with($name, '.view')
+            || str_contains($name, '.column.') && str_ends_with($name, '.view')
+        ));
+
+        $orderManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'order.')
+        ));
+
+        $collectionViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'shipper-collection.')
+            || str_starts_with($name, 'shipper-return.')
+        ));
+
+        $collectionViewerPermissions = array_values(array_filter($collectionViewerPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
+            || str_ends_with($name, '.view')
+            || str_contains($name, '.column.') && str_ends_with($name, '.view')
+        ));
+
+        $collectionManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'shipper-collection.')
+            || str_starts_with($name, 'shipper-return.')
+        ));
+
+        $settlementViewerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'client-settlement.')
+            || str_starts_with($name, 'client-return.')
+        ));
+
+        $settlementViewerPermissions = array_values(array_filter($settlementViewerPermissions, static fn (string $name): bool => str_ends_with($name, '.page')
+            || str_ends_with($name, '.view')
+            || str_contains($name, '.column.') && str_ends_with($name, '.view')
+        ));
+
+        $settlementManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'client-settlement.')
+            || str_starts_with($name, 'client-return.')
+        ));
+
+        $activityLogPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'activity-log.')
         ));
 
         $superAdminRole = Role::query()->firstOrCreate([
@@ -183,8 +249,7 @@ class ExpenseAuthorizationSeeder extends Seeder
         ]);
         $contentViewerRole->syncPermissions($contentViewerPermissions);
 
-        $settingManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool =>
-            str_starts_with($name, 'setting.')
+        $settingManagerPermissions = array_values(array_filter($allPermissions, static fn (string $name): bool => str_starts_with($name, 'setting.')
         ));
 
         $settingManagerRole = Role::query()->firstOrCreate([
@@ -231,6 +296,105 @@ class ExpenseAuthorizationSeeder extends Seeder
             'is_active' => true,
         ]);
         $planViewerRole->syncPermissions($planViewerPermissions);
+
+        $operationsManagerRole = Role::query()->firstOrCreate([
+            'name' => 'operations-manager',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Operations Manager',
+            'is_active' => true,
+        ]);
+        $operationsManagerRole->syncPermissions($operationsManagerPermissions);
+
+        $operationsViewerRole = Role::query()->firstOrCreate([
+            'name' => 'operations-viewer',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Operations Viewer',
+            'is_active' => true,
+        ]);
+        $operationsViewerRole->syncPermissions($operationsViewerPermissions);
+
+        $refusedReasonManagerRole = Role::query()->firstOrCreate([
+            'name' => 'refused-reason-manager',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Refused Reason Manager',
+            'is_active' => true,
+        ]);
+        $refusedReasonManagerRole->syncPermissions($refusedReasonManagerPermissions);
+
+        $refusedReasonViewerRole = Role::query()->firstOrCreate([
+            'name' => 'refused-reason-viewer',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Refused Reason Viewer',
+            'is_active' => true,
+        ]);
+        $refusedReasonViewerRole->syncPermissions($refusedReasonViewerPermissions);
+
+        $orderManagerRole = Role::query()->firstOrCreate([
+            'name' => 'order-manager',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Order Manager',
+            'is_active' => true,
+        ]);
+        $orderManagerRole->syncPermissions($orderManagerPermissions);
+
+        $orderViewerRole = Role::query()->firstOrCreate([
+            'name' => 'order-viewer',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Order Viewer',
+            'is_active' => true,
+        ]);
+        $orderViewerRole->syncPermissions($orderViewerPermissions);
+
+        $collectionManagerRole = Role::query()->firstOrCreate([
+            'name' => 'collection-manager',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Collection Manager',
+            'is_active' => true,
+        ]);
+        $collectionManagerRole->syncPermissions($collectionManagerPermissions);
+
+        $collectionViewerRole = Role::query()->firstOrCreate([
+            'name' => 'collection-viewer',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Collection Viewer',
+            'is_active' => true,
+        ]);
+        $collectionViewerRole->syncPermissions($collectionViewerPermissions);
+
+        $settlementManagerRole = Role::query()->firstOrCreate([
+            'name' => 'settlement-manager',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Settlement Manager',
+            'is_active' => true,
+        ]);
+        $settlementManagerRole->syncPermissions($settlementManagerPermissions);
+
+        $settlementViewerRole = Role::query()->firstOrCreate([
+            'name' => 'settlement-viewer',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Settlement Viewer',
+            'is_active' => true,
+        ]);
+        $settlementViewerRole->syncPermissions($settlementViewerPermissions);
+
+        $activityLogViewerRole = Role::query()->firstOrCreate([
+            'name' => 'activity-log-viewer',
+            'guard_name' => 'web',
+        ], [
+            'label' => 'Activity Log Viewer',
+            'is_active' => true,
+        ]);
+        $activityLogViewerRole->syncPermissions($activityLogPermissions);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

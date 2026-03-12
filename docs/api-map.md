@@ -107,6 +107,79 @@ Returns permissions matrix used by frontend:
 }
 ```
 
+## 3.1) Roles
+- `GET /roles`
+- `POST /roles`
+- `GET /roles/{id}`
+- `PUT|PATCH /roles/{id}`
+- `DELETE /roles/{id}`
+
+### Store/Update request
+`permissions` accepts permission names or ids.
+```json
+{
+  "name": "sales-manager",
+  "label": "Sales Manager",
+  "is_active": true,
+  "permissions": [
+    "user.page",
+    "user.view",
+    "content.page"
+  ]
+}
+```
+
+### Response shape
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "sales-manager",
+    "label": "Sales Manager",
+    "is_active": true,
+    "permissions_count": 3,
+    "users_count": 0,
+    "permissions": [
+      {
+        "id": 5,
+        "name": "user.page",
+        "group": "users",
+        "label": "Access User page",
+        "type": "page"
+      }
+    ]
+  }
+}
+```
+
+## 3.2) Permissions
+- `GET /permissions`
+- `GET /permissions/{id}`
+
+Optional filters on index:
+- `group`
+- `type`
+
+### Index response
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "user.page",
+      "guard_name": "web",
+      "group": "users",
+      "label": "Access User page",
+      "type": "page"
+    }
+  ],
+  "meta": {
+    "groups": ["users", "content"],
+    "types": ["page", "action", "button", "column"]
+  }
+}
+```
+
 ## 4) Clients (read-only)
 
 - `GET /clients`
@@ -298,6 +371,175 @@ Response shape (filtered):
 }
 ```
 
+## 23) Activity Logs (Audit Trail - Read Only)
+
+### What is Activity Log?
+
+Activity Log is an **audit trail** that records all important system operations:
+- Create, Update, Delete operations
+- Who performed the action
+- What changed (old vs new values)
+- When it happened
+- From where (IP address, device)
+
+### Endpoints
+
+- `GET /activity-logs` - List all activity logs (paginated, 50 per page)
+- `GET /activity-logs/{id}` - Get specific activity log details
+
+### Index Response
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "user": {
+        "id": 1,
+        "name": "Admin User",
+        "username": "admin"
+      },
+      "login_session": {
+        "id": 5,
+        "ip_address": "192.168.1.1",
+        "country": "Egypt",
+        "city": "Cairo"
+      },
+      "entity_type": "Order",
+      "entity_id": 145,
+      "action": "updated",
+      "label": "Updated Order #145",
+      "old_values": {
+        "status": "OUT_FOR_DELIVERY"
+      },
+      "new_values": {
+        "status": "DELIVERED"
+      },
+      "ip_address": "192.168.1.1",
+      "user_agent": "Mozilla/5.0...",
+      "created_at": "2026-03-12T14:30:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 50,
+    "total": 1250
+  }
+}
+```
+
+### Permissions Required
+
+- `activity-log.page` - Access Activity Log page
+- `activity-log.view` - View activity logs
+- `activity-log.column.*.view` - View specific columns
+
+### Roles
+
+- `activity-log-viewer` - Can view all activity logs (read-only)
+- `super-admin` - Can view all activity logs
+
+### Examples
+
+```bash
+# View all recent activities
+http GET $BASE_URL/activity-logs Authorization:"Bearer $TOKEN"
+
+# View activity on specific order
+http GET "$BASE_URL/activity-logs?entity_type=Order&entity_id=145" \
+  Authorization:"Bearer $TOKEN"
+
+# View specific activity details
+http GET $BASE_URL/activity-logs/1 Authorization:"Bearer $TOKEN"
+```
+
+### What Gets Logged Automatically
+
+✅ **Create** - New record created
+✅ **Update** - Record fields changed (only changed fields recorded)
+✅ **Delete** - Record deleted
+✅ **Restore** - Soft-deleted record restored
+✅ **Force Delete** - Record permanently deleted
+
+### Logged Entities
+
+Activity is automatically logged for:
+- User, Expense, ExpenseCategory
+- Content, Setting
+- Governorate, Plan, PlanPrice
+- Material, MaterialRequest, MaterialRequestItem
+- PickupRequest, Visit
+- RefusedReason
+- Order, ShipperCollection, ShipperReturn
+- ClientSettlement, ClientReturn
+- Role
+
+### Activity Log Entry Fields
+
+| Field | Description |
+|-------|-------------|
+| `id` | Log entry ID |
+| `user_id` | User who performed the action |
+| `user` | User object (name, username) |
+| `login_session` | Session details (IP, country, city) |
+| `entity_type` | Type of record (Order, User, etc.) |
+| `entity_id` | ID of the record |
+| `action` | Operation type (created, updated, deleted, restored, status_changed) |
+| `label` | Human-readable description |
+| `old_values` | Previous field values (JSON) |
+| `new_values` | Updated field values (JSON) |
+| `ip_address` | IP address of the requester |
+| `user_agent` | Browser/device information |
+| `created_at` | Timestamp of the action |
+
+### Common Use Cases
+
+**1. Find who changed an order status**
+```json
+{
+  "entity_type": "Order",
+  "entity_id": 145,
+  "action": "updated",
+  "old_values": {"status": "PENDING"},
+  "new_values": {"status": "SHIPPED"}
+}
+```
+
+**2. Track user permission changes**
+```json
+{
+  "entity_type": "User",
+  "entity_id": 5,
+  "action": "updated",
+  "old_values": {"roles": [1,2]},
+  "new_values": {"roles": [1,2,3]}
+}
+```
+
+**3. Audit account deletions**
+```json
+{
+  "entity_type": "User",
+  "entity_id": 10,
+  "action": "deleted",
+  "old_values": {/*entire user data*/},
+  "user": {"id": 1, "name": "Admin"},
+  "created_at": "2026-03-12T14:30:00Z"
+}
+```
+
+### Important Notes
+
+- **Read-Only** - Activity logs cannot be created, updated, or deleted via API
+- **Auto-Logged** - All CRUD operations are automatically captured
+- **Sensitive Fields Ignored** - Passwords and tokens are not logged
+- **Pagination** - Index returns 50 records per page
+- **User Info Included** - User who performed the action is always recorded
+- **Location Tracking** - IP address and geolocation of the request
+
+For complete examples and usage guide, see [ACTIVITY_LOG.md](./ACTIVITY_LOG.md)
+
 ## Full Route List (Current)
 
 - `POST /login`
@@ -314,9 +556,37 @@ Response shape (filtered):
 - `GET /shippers/{shipper}`
 - `GET|POST /users`
 - `GET|PUT|PATCH|DELETE /users/{user}`
+- `GET|POST /roles`
+- `GET|PUT|PATCH|DELETE /roles/{role}`
+- `GET /permissions`
+- `GET /permissions/{permission}`
 - `GET /settings`
 - `PUT /settings`
 - `GET|POST /governorates`
 - `GET|PUT|PATCH|DELETE /governorates/{governorate}`
 - `GET|POST /plans`
 - `GET|PUT|PATCH|DELETE /plans/{plan}`
+- `GET|POST /orders`
+- `GET|PUT|PATCH|DELETE /orders/{order}`
+- `GET|POST /shipper-collections`
+- `GET|PUT|PATCH|DELETE /shipper-collections/{shipper_collection}`
+- `GET|POST /shipper-returns`
+- `GET|PUT|PATCH|DELETE /shipper-returns/{shipper_return}`
+- `GET|POST /client-settlements`
+- `GET|PUT|PATCH|DELETE /client-settlements/{client_settlement}`
+- `GET|POST /client-returns`
+- `GET|PUT|PATCH|DELETE /client-returns/{client_return}`
+- `GET /activity-logs`
+- `GET /activity-logs/{activity_log}`
+- `GET|POST /materials`
+- `GET|PUT|PATCH|DELETE /materials/{material}`
+- `GET|POST /material-requests`
+- `GET|PUT|PATCH|DELETE /material-requests/{material_request}`
+- `GET|POST /material-request-items`
+- `GET|PUT|PATCH|DELETE /material-request-items/{material_request_item}`
+- `GET|POST /pickup-requests`
+- `GET|PUT|PATCH|DELETE /pickup-requests/{pickup_request}`
+- `GET|POST /visits`
+- `GET|PUT|PATCH|DELETE /visits/{visit}`
+- `GET|POST /refused-reasons`
+- `GET|PUT|PATCH|DELETE /refused-reasons/{refused_reason}`

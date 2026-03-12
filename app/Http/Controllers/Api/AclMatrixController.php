@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\Permissions\ActivityLogPermissionMap;
 use App\Support\Permissions\AreaPlanPermissionMap;
 use App\Support\Permissions\AccountPermissionMap;
+use App\Support\Permissions\CollectionsReturnsSettlementsPermissionMap;
 use App\Support\Permissions\ContentPermissionMap;
 use App\Support\Permissions\ExpensePermissionMap;
+use App\Support\Permissions\OperationsPermissionMap;
+use App\Support\Permissions\OrdersPermissionMap;
+use App\Support\Permissions\RefusedReasonPermissionMap;
 use App\Support\Permissions\SettingPermissionMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,12 +35,32 @@ class AclMatrixController extends Controller
                 'setting.page' => $user->can('setting.page'),
                 'governorate.page' => $user->can('governorate.page'),
                 'plan.page' => $user->can('plan.page'),
+                'material.page' => $user->can('material.page'),
+                'material-request.page' => $user->can('material-request.page'),
+                'material-request-item.page' => $user->can('material-request-item.page'),
+                'pickup-request.page' => $user->can('pickup-request.page'),
+                'visit.page' => $user->can('visit.page'),
+                'refused-reason.page' => $user->can('refused-reason.page'),
+                'order.page' => $user->can('order.page'),
+                'shipper-collection.page' => $user->can('shipper-collection.page'),
+                'shipper-return.page' => $user->can('shipper-return.page'),
+                'client-settlement.page' => $user->can('client-settlement.page'),
+                'client-return.page' => $user->can('client-return.page'),
+                'activity-log.page' => $user->can('activity-log.page'),
             ],
             'actions' => [
                 ...$this->permissionState($user, array_column(ExpensePermissionMap::ACTION_PERMISSIONS, 'name')),
                 ...$this->permissionState($user, array_column(AccountPermissionMap::ACTION_PERMISSIONS, 'name')),
                 ...$this->permissionState($user, array_column(ContentPermissionMap::ACTION_PERMISSIONS, 'name')),
                 ...$this->permissionState($user, array_column(AreaPlanPermissionMap::ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(OperationsPermissionMap::ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(RefusedReasonPermissionMap::ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(OrdersPermissionMap::ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::SHIPPER_COLLECTION_ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::SHIPPER_RETURN_ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::CLIENT_SETTLEMENT_ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::CLIENT_RETURN_ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(ActivityLogPermissionMap::ACTION_PERMISSIONS, 'name')),
             ],
             'setting_pages' => $this->permissionState($user, array_column(SettingPermissionMap::PAGE_PERMISSIONS, 'name')),
             'expense_columns' => [
@@ -75,6 +100,53 @@ class AclMatrixController extends Controller
             'plan_price_columns' => [
                 'view' => $this->permissionState($user, array_values(array_filter(AreaPlanPermissionMap::PLAN_PRICE_VIEW_COLUMNS))),
                 'edit' => $this->permissionState($user, array_values(AreaPlanPermissionMap::PLAN_PRICE_EDIT_COLUMNS)),
+            ],
+            'material_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(OperationsPermissionMap::MATERIAL_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(OperationsPermissionMap::MATERIAL_EDIT_COLUMNS)),
+            ],
+            'material_request_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(OperationsPermissionMap::MATERIAL_REQUEST_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(OperationsPermissionMap::MATERIAL_REQUEST_EDIT_COLUMNS)),
+            ],
+            'material_request_item_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(OperationsPermissionMap::MATERIAL_REQUEST_ITEM_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(OperationsPermissionMap::MATERIAL_REQUEST_ITEM_EDIT_COLUMNS)),
+            ],
+            'pickup_request_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(OperationsPermissionMap::PICKUP_REQUEST_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(OperationsPermissionMap::PICKUP_REQUEST_EDIT_COLUMNS)),
+            ],
+            'visit_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(OperationsPermissionMap::VISIT_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(OperationsPermissionMap::VISIT_EDIT_COLUMNS)),
+            ],
+            'refused_reason_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(RefusedReasonPermissionMap::VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(RefusedReasonPermissionMap::EDIT_COLUMNS)),
+            ],
+            'order_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(OrdersPermissionMap::VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(OrdersPermissionMap::EDIT_COLUMNS)),
+            ],
+            'shipper_collection_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(CollectionsReturnsSettlementsPermissionMap::SHIPPER_COLLECTION_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(CollectionsReturnsSettlementsPermissionMap::SHIPPER_COLLECTION_EDIT_COLUMNS)),
+            ],
+            'shipper_return_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(CollectionsReturnsSettlementsPermissionMap::SHIPPER_RETURN_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(CollectionsReturnsSettlementsPermissionMap::SHIPPER_RETURN_EDIT_COLUMNS)),
+            ],
+            'client_settlement_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(CollectionsReturnsSettlementsPermissionMap::CLIENT_SETTLEMENT_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(CollectionsReturnsSettlementsPermissionMap::CLIENT_SETTLEMENT_EDIT_COLUMNS)),
+            ],
+            'client_return_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(CollectionsReturnsSettlementsPermissionMap::CLIENT_RETURN_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(CollectionsReturnsSettlementsPermissionMap::CLIENT_RETURN_EDIT_COLUMNS)),
+            ],
+            'activity_log_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(ActivityLogPermissionMap::VIEW_COLUMNS))),
             ],
         ]);
     }
