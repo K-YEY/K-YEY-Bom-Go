@@ -50,6 +50,11 @@ Route::middleware(['auth:sanctum', UpdateLoginSessionLastSeen::class])->group(fu
     Route::apiResource('material-request-items', MaterialRequestItemController::class);
     Route::apiResource('pickup-requests', PickupRequestController::class);
     Route::apiResource('visits', VisitController::class);
+    Route::patch('orders/{order}/change-status', [OrderController::class, 'changeStatus']);
+    Route::patch('orders/{order}/change-shipper', [OrderController::class, 'changeShipper']);
+    Route::patch('orders/{order}/change-note', [OrderController::class, 'changeNote']);
+    Route::get('orders/{order}/history', [OrderController::class, 'history']);
+    Route::get('orders/{order}/shipping-label', [OrderController::class, 'shippingLabel']);
     Route::apiResource('orders', OrderController::class);
     Route::apiResource('shipper-collections', ShipperCollectionController::class);
     Route::apiResource('shipper-returns', ShipperReturnController::class);

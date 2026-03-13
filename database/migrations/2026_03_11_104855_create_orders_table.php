@@ -45,6 +45,9 @@ return new class extends Migration
 
             $table->foreignId('shipper_user_id')->nullable()->constrained('users')->nullOnDelete()->index();
             $table->foreignId('client_user_id')->constrained('users')->cascadeOnDelete()->index();
+            $table->boolean('allow_open')->default(true)->index();
+
+            $table->foreignId('shipping_content_id')->constrained('content')->nullOnDelete()->index();
 
             $table->enum('approval_status', [
                 'PENDING',
@@ -61,6 +64,9 @@ return new class extends Migration
 
             $table->text('approval_note')->nullable();
 
+            $table->boolean('has_return')->default(false);
+            $table->date('has_return_date')->nullable()->index();
+
             $table->boolean('is_in_shipper_collection')->default(false)->index();
             $table->boolean('is_shipper_collected')->default(false)->index();
             $table->date('shipper_collected_at')->nullable()->index();
@@ -76,6 +82,8 @@ return new class extends Migration
             $table->boolean('is_in_client_return')->default(false)->index();
             $table->boolean('is_client_returned')->default(false)->index();
             $table->date('client_returned_at')->nullable()->index();
+
+            $table->date('shipper_date')->nullable()->index();
 
             $table->timestamps();
         });
@@ -256,6 +264,6 @@ return new class extends Migration
         Schema::dropIfExists('client_settlement_orders');
         Schema::dropIfExists('client_returns');
         Schema::dropIfExists('client_return_orders');
-        
+
     }
 };

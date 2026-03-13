@@ -3,27 +3,103 @@
 namespace App\Http\Controllers\Api\Orders;
 
 use App\Http\Controllers\Controller;
+use App\Models\Client;
+use App\Models\Governorate;
 use App\Models\Order;
+use App\Models\PlanPrice;
+use App\Models\Shipper;
 use App\Support\Permissions\OrdersPermissionMap;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
+    private const FINAL_STATUSES = ['DELIVERED', 'UNDELIVERED'];
+
+    private const STATUS_LABELS = [
+        'OUT_FOR_DELIVERY' => 'Out for delivery',
+        'DELIVERED' => 'Delivered',
+        'HOLD' => 'On hold',
+        'UNDELIVERED' => 'Undelivered',
+    ];
+
+    private const SUMMABLE_COLUMNS = [
+        'total_amount',
+        'shipping_fee',
+        'commission_amount',
+        'company_amount',
+        'cod_amount',
+    ];
+
     public function index(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'order.page');
         $this->authorizePermission($request, 'order.view');
 
-        $orders = Order::query()
-            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name'])
-            ->orderByDesc('id')
-            ->get();
+        $validated = $request->validate([
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'search' => ['nullable', 'array'],
+            'search.code' => ['nullable', 'string', 'max:255'],
+            'search.external_code' => ['nullable', 'string', 'max:255'],
+            'search.receiver_name' => ['nullable', 'string', 'max:255'],
+            'search.phone' => ['nullable', 'string', 'max:30'],
+            'search.phone_2' => ['nullable', 'string', 'max:30'],
+            'search.address' => ['nullable', 'string', 'max:1000'],
+            'search.status' => ['nullable', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'search.approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
+            'search.governorate_id' => ['nullable', 'integer', 'exists:governorates,id'],
+            'search.city_id' => ['nullable', 'integer', 'exists:cities,id'],
+            'search.shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'search.client_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'search.allow_open' => ['nullable', 'boolean'],
+            'search.has_return' => ['nullable', 'boolean'],
+            'search.is_in_shipper_collection' => ['nullable', 'boolean'],
+            'search.is_in_client_settlement' => ['nullable', 'boolean'],
+            'search.is_in_shipper_return' => ['nullable', 'boolean'],
+            'search.is_in_client_return' => ['nullable', 'boolean'],
+            'code' => ['nullable', 'string', 'max:255'],
+            'external_code' => ['nullable', 'string', 'max:255'],
+            'receiver_name' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'phone_2' => ['nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:1000'],
+            'status' => ['nullable', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
+            'governorate_id' => ['nullable', 'integer', 'exists:governorates,id'],
+            'city_id' => ['nullable', 'integer', 'exists:cities,id'],
+            'shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'client_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'allow_open' => ['nullable', 'boolean'],
+            'has_return' => ['nullable', 'boolean'],
+            'is_in_shipper_collection' => ['nullable', 'boolean'],
+            'is_in_client_settlement' => ['nullable', 'boolean'],
+            'is_in_shipper_return' => ['nullable', 'boolean'],
+            'is_in_client_return' => ['nullable', 'boolean'],
+        ]);
 
-        return response()->json(
-            $orders->map(fn (Order $order): array => $this->filterVisibleColumns($request, $order))->values()
-        );
+        $perPage = $validated['per_page'] ?? 100;
+
+        $query = Order::query()
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name'])
+            ->orderByDesc('id');
+
+        $this->applyOrderSearch($query, $validated);
+
+        $orders = $query
+            ->paginate($perPage)
+            ->appends($request->query())
+            ->through(fn (Order $order): array => $this->filterVisibleColumns($request, $order));
+
+        return response()->json([
+            ...$orders->toArray(),
+            'totals' => $this->calculateDisplayedTotals($orders->items()),
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -40,19 +116,26 @@ class OrderController extends Controller
             'governorate_id' => ['required', 'exists:governorates,id'],
             'city_id' => ['required', 'exists:cities,id'],
             'total_amount' => ['required', 'numeric', 'min:0'],
-            'shipping_fee' => ['required', 'numeric', 'min:0'],
-            'commission_amount' => ['nullable', 'numeric', 'min:0'],
-            'company_amount' => ['nullable', 'numeric', 'min:0'],
-            'cod_amount' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'has_return' => ['nullable', 'boolean'],
+            'has_return_date' => ['nullable', 'date'],
             'shipper_user_id' => ['nullable', 'exists:users,id'],
             'client_user_id' => ['required', 'exists:users,id'],
+            'shipping_content_id' => ['nullable', 'integer', 'exists:content,id'],
+            'allow_open' => ['nullable', 'boolean'],
             'order_note' => ['nullable', 'string'],
         ]);
 
         $this->authorizeEditableColumns($request, array_keys($data));
 
+        $data = $this->resolveDefaultShipper($data);
+        $data = $this->applyAutomaticFinancials($data);
         $data['created_by'] = $request->user()->id;
+
+        if (! empty($data['shipper_user_id'])) {
+            $data['shipper_date'] = now()->toDateString();
+        }
+
         $order = Order::query()->create($data);
 
         return response()->json([
@@ -66,14 +149,125 @@ class OrderController extends Controller
         $this->authorizePermission($request, 'order.page');
         $this->authorizePermission($request, 'order.view');
 
+        $validated = $request->validate([
+            'include_history' => ['nullable', 'boolean'],
+            'history_per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
         $order->load(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name']);
 
-        return response()->json($this->filterVisibleColumns($request, $order));
+        $payload = $this->filterVisibleColumns($request, $order);
+
+        if (($validated['include_history'] ?? false) === true) {
+            $historyPerPage = $validated['history_per_page'] ?? 20;
+
+            if (! $request->user()?->can('activity-log.view')) {
+                $payload['history'] = $order->history()
+                    ->where(function (Builder|QueryBuilder $query): void {
+                        $query
+                            ->where('action', 'created')
+                            ->orWhereNotNull('new_values->status')
+                            ->orWhereNotNull('old_values->status');
+                    })
+                    ->paginate($historyPerPage, ['*'], 'history_page')
+                    ->appends($request->query())
+                    ->through(fn ($log): array => $this->buildClientTimelineEntry($log))
+                    ->toArray();
+            } else {
+                $payload['history'] = $order->history()
+                    ->with([
+                        'user:id,name,username,phone',
+                        'loginSession:id,ip_address,country,city,device_name',
+                    ])
+                    ->paginate($historyPerPage, ['*'], 'history_page')
+                    ->appends($request->query())
+                    ->toArray();
+            }
+        }
+
+        return response()->json($payload);
+    }
+
+    public function history(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+
+        $validated = $request->validate([
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $perPage = $validated['per_page'] ?? 50;
+
+        if (! $request->user()?->can('activity-log.view')) {
+            $timeline = $order->history()
+                ->where(function (Builder|QueryBuilder $query): void {
+                    $query
+                        ->where('action', 'created')
+                        ->orWhereNotNull('new_values->status')
+                        ->orWhereNotNull('old_values->status');
+                })
+                ->paginate($perPage)
+                ->appends($request->query())
+                ->through(fn ($log): array => $this->buildClientTimelineEntry($log));
+
+            return response()->json($timeline);
+        }
+
+        $history = $order->history()
+            ->with([
+                'user:id,name,username,phone',
+                'loginSession:id,ip_address,country,city,device_name',
+            ])
+            ->paginate($perPage)
+            ->appends($request->query());
+
+        return response()->json($history);
+    }
+
+    public function shippingLabel(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+
+        $order->load([
+            'client:id,name,phone',
+            'shippingContent:id,name',
+            'governorate:id,name',
+            'city:id,name',
+        ]);
+
+        $receiverPhones = array_values(array_filter([
+            $order->phone,
+            $order->phone_2,
+        ], static fn ($phone): bool => $phone !== null && $phone !== ''));
+
+        $formattedAddress = implode(' \\ ', array_values(array_filter([
+            $order->governorate?->name,
+            $order->city?->name,
+            $order->address,
+        ], static fn ($part): bool => $part !== null && $part !== '')));
+
+        return response()->json([
+            'order_id' => $order->id,
+            'client_name' => $order->client?->name,
+            'client_phone' => $order->client?->phone,
+            'receiver_name' => $order->receiver_name,
+            'receiver_phones' => $receiverPhones,
+            'receiver_phones_text' => implode(' - ', $receiverPhones),
+            'address' => $formattedAddress,
+            'total_amount' => $order->total_amount,
+            'cod' => $order->cod_amount,
+            'allow_open' => (bool) $order->allow_open,
+            'shipping_content' => $order->shippingContent?->name,
+        ]);
     }
 
     public function update(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.update');
+        $this->authorizeFinalStatusUpdate($request, $order);
 
         $data = $request->validate([
             'external_code' => ['sometimes', 'nullable', 'string'],
@@ -83,19 +277,125 @@ class OrderController extends Controller
             'address' => ['sometimes', 'required', 'string'],
             'governorate_id' => ['sometimes', 'required', 'exists:governorates,id'],
             'city_id' => ['sometimes', 'required', 'exists:cities,id'],
+            'shipper_user_id' => ['sometimes', 'nullable', 'exists:users,id'],
+            'shipping_content_id' => ['sometimes', 'nullable', 'integer', 'exists:content,id'],
             'total_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'shipping_fee' => ['sometimes', 'required', 'numeric', 'min:0'],
             'status' => ['sometimes', 'required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'allow_open' => ['sometimes', 'boolean'],
+            'has_return' => ['sometimes', 'nullable', 'boolean'],
+            'has_return_date' => ['sometimes', 'nullable', 'date'],
             'latest_status_note' => ['nullable', 'string'],
             'order_note' => ['nullable', 'string'],
         ]);
 
         $this->authorizeEditableColumns($request, array_keys($data));
 
+        $data = $this->resolveDefaultShipper($data, $order);
+
+        if ($this->shouldRecalculateFinancials($data)) {
+            $data = $this->applyAutomaticFinancials($data, $order);
+        }
+
+        if (array_key_exists('shipper_user_id', $data)) {
+            $data['shipper_date'] = $data['shipper_user_id'] ? now()->toDateString() : null;
+        }
+
         $order->update($data);
 
         return response()->json([
             'message' => 'Order updated successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function changeStatus(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-status');
+        $this->authorizeFinalStatusUpdate($request, $order);
+
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'reason' => ['nullable', 'string'],
+            'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'has_return' => ['sometimes', 'boolean'],
+            'has_return_date' => ['nullable', 'date'],
+        ]);
+
+        $payload = [
+            'status' => $data['status'],
+            'latest_status_note' => $data['reason'] ?? null,
+        ];
+
+        if ($data['status'] !== 'DELIVERED' && (
+            array_key_exists('total_amount', $data)
+            || array_key_exists('has_return', $data)
+            || array_key_exists('has_return_date', $data)
+        )) {
+            throw ValidationException::withMessages([
+                'status' => ['total_amount and has_return fields are only allowed when status is DELIVERED.'],
+            ]);
+        }
+
+        if ($data['status'] === 'DELIVERED' && array_key_exists('total_amount', $data)) {
+            $payload['total_amount'] = $data['total_amount'];
+        }
+
+        if ($data['status'] === 'DELIVERED' && array_key_exists('has_return', $data)) {
+            $payload['has_return'] = $data['has_return'];
+            $payload['has_return_date'] = $data['has_return']
+                ? ($data['has_return_date'] ?? now()->toDateString())
+                : null;
+        }
+
+        $this->authorizeEditableColumns($request, array_keys($payload));
+
+        $order->update($payload);
+
+        return response()->json([
+            'message' => 'Order status updated successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function changeShipper(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-shipper');
+        $this->authorizeFinalStatusUpdate($request, $order);
+
+        $data = $request->validate([
+            'shipper_user_id' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $payload = [
+            'shipper_user_id' => $data['shipper_user_id'] ?? null,
+        ];
+
+        $payload = $this->resolveDefaultShipper($payload, $order);
+        $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
+
+        $payload = $this->applyAutomaticFinancials($payload, $order);
+
+        $order->update($payload);
+
+        return response()->json([
+            'message' => 'Order shipper updated successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function changeNote(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-note');
+        $this->authorizeFinalStatusUpdate($request, $order);
+
+        $data = $request->validate([
+            'order_note' => ['required', 'nullable', 'string'],
+        ]);
+
+        $order->update(['order_note' => $data['order_note']]);
+
+        return response()->json([
+            'message' => 'Order note updated successfully.',
             'data' => $this->filterVisibleColumns($request, $order),
         ]);
     }
@@ -114,6 +414,19 @@ class OrderController extends Controller
     private function authorizePermission(Request $request, string $permission): void
     {
         abort_unless($request->user()?->can($permission), 403, "Missing permission: {$permission}");
+    }
+
+    private function authorizeFinalStatusUpdate(Request $request, Order $order): void
+    {
+        if (! in_array($order->status, self::FINAL_STATUSES, true)) {
+            return;
+        }
+
+        abort_unless(
+            $request->user()?->can('order.update-after-final-status'),
+            403,
+            'Missing permission: order.update-after-final-status'
+        );
     }
 
     private function authorizeEditableColumns(Request $request, array $columns): void
@@ -147,5 +460,237 @@ class OrderController extends Controller
         }
 
         return $result;
+    }
+
+    private function applyOrderSearch(Builder|QueryBuilder $query, array $validated): void
+    {
+        $generalSearch = isset($validated['q']) ? trim((string) $validated['q']) : '';
+
+        if ($generalSearch !== '') {
+            $query->where(function (Builder $builder) use ($generalSearch): void {
+                $like = '%'.$generalSearch.'%';
+
+                $builder
+                    ->where('code', 'like', $like)
+                    ->orWhere('external_code', 'like', $like)
+                    ->orWhere('receiver_name', 'like', $like)
+                    ->orWhere('phone', 'like', $like)
+                    ->orWhere('phone_2', 'like', $like)
+                    ->orWhere('address', 'like', $like);
+            });
+        }
+
+        $columnSearch = is_array($validated['search'] ?? null) ? $validated['search'] : [];
+
+        $directFilters = [
+            'code',
+            'external_code',
+            'receiver_name',
+            'phone',
+            'phone_2',
+            'address',
+            'status',
+            'approval_status',
+            'governorate_id',
+            'city_id',
+            'shipper_user_id',
+            'client_user_id',
+            'allow_open',
+            'has_return',
+            'is_in_shipper_collection',
+            'is_in_client_settlement',
+            'is_in_shipper_return',
+            'is_in_client_return',
+        ];
+
+        foreach ($directFilters as $filter) {
+            if (array_key_exists($filter, $validated)) {
+                $columnSearch[$filter] = $validated[$filter];
+            }
+        }
+
+        foreach ($columnSearch as $column => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            match ($column) {
+                'code', 'external_code', 'receiver_name', 'phone', 'phone_2', 'address' => $query->where($column, 'like', '%'.(string) $value.'%'),
+                'status', 'approval_status', 'governorate_id', 'city_id', 'shipper_user_id', 'client_user_id', 'allow_open', 'has_return', 'is_in_shipper_collection', 'is_in_client_settlement', 'is_in_shipper_return', 'is_in_client_return' => $query->where($column, $value),
+                default => null,
+            };
+        }
+    }
+
+    private function calculateDisplayedTotals(array $rows): array
+    {
+        $totals = array_fill_keys(self::SUMMABLE_COLUMNS, 0.0);
+
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            foreach (self::SUMMABLE_COLUMNS as $column) {
+                if (! array_key_exists($column, $row) || $row[$column] === null || $row[$column] === '') {
+                    continue;
+                }
+
+                $totals[$column] += (float) $row[$column];
+            }
+        }
+
+        return array_map(
+            static fn (float $value): float => round($value, 2),
+            $totals
+        );
+    }
+
+    private function shouldRecalculateFinancials(array $data): bool
+    {
+        foreach (['total_amount', 'governorate_id', 'shipper_user_id', 'shipping_fee', 'commission_amount', 'company_amount', 'cod_amount'] as $field) {
+            if (array_key_exists($field, $data)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function applyAutomaticFinancials(array $data, ?Order $order = null): array
+    {
+        $clientUserId = $order?->client_user_id;
+        $governorateId = $order?->governorate_id;
+        $shipperUserId = $order?->shipper_user_id;
+        $totalAmount = $order?->total_amount;
+
+        if (array_key_exists('client_user_id', $data)) {
+            $clientUserId = $data['client_user_id'];
+        }
+
+        if (array_key_exists('governorate_id', $data)) {
+            $governorateId = $data['governorate_id'];
+        }
+
+        if (array_key_exists('shipper_user_id', $data)) {
+            $shipperUserId = $data['shipper_user_id'];
+        }
+
+        if (array_key_exists('total_amount', $data)) {
+            $totalAmount = $data['total_amount'];
+        }
+
+        if ($clientUserId === null || $governorateId === null || $totalAmount === null) {
+            throw ValidationException::withMessages([
+                'total_amount' => ['Unable to calculate order financials without client_user_id, governorate_id, and total_amount.'],
+            ]);
+        }
+
+        $shippingFee = $this->resolveShippingFee((int) $clientUserId, (int) $governorateId);
+        $commissionAmount = $this->resolveCommissionAmount($shipperUserId ? (int) $shipperUserId : null);
+        $total = round((float) $totalAmount, 2);
+
+        $data['total_amount'] = $total;
+        $data['shipping_fee'] = $shippingFee;
+        $data['commission_amount'] = $commissionAmount;
+        $data['company_amount'] = round($shippingFee - $commissionAmount, 2);
+        $data['cod_amount'] = round($total - $shippingFee, 2);
+
+        return $data;
+    }
+
+    private function resolveShippingFee(int $clientUserId, int $governorateId): float
+    {
+        $planId = Client::query()
+            ->where('user_id', $clientUserId)
+            ->value('plan_id');
+
+        if (! $planId) {
+            throw ValidationException::withMessages([
+                'client_user_id' => ['Selected client has no plan assigned.'],
+            ]);
+        }
+
+        $shippingFee = PlanPrice::query()
+            ->where('plan_id', $planId)
+            ->where('governorate_id', $governorateId)
+            ->value('price');
+
+        if ($shippingFee === null) {
+            throw ValidationException::withMessages([
+                'governorate_id' => ['No shipping fee found for the selected client plan and governorate.'],
+            ]);
+        }
+
+        return round((float) $shippingFee, 2);
+    }
+
+    private function resolveCommissionAmount(?int $shipperUserId): float
+    {
+        if ($shipperUserId === null) {
+            return 0.0;
+        }
+
+        $commission = Shipper::query()
+            ->where('user_id', $shipperUserId)
+            ->value('commission_rate');
+
+        return round((float) ($commission ?? 0), 2);
+    }
+
+    private function resolveDefaultShipper(array $data, ?Order $order = null): array
+    {
+        $governorateId = $data['governorate_id'] ?? $order?->governorate_id;
+        $shipperProvided = array_key_exists('shipper_user_id', $data);
+
+        if (! $shipperProvided) {
+            if ($order === null || ! array_key_exists('governorate_id', $data) || $order->shipper_user_id !== null) {
+                return $data;
+            }
+
+            $data['shipper_user_id'] = null;
+        }
+
+        if ($data['shipper_user_id'] !== null && $data['shipper_user_id'] !== '') {
+            return $data;
+        }
+
+        if ($governorateId === null) {
+            throw ValidationException::withMessages([
+                'shipper_user_id' => ['Please assign a shipper or select a governorate with a default shipper.'],
+            ]);
+        }
+
+        $defaultShipperUserId = Governorate::query()
+            ->whereKey($governorateId)
+            ->value('default_shipper_user_id');
+
+        if ($defaultShipperUserId === null) {
+            throw ValidationException::withMessages([
+                'shipper_user_id' => ['No default shipper found for the selected governorate. Please assign a shipper.'],
+            ]);
+        }
+
+        $data['shipper_user_id'] = (int) $defaultShipperUserId;
+
+        return $data;
+    }
+
+    private function buildClientTimelineEntry($log): array
+    {
+        $newValues = is_array($log->new_values) ? $log->new_values : [];
+        $oldValues = is_array($log->old_values) ? $log->old_values : [];
+
+        $status = $newValues['status'] ?? $oldValues['status'] ?? null;
+        $statusLabel = $status && array_key_exists($status, self::STATUS_LABELS)
+            ? self::STATUS_LABELS[$status]
+            : (string) ($status ?? 'Unknown');
+
+        return [
+            'id' => $log->id,
+            'status' => $status,
+            'message' => "Shipment status is {$statusLabel}",
+            'created_at' => $log->created_at,
+        ];
     }
 }
