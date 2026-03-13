@@ -50,9 +50,14 @@ Route::middleware(['auth:sanctum', UpdateLoginSessionLastSeen::class])->group(fu
     Route::apiResource('material-request-items', MaterialRequestItemController::class);
     Route::apiResource('pickup-requests', PickupRequestController::class);
     Route::apiResource('visits', VisitController::class);
+    Route::post('orders/scan', [OrderController::class, 'scan']);
+    Route::get('orders/my-orders', [OrderController::class, 'myOrders']);
+    Route::patch('orders/bulk-change-status', [OrderController::class, 'bulkChangeStatus']);
+    Route::patch('orders/bulk-change-shipper', [OrderController::class, 'bulkChangeShipper']);
     Route::patch('orders/{order}/change-status', [OrderController::class, 'changeStatus']);
     Route::patch('orders/{order}/change-shipper', [OrderController::class, 'changeShipper']);
     Route::patch('orders/{order}/change-note', [OrderController::class, 'changeNote']);
+    Route::patch('orders/{order}/change-external-code', [OrderController::class, 'changeExternalCode']);
     Route::get('orders/{order}/history', [OrderController::class, 'history']);
     Route::get('orders/{order}/shipping-label', [OrderController::class, 'shippingLabel']);
     Route::apiResource('orders', OrderController::class);

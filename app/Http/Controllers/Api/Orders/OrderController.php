@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -52,6 +53,8 @@ class OrderController extends Controller
             'search.phone_2' => ['nullable', 'string', 'max:30'],
             'search.address' => ['nullable', 'string', 'max:1000'],
             'search.status' => ['nullable', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'search.statuses' => ['nullable', 'array'],
+            'search.statuses.*' => [Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'search.approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
             'search.governorate_id' => ['nullable', 'integer', 'exists:governorates,id'],
             'search.city_id' => ['nullable', 'integer', 'exists:cities,id'],
@@ -59,10 +62,15 @@ class OrderController extends Controller
             'search.client_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'search.allow_open' => ['nullable', 'boolean'],
             'search.has_return' => ['nullable', 'boolean'],
+            'search.collection_state' => ['nullable', Rule::in(['not_collected', 'ready_to_collect', 'collected'])],
             'search.is_in_shipper_collection' => ['nullable', 'boolean'],
+            'search.is_shipper_collected' => ['nullable', 'boolean'],
             'search.is_in_client_settlement' => ['nullable', 'boolean'],
+            'search.is_client_settled' => ['nullable', 'boolean'],
             'search.is_in_shipper_return' => ['nullable', 'boolean'],
+            'search.is_shipper_returned' => ['nullable', 'boolean'],
             'search.is_in_client_return' => ['nullable', 'boolean'],
+            'search.is_client_returned' => ['nullable', 'boolean'],
             'code' => ['nullable', 'string', 'max:255'],
             'external_code' => ['nullable', 'string', 'max:255'],
             'receiver_name' => ['nullable', 'string', 'max:255'],
@@ -70,6 +78,8 @@ class OrderController extends Controller
             'phone_2' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:1000'],
             'status' => ['nullable', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'statuses' => ['nullable', 'array'],
+            'statuses.*' => [Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
             'governorate_id' => ['nullable', 'integer', 'exists:governorates,id'],
             'city_id' => ['nullable', 'integer', 'exists:cities,id'],
@@ -77,10 +87,15 @@ class OrderController extends Controller
             'client_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'allow_open' => ['nullable', 'boolean'],
             'has_return' => ['nullable', 'boolean'],
+            'collection_state' => ['nullable', Rule::in(['not_collected', 'ready_to_collect', 'collected'])],
             'is_in_shipper_collection' => ['nullable', 'boolean'],
+            'is_shipper_collected' => ['nullable', 'boolean'],
             'is_in_client_settlement' => ['nullable', 'boolean'],
+            'is_client_settled' => ['nullable', 'boolean'],
             'is_in_shipper_return' => ['nullable', 'boolean'],
+            'is_shipper_returned' => ['nullable', 'boolean'],
             'is_in_client_return' => ['nullable', 'boolean'],
+            'is_client_returned' => ['nullable', 'boolean'],
         ]);
 
         $perPage = $validated['per_page'] ?? 100;
@@ -142,6 +157,189 @@ class OrderController extends Controller
             'message' => 'Order created successfully.',
             'data' => $this->filterVisibleColumns($request, $order),
         ], 201);
+    }
+
+    public function myOrders(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+        $this->authorizePermission($request, 'order.my-orders');
+
+        $validated = $request->validate([
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $perPage = $validated['per_page'] ?? 100;
+
+        $orders = Order::query()
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name'])
+            ->where('shipper_user_id', $request->user()?->id)
+            ->whereNotIn('status', self::FINAL_STATUSES)
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->appends($request->query())
+            ->through(fn (Order $order): array => $this->formatMyOrderRow($order));
+
+        return response()->json($orders);
+    }
+
+    public function scan(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+
+        $data = $request->validate([
+            'code' => ['nullable', 'string'],
+            'external_code' => ['nullable', 'string'],
+        ]);
+
+        $code = trim((string) ($data['code'] ?? ''));
+        $externalCode = trim((string) ($data['external_code'] ?? ''));
+
+        if ($code === '' && $externalCode === '') {
+            throw ValidationException::withMessages([
+                'code' => ['Please provide code or external_code.'],
+            ]);
+        }
+
+        $order = Order::query()
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name'])
+            ->where(function (Builder $query) use ($code, $externalCode): void {
+                if ($code !== '') {
+                    $query->where('code', $code);
+                }
+
+                if ($externalCode !== '') {
+                    if ($code !== '') {
+                        $query->orWhere('external_code', $externalCode);
+                    } else {
+                        $query->where('external_code', $externalCode);
+                    }
+                }
+            })
+            ->first();
+
+        if (! $order) {
+            throw ValidationException::withMessages([
+                'code' => ['Order not found for provided code/external_code.'],
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Order scanned successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function bulkChangeShipper(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-shipper');
+
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['required', 'integer', 'exists:orders,id'],
+            'shipper_user_id' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $orders = Order::query()->whereIn('id', $data['order_ids'])->get();
+
+        $updated = DB::transaction(function () use ($orders, $data): array {
+            $result = [];
+
+            foreach ($orders as $order) {
+                if (! $order instanceof Order) {
+                    continue;
+                }
+
+                $this->authorizeFinalStatusUpdate(request(), $order);
+
+                $payload = [
+                    'shipper_user_id' => $data['shipper_user_id'] ?? null,
+                ];
+
+                $payload = $this->resolveDefaultShipper($payload, $order);
+                $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
+                $payload = $this->applyAutomaticFinancials($payload, $order);
+
+                $order->update($payload);
+                $result[] = $order->id;
+            }
+
+            return $result;
+        });
+
+        return response()->json([
+            'message' => 'Shipper updated successfully for selected orders.',
+            'updated_order_ids' => $updated,
+        ]);
+    }
+
+    public function bulkChangeStatus(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-status');
+
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['required', 'integer', 'exists:orders,id'],
+            'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'reason' => ['nullable', 'string'],
+            'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'has_return' => ['sometimes', 'boolean'],
+            'has_return_date' => ['nullable', 'date'],
+        ]);
+
+        if ($data['status'] !== 'DELIVERED' && (
+            array_key_exists('total_amount', $data)
+            || array_key_exists('has_return', $data)
+            || array_key_exists('has_return_date', $data)
+        )) {
+            throw ValidationException::withMessages([
+                'status' => ['total_amount and has_return fields are only allowed when status is DELIVERED.'],
+            ]);
+        }
+
+        $orders = Order::query()->whereIn('id', $data['order_ids'])->get();
+
+        $updated = DB::transaction(function () use ($orders, $data): array {
+            $result = [];
+
+            foreach ($orders as $order) {
+                if (! $order instanceof Order) {
+                    continue;
+                }
+
+                $this->authorizeFinalStatusUpdate(request(), $order);
+
+                $payload = [
+                    'status' => $data['status'],
+                    'latest_status_note' => $data['reason'] ?? null,
+                ];
+
+                if ($data['status'] === 'DELIVERED' && array_key_exists('total_amount', $data)) {
+                    $payload['total_amount'] = $data['total_amount'];
+                }
+
+                if ($data['status'] === 'DELIVERED' && array_key_exists('has_return', $data)) {
+                    $payload['has_return'] = $data['has_return'];
+                    $payload['has_return_date'] = $data['has_return']
+                        ? ($data['has_return_date'] ?? now()->toDateString())
+                        : null;
+                }
+
+                $this->authorizeEditableColumns(request(), array_keys($payload));
+
+                $order->update($payload);
+                $result[] = $order->id;
+            }
+
+            return $result;
+        });
+
+        return response()->json([
+            'message' => 'Status updated successfully for selected orders.',
+            'updated_order_ids' => $updated,
+        ]);
     }
 
     public function show(Request $request, Order $order): JsonResponse
@@ -400,6 +598,30 @@ class OrderController extends Controller
         ]);
     }
 
+    public function changeExternalCode(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-external-code');
+
+        if (in_array($order->status, self::FINAL_STATUSES, true)) {
+            throw ValidationException::withMessages([
+                'status' => ['External code cannot be changed when order status is DELIVERED or UNDELIVERED.'],
+            ]);
+        }
+
+        $data = $request->validate([
+            'external_code' => ['required', 'nullable', 'string', 'max:255'],
+        ]);
+
+        $this->authorizeEditableColumns($request, ['external_code']);
+
+        $order->update(['external_code' => $data['external_code']]);
+
+        return response()->json([
+            'message' => 'Order external code updated successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
     public function destroy(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.delete');
@@ -459,6 +681,10 @@ class OrderController extends Controller
             $result['id'] = $order->id;
         }
 
+        // Convenience state for orders table collection tabs.
+        $result['collection_state'] = $this->resolveCollectionState($order);
+        $result['can_collect'] = ! (bool) $order->is_shipper_collected;
+
         return $result;
     }
 
@@ -482,6 +708,40 @@ class OrderController extends Controller
 
         $columnSearch = is_array($validated['search'] ?? null) ? $validated['search'] : [];
 
+        $collectionState = $validated['collection_state'] ?? $columnSearch['collection_state'] ?? null;
+
+        if ($collectionState !== null && $collectionState !== '') {
+            match ($collectionState) {
+                'not_collected' => $query
+                    ->where('is_in_shipper_collection', false)
+                    ->where('is_shipper_collected', false),
+                'ready_to_collect' => $query
+                    ->where('is_in_shipper_collection', true)
+                    ->where('is_shipper_collected', false),
+                'collected' => $query->where('is_shipper_collected', true),
+                default => null,
+            };
+
+            unset($columnSearch['collection_state']);
+        }
+
+        $statuses = [];
+        if (is_array($validated['statuses'] ?? null)) {
+            $statuses = array_values(array_unique(array_filter($validated['statuses'])));
+        }
+
+        if (is_array($columnSearch['statuses'] ?? null)) {
+            $statuses = array_values(array_unique(array_filter([
+                ...$statuses,
+                ...$columnSearch['statuses'],
+            ])));
+        }
+
+        if (! empty($statuses)) {
+            $query->whereIn('status', $statuses);
+            unset($columnSearch['statuses']);
+        }
+
         $directFilters = [
             'code',
             'external_code',
@@ -498,9 +758,13 @@ class OrderController extends Controller
             'allow_open',
             'has_return',
             'is_in_shipper_collection',
+            'is_shipper_collected',
             'is_in_client_settlement',
+            'is_client_settled',
             'is_in_shipper_return',
+            'is_shipper_returned',
             'is_in_client_return',
+            'is_client_returned',
         ];
 
         foreach ($directFilters as $filter) {
@@ -516,10 +780,23 @@ class OrderController extends Controller
 
             match ($column) {
                 'code', 'external_code', 'receiver_name', 'phone', 'phone_2', 'address' => $query->where($column, 'like', '%'.(string) $value.'%'),
-                'status', 'approval_status', 'governorate_id', 'city_id', 'shipper_user_id', 'client_user_id', 'allow_open', 'has_return', 'is_in_shipper_collection', 'is_in_client_settlement', 'is_in_shipper_return', 'is_in_client_return' => $query->where($column, $value),
+                'status', 'approval_status', 'governorate_id', 'city_id', 'shipper_user_id', 'client_user_id', 'allow_open', 'has_return', 'is_in_shipper_collection', 'is_shipper_collected', 'is_in_client_settlement', 'is_client_settled', 'is_in_shipper_return', 'is_shipper_returned', 'is_in_client_return', 'is_client_returned' => $query->where($column, $value),
                 default => null,
             };
         }
+    }
+
+    private function resolveCollectionState(Order $order): string
+    {
+        if ((bool) $order->is_shipper_collected) {
+            return 'collected';
+        }
+
+        if ((bool) $order->is_in_shipper_collection) {
+            return 'ready_to_collect';
+        }
+
+        return 'not_collected';
     }
 
     private function calculateDisplayedTotals(array $rows): array
@@ -691,6 +968,30 @@ class OrderController extends Controller
             'status' => $status,
             'message' => "Shipment status is {$statusLabel}",
             'created_at' => $log->created_at,
+        ];
+    }
+
+    private function formatMyOrderRow(Order $order): array
+    {
+        $phones = array_values(array_filter([
+            $order->phone,
+            $order->phone_2,
+        ], static fn ($phone): bool => $phone !== null && $phone !== ''));
+
+        $address = implode(' \\ ', array_values(array_filter([
+            $order->governorate?->name,
+            $order->city?->name,
+            $order->address,
+        ], static fn ($part): bool => $part !== null && $part !== '')));
+
+        return [
+            'id' => $order->id,
+            'receiver_name' => $order->receiver_name,
+            'phones' => $phones,
+            'phones_text' => implode(' - ', $phones),
+            'address' => $address,
+            'total_amount' => $order->total_amount,
+            'cod' => $order->cod_amount,
         ];
     }
 }

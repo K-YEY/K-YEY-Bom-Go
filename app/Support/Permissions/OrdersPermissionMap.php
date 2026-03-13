@@ -17,6 +17,8 @@ class OrdersPermissionMap
         ['name' => 'order.change-status', 'group' => 'orders', 'label' => 'Change order status', 'type' => 'button'],
         ['name' => 'order.change-shipper', 'group' => 'orders', 'label' => 'Change order shipper', 'type' => 'button'],
         ['name' => 'order.change-note', 'group' => 'orders', 'label' => 'Change order note', 'type' => 'button'],
+        ['name' => 'order.change-external-code', 'group' => 'orders', 'label' => 'Change order external code', 'type' => 'button'],
+        ['name' => 'order.my-orders', 'group' => 'orders', 'label' => 'View my orders', 'type' => 'button'],
         ['name' => 'order.approve', 'group' => 'orders', 'label' => 'Approve order', 'type' => 'button'],
         ['name' => 'order.reject', 'group' => 'orders', 'label' => 'Reject order', 'type' => 'button'],
     ];
