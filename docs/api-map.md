@@ -107,6 +107,67 @@ Returns permissions matrix used by frontend:
 }
 ```
 
+## 3.3) My Profile
+
+- `GET /profile`
+- `PATCH /profile`
+
+Permission model:
+
+- page: `user.profile.page`
+- view: `user.profile.view`
+- update: `user.profile.update`
+- column view: `user.profile.column.*.view`
+- column edit: `user.profile.column.*.edit`
+
+`GET /profile` returns current authenticated user filtered by profile column permissions.
+
+Example response:
+
+```json
+{
+  "id": 1,
+  "name": "System Admin",
+  "username": "admin",
+  "phone": "01000000000",
+  "avatar": null,
+  "roles": [
+    {
+      "id": 1,
+      "name": "super-admin",
+      "label": "Super Admin"
+    }
+  ],
+  "account_type": 0,
+  "created_at": "2026-03-13T10:00:00.000000Z",
+  "updated_at": "2026-03-13T10:00:00.000000Z"
+}
+```
+
+`PATCH /profile` accepts editable profile fields (based on column edit permissions):
+
+```json
+{
+  "name": "Updated Name",
+  "phone": "01012345678",
+  "avatar": "https://.../avatar.png",
+  "password": "new-password-123"
+}
+```
+
+## 3.4) Notifications
+
+- `GET /notifications`
+- `PATCH /notifications/{notificationId}/read`
+- `PATCH /notifications/read-all`
+
+Notes:
+
+- Notifications are stored in `notifications` table (database channel).
+- `GET /notifications` returns paginated current-user notifications.
+- `PATCH /notifications/{notificationId}/read` marks one notification as read.
+- `PATCH /notifications/read-all` marks all unread notifications as read.
+
 ## 3.1) Roles
 
 - `GET /roles`

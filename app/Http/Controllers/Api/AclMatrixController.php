@@ -31,6 +31,7 @@ class AclMatrixController extends Controller
                 'user.page' => $user->can('user.page'),
                 'client.page' => $user->can('client.page'),
                 'shipper.page' => $user->can('shipper.page'),
+                'user.profile.page' => $user->can('user.profile.page'),
                 'content.page' => $user->can('content.page'),
                 'setting.page' => $user->can('setting.page'),
                 'governorate.page' => $user->can('governorate.page'),
@@ -74,6 +75,10 @@ class AclMatrixController extends Controller
             'user_columns' => [
                 'view' => $this->permissionState($user, array_values(array_filter(AccountPermissionMap::USER_VIEW_COLUMNS))),
                 'edit' => $this->permissionState($user, array_values(AccountPermissionMap::USER_EDIT_COLUMNS)),
+            ],
+            'profile_columns' => [
+                'view' => $this->permissionState($user, array_values(array_filter(AccountPermissionMap::PROFILE_VIEW_COLUMNS))),
+                'edit' => $this->permissionState($user, array_values(AccountPermissionMap::PROFILE_EDIT_COLUMNS)),
             ],
             'client_columns' => [
                 'view' => $this->permissionState($user, array_values(array_filter(AccountPermissionMap::CLIENT_VIEW_COLUMNS))),

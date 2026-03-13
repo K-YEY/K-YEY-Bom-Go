@@ -56,7 +56,7 @@ dist-ssr
 *.sln
 *.sw?
 .yarn
-
+*.zip
 # iconify dist files
 resources/ts/plugins/iconify/icons.css
 

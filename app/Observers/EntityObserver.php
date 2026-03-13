@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\ActivityLog;
 use App\Support\Services\ActivityLogService;
+use App\Support\Services\WorkflowNotificationService;
 use Illuminate\Database\Eloquent\Model;
 
 class EntityObserver
@@ -24,6 +25,7 @@ class EntityObserver
         }
 
         ActivityLogService::logCreated($model);
+        app(WorkflowNotificationService::class)->handleModelCreated($model);
     }
 
     public function updated(Model $model): void
@@ -56,6 +58,7 @@ class EntityObserver
         }
 
         ActivityLogService::logUpdated($model, $oldValues, $newValues);
+        app(WorkflowNotificationService::class)->handleModelUpdated($model, $changes);
     }
 
     public function deleted(Model $model): void

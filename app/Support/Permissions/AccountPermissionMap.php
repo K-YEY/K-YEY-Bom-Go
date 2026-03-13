@@ -8,6 +8,7 @@ class AccountPermissionMap
         ['name' => 'user.page', 'group' => 'users', 'label' => 'Access User page', 'type' => 'page'],
         ['name' => 'client.page', 'group' => 'clients', 'label' => 'Access Client page', 'type' => 'page'],
         ['name' => 'shipper.page', 'group' => 'shippers', 'label' => 'Access Shipper page', 'type' => 'page'],
+        ['name' => 'user.profile.page', 'group' => 'users', 'label' => 'Access My Profile page', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
@@ -21,6 +22,30 @@ class AccountPermissionMap
 
         ['name' => 'client.view', 'group' => 'clients', 'label' => 'View clients', 'type' => 'action'],
         ['name' => 'shipper.view', 'group' => 'shippers', 'label' => 'View shippers', 'type' => 'action'],
+        ['name' => 'user.profile.view', 'group' => 'users', 'label' => 'View my profile', 'type' => 'action'],
+        ['name' => 'user.profile.update', 'group' => 'users', 'label' => 'Update my profile', 'type' => 'button'],
+    ];
+
+    public const PROFILE_VIEW_COLUMNS = [
+        'id' => null,
+        'name' => 'user.profile.column.name.view',
+        'username' => 'user.profile.column.username.view',
+        'phone' => 'user.profile.column.phone.view',
+        'avatar' => 'user.profile.column.avatar.view',
+        'roles' => 'user.profile.column.roles.view',
+        'account_type' => null,
+        'shipper' => 'user.profile.column.shipper.view',
+        'client' => 'user.profile.column.client.view',
+        'created_at' => 'user.profile.column.created_at.view',
+        'updated_at' => 'user.profile.column.updated_at.view',
+    ];
+
+    public const PROFILE_EDIT_COLUMNS = [
+        'name' => 'user.profile.column.name.edit',
+        'username' => 'user.profile.column.username.edit',
+        'phone' => 'user.profile.column.phone.edit',
+        'avatar' => 'user.profile.column.avatar.edit',
+        'password' => 'user.profile.column.password.edit',
     ];
 
     public const USER_VIEW_COLUMNS = [
@@ -109,6 +134,28 @@ class AccountPermissionMap
                 'name' => $permission,
                 'group' => 'users',
                 'label' => "Edit user {$column} column",
+                'type' => 'column',
+            ];
+        }
+
+        foreach (self::PROFILE_VIEW_COLUMNS as $column => $permission) {
+            if ($permission === null) {
+                continue;
+            }
+
+            $permissions[] = [
+                'name' => $permission,
+                'group' => 'users',
+                'label' => "View my profile {$column} column",
+                'type' => 'column',
+            ];
+        }
+
+        foreach (self::PROFILE_EDIT_COLUMNS as $column => $permission) {
+            $permissions[] = [
+                'name' => $permission,
+                'group' => 'users',
+                'label' => "Edit my profile {$column} column",
                 'type' => 'column',
             ];
         }
