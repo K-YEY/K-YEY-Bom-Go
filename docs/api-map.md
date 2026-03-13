@@ -108,6 +108,7 @@ Returns permissions matrix used by frontend:
 ```
 
 ## 3.1) Roles
+
 - `GET /roles`
 - `POST /roles`
 - `GET /roles/{id}`
@@ -115,21 +116,20 @@ Returns permissions matrix used by frontend:
 - `DELETE /roles/{id}`
 
 ### Store/Update request
+
 `permissions` accepts permission names or ids.
+
 ```json
 {
   "name": "sales-manager",
   "label": "Sales Manager",
   "is_active": true,
-  "permissions": [
-    "user.page",
-    "user.view",
-    "content.page"
-  ]
+  "permissions": ["user.page", "user.view", "content.page"]
 }
 ```
 
 ### Response shape
+
 ```json
 {
   "data": {
@@ -153,14 +153,17 @@ Returns permissions matrix used by frontend:
 ```
 
 ## 3.2) Permissions
+
 - `GET /permissions`
 - `GET /permissions/{id}`
 
 Optional filters on index:
+
 - `group`
 - `type`
 
 ### Index response
+
 ```json
 {
   "data": [
@@ -376,6 +379,7 @@ Response shape (filtered):
 ### What is Activity Log?
 
 Activity Log is an **audit trail** that records all important system operations:
+
 - Create, Update, Delete operations
 - Who performed the action
 - What changed (old vs new values)
@@ -465,6 +469,7 @@ http GET $BASE_URL/activity-logs/1 Authorization:"Bearer $TOKEN"
 ### Logged Entities
 
 Activity is automatically logged for:
+
 - User, Expense, ExpenseCategory
 - Content, Setting
 - Governorate, Plan, PlanPrice
@@ -477,54 +482,59 @@ Activity is automatically logged for:
 
 ### Activity Log Entry Fields
 
-| Field | Description |
-|-------|-------------|
-| `id` | Log entry ID |
-| `user_id` | User who performed the action |
-| `user` | User object (name, username) |
-| `login_session` | Session details (IP, country, city) |
-| `entity_type` | Type of record (Order, User, etc.) |
-| `entity_id` | ID of the record |
-| `action` | Operation type (created, updated, deleted, restored, status_changed) |
-| `label` | Human-readable description |
-| `old_values` | Previous field values (JSON) |
-| `new_values` | Updated field values (JSON) |
-| `ip_address` | IP address of the requester |
-| `user_agent` | Browser/device information |
-| `created_at` | Timestamp of the action |
+| Field           | Description                                                          |
+| --------------- | -------------------------------------------------------------------- |
+| `id`            | Log entry ID                                                         |
+| `user_id`       | User who performed the action                                        |
+| `user`          | User object (name, username)                                         |
+| `login_session` | Session details (IP, country, city)                                  |
+| `entity_type`   | Type of record (Order, User, etc.)                                   |
+| `entity_id`     | ID of the record                                                     |
+| `action`        | Operation type (created, updated, deleted, restored, status_changed) |
+| `label`         | Human-readable description                                           |
+| `old_values`    | Previous field values (JSON)                                         |
+| `new_values`    | Updated field values (JSON)                                          |
+| `ip_address`    | IP address of the requester                                          |
+| `user_agent`    | Browser/device information                                           |
+| `created_at`    | Timestamp of the action                                              |
 
 ### Common Use Cases
 
 **1. Find who changed an order status**
+
 ```json
 {
   "entity_type": "Order",
   "entity_id": 145,
   "action": "updated",
-  "old_values": {"status": "PENDING"},
-  "new_values": {"status": "SHIPPED"}
+  "old_values": { "status": "PENDING" },
+  "new_values": { "status": "SHIPPED" }
 }
 ```
 
 **2. Track user permission changes**
+
 ```json
 {
   "entity_type": "User",
   "entity_id": 5,
   "action": "updated",
-  "old_values": {"roles": [1,2]},
-  "new_values": {"roles": [1,2,3]}
+  "old_values": { "roles": [1, 2] },
+  "new_values": { "roles": [1, 2, 3] }
 }
 ```
 
 **3. Audit account deletions**
+
 ```json
 {
   "entity_type": "User",
   "entity_id": 10,
   "action": "deleted",
-  "old_values": {/*entire user data*/},
-  "user": {"id": 1, "name": "Admin"},
+  "old_values": {
+    /*entire user data*/
+  },
+  "user": { "id": 1, "name": "Admin" },
   "created_at": "2026-03-12T14:30:00Z"
 }
 ```
@@ -569,12 +579,24 @@ For complete examples and usage guide, see [ACTIVITY_LOG.md](./ACTIVITY_LOG.md)
 - `GET|POST /orders`
 - `GET|PUT|PATCH|DELETE /orders/{order}`
 - `GET|POST /shipper-collections`
+- `GET /shipper-collections/eligible-orders`
+- `PATCH /shipper-collections/{shipper_collection}/approve`
+- `PATCH /shipper-collections/{shipper_collection}/reject`
 - `GET|PUT|PATCH|DELETE /shipper-collections/{shipper_collection}`
 - `GET|POST /shipper-returns`
+- `GET /shipper-returns/eligible-orders`
+- `PATCH /shipper-returns/{shipper_return}/approve`
+- `PATCH /shipper-returns/{shipper_return}/reject`
 - `GET|PUT|PATCH|DELETE /shipper-returns/{shipper_return}`
 - `GET|POST /client-settlements`
+- `GET /client-settlements/eligible-orders`
+- `PATCH /client-settlements/{client_settlement}/approve`
+- `PATCH /client-settlements/{client_settlement}/reject`
 - `GET|PUT|PATCH|DELETE /client-settlements/{client_settlement}`
 - `GET|POST /client-returns`
+- `GET /client-returns/eligible-orders`
+- `PATCH /client-returns/{client_return}/approve`
+- `PATCH /client-returns/{client_return}/reject`
 - `GET|PUT|PATCH|DELETE /client-returns/{client_return}`
 - `GET /activity-logs`
 - `GET /activity-logs/{activity_log}`

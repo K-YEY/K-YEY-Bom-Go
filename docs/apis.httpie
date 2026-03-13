@@ -150,40 +150,64 @@ http DELETE $BASE_URL/orders/1 Authorization:"Bearer $TOKEN"
 
 # 18) Shipper Collections
 http GET $BASE_URL/shipper-collections Authorization:"Bearer $TOKEN"
+http GET "$BASE_URL/shipper-collections?status=PENDING" Authorization:"Bearer $TOKEN"
+http GET "$BASE_URL/shipper-collections/eligible-orders?shipper_user_id=7&per_page=50" Authorization:"Bearer $TOKEN"
 http POST $BASE_URL/shipper-collections Authorization:"Bearer $TOKEN" \
   shipper_user_id:=7 collection_date="2026-03-12" total_amount:=5000 \
   number_of_orders:=10 shipper_fees:=500
 http GET $BASE_URL/shipper-collections/1 Authorization:"Bearer $TOKEN"
+http PATCH $BASE_URL/shipper-collections/1/approve Authorization:"Bearer $TOKEN" \
+  approval_note="approved by admin"
+http PATCH $BASE_URL/shipper-collections/1/reject Authorization:"Bearer $TOKEN" \
+  approval_note="collection request rejected"
 http PUT $BASE_URL/shipper-collections/1 Authorization:"Bearer $TOKEN" \
   status="COMPLETED"
 http DELETE $BASE_URL/shipper-collections/1 Authorization:"Bearer $TOKEN"
 
 # 19) Shipper Returns
 http GET $BASE_URL/shipper-returns Authorization:"Bearer $TOKEN"
+http GET "$BASE_URL/shipper-returns?status=PENDING" Authorization:"Bearer $TOKEN"
+http GET "$BASE_URL/shipper-returns/eligible-orders?shipper_user_id=7&per_page=50" Authorization:"Bearer $TOKEN"
 http POST $BASE_URL/shipper-returns Authorization:"Bearer $TOKEN" \
   shipper_user_id:=7 return_date="2026-03-12" number_of_orders:=3 \
   notes="Items returned in good condition"
 http GET $BASE_URL/shipper-returns/1 Authorization:"Bearer $TOKEN"
+http PATCH $BASE_URL/shipper-returns/1/approve Authorization:"Bearer $TOKEN" \
+  approval_note="approved by admin"
+http PATCH $BASE_URL/shipper-returns/1/reject Authorization:"Bearer $TOKEN" \
+  approval_note="return request rejected"
 http PUT $BASE_URL/shipper-returns/1 Authorization:"Bearer $TOKEN" \
   status="COMPLETED"
 http DELETE $BASE_URL/shipper-returns/1 Authorization:"Bearer $TOKEN"
 
 # 20) Client Settlements
 http GET $BASE_URL/client-settlements Authorization:"Bearer $TOKEN"
+http GET "$BASE_URL/client-settlements?status=PENDING" Authorization:"Bearer $TOKEN"
+http GET "$BASE_URL/client-settlements/eligible-orders?client_user_id=5&per_page=50" Authorization:"Bearer $TOKEN"
 http POST $BASE_URL/client-settlements Authorization:"Bearer $TOKEN" \
   client_user_id:=5 settlement_date="2026-03-12" total_amount:=10000 \
   number_of_orders:=20 fees:=1000
 http GET $BASE_URL/client-settlements/1 Authorization:"Bearer $TOKEN"
+http PATCH $BASE_URL/client-settlements/1/approve Authorization:"Bearer $TOKEN" \
+  approval_note="approved by admin"
+http PATCH $BASE_URL/client-settlements/1/reject Authorization:"Bearer $TOKEN" \
+  approval_note="missing review data"
 http PUT $BASE_URL/client-settlements/1 Authorization:"Bearer $TOKEN" \
   status="COMPLETED"
 http DELETE $BASE_URL/client-settlements/1 Authorization:"Bearer $TOKEN"
 
 # 21) Client Returns
 http GET $BASE_URL/client-returns Authorization:"Bearer $TOKEN"
+http GET "$BASE_URL/client-returns?status=PENDING" Authorization:"Bearer $TOKEN"
+http GET "$BASE_URL/client-returns/eligible-orders?client_user_id=5&per_page=50" Authorization:"Bearer $TOKEN"
 http POST $BASE_URL/client-returns Authorization:"Bearer $TOKEN" \
   client_user_id:=5 return_date="2026-03-12" number_of_orders:=5 \
   notes="Client returned items"
 http GET $BASE_URL/client-returns/1 Authorization:"Bearer $TOKEN"
+http PATCH $BASE_URL/client-returns/1/approve Authorization:"Bearer $TOKEN" \
+  approval_note="approved by admin"
+http PATCH $BASE_URL/client-returns/1/reject Authorization:"Bearer $TOKEN" \
+  approval_note="client return rejected"
 http PUT $BASE_URL/client-returns/1 Authorization:"Bearer $TOKEN" \
   status="COMPLETED"
 http DELETE $BASE_URL/client-returns/1 Authorization:"Bearer $TOKEN"

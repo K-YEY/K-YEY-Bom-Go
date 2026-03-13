@@ -14,6 +14,7 @@ class CollectionsReturnsSettlementsPermissionMap
         ['name' => 'shipper-collection.create', 'group' => 'shipper-collections', 'label' => 'Create shipper collection', 'type' => 'button'],
         ['name' => 'shipper-collection.update', 'group' => 'shipper-collections', 'label' => 'Update shipper collection', 'type' => 'button'],
         ['name' => 'shipper-collection.delete', 'group' => 'shipper-collections', 'label' => 'Delete shipper collection', 'type' => 'button'],
+        ['name' => 'shipper-collection.unlock', 'group' => 'shipper-collections', 'label' => 'Unlock shipper collection', 'type' => 'button'],
         ['name' => 'shipper-collection.approve', 'group' => 'shipper-collections', 'label' => 'Approve shipper collection', 'type' => 'button'],
         ['name' => 'shipper-collection.reject', 'group' => 'shipper-collections', 'label' => 'Reject shipper collection', 'type' => 'button'],
     ];
@@ -49,6 +50,7 @@ class CollectionsReturnsSettlementsPermissionMap
         ['name' => 'shipper-return.create', 'group' => 'shipper-returns', 'label' => 'Create shipper return', 'type' => 'button'],
         ['name' => 'shipper-return.update', 'group' => 'shipper-returns', 'label' => 'Update shipper return', 'type' => 'button'],
         ['name' => 'shipper-return.delete', 'group' => 'shipper-returns', 'label' => 'Delete shipper return', 'type' => 'button'],
+        ['name' => 'shipper-return.unlock', 'group' => 'shipper-returns', 'label' => 'Unlock shipper return', 'type' => 'button'],
         ['name' => 'shipper-return.approve', 'group' => 'shipper-returns', 'label' => 'Approve shipper return', 'type' => 'button'],
         ['name' => 'shipper-return.reject', 'group' => 'shipper-returns', 'label' => 'Reject shipper return', 'type' => 'button'],
     ];
@@ -82,6 +84,7 @@ class CollectionsReturnsSettlementsPermissionMap
         ['name' => 'client-settlement.create', 'group' => 'client-settlements', 'label' => 'Create client settlement', 'type' => 'button'],
         ['name' => 'client-settlement.update', 'group' => 'client-settlements', 'label' => 'Update client settlement', 'type' => 'button'],
         ['name' => 'client-settlement.delete', 'group' => 'client-settlements', 'label' => 'Delete client settlement', 'type' => 'button'],
+        ['name' => 'client-settlement.unlock', 'group' => 'client-settlements', 'label' => 'Unlock client settlement', 'type' => 'button'],
         ['name' => 'client-settlement.approve', 'group' => 'client-settlements', 'label' => 'Approve client settlement', 'type' => 'button'],
         ['name' => 'client-settlement.reject', 'group' => 'client-settlements', 'label' => 'Reject client settlement', 'type' => 'button'],
     ];
@@ -117,6 +120,7 @@ class CollectionsReturnsSettlementsPermissionMap
         ['name' => 'client-return.create', 'group' => 'client-returns', 'label' => 'Create client return', 'type' => 'button'],
         ['name' => 'client-return.update', 'group' => 'client-returns', 'label' => 'Update client return', 'type' => 'button'],
         ['name' => 'client-return.delete', 'group' => 'client-returns', 'label' => 'Delete client return', 'type' => 'button'],
+        ['name' => 'client-return.unlock', 'group' => 'client-returns', 'label' => 'Unlock client return', 'type' => 'button'],
         ['name' => 'client-return.approve', 'group' => 'client-returns', 'label' => 'Approve client return', 'type' => 'button'],
         ['name' => 'client-return.reject', 'group' => 'client-returns', 'label' => 'Reject client return', 'type' => 'button'],
     ];
