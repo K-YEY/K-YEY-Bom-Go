@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Governorate;
 use App\Models\Order;
 use App\Models\PlanPrice;
+use App\Models\RefusedReason;
 use App\Models\Shipper;
 use App\Support\Permissions\OrdersPermissionMap;
 use Illuminate\Database\Eloquent\Builder;
@@ -61,7 +62,6 @@ class OrderController extends Controller
             'search.shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'search.client_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'search.allow_open' => ['nullable', 'boolean'],
-            'search.has_return' => ['nullable', 'boolean'],
             'search.collection_state' => ['nullable', Rule::in(['not_collected', 'ready_to_collect', 'collected'])],
             'search.is_in_shipper_collection' => ['nullable', 'boolean'],
             'search.is_shipper_collected' => ['nullable', 'boolean'],
@@ -86,7 +86,6 @@ class OrderController extends Controller
             'shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'client_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'allow_open' => ['nullable', 'boolean'],
-            'has_return' => ['nullable', 'boolean'],
             'collection_state' => ['nullable', Rule::in(['not_collected', 'ready_to_collect', 'collected'])],
             'is_in_shipper_collection' => ['nullable', 'boolean'],
             'is_shipper_collected' => ['nullable', 'boolean'],
@@ -132,8 +131,6 @@ class OrderController extends Controller
             'city_id' => ['required', 'exists:cities,id'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
-            'has_return' => ['nullable', 'boolean'],
-            'has_return_date' => ['nullable', 'date'],
             'shipper_user_id' => ['nullable', 'exists:users,id'],
             'client_user_id' => ['required', 'exists:users,id'],
             'shipping_content_id' => ['nullable', 'integer', 'exists:content,id'],
@@ -252,6 +249,8 @@ class OrderController extends Controller
                     continue;
                 }
 
+                $this->authorizeNotShipperCollected($order);
+                $this->authorizeShipperChangeAllowed($order);
                 $this->authorizeFinalStatusUpdate(request(), $order);
 
                 $payload = [
@@ -284,24 +283,22 @@ class OrderController extends Controller
             'order_ids.*' => ['required', 'integer', 'exists:orders,id'],
             'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'reason' => ['nullable', 'string'],
+            'refused_reason_id' => ['nullable', 'integer', 'exists:refused_reasons,id'],
             'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'has_return' => ['sometimes', 'boolean'],
-            'has_return_date' => ['nullable', 'date'],
         ]);
 
-        if ($data['status'] !== 'DELIVERED' && (
-            array_key_exists('total_amount', $data)
-            || array_key_exists('has_return', $data)
-            || array_key_exists('has_return_date', $data)
-        )) {
+        $refusedReason = $this->resolveRefusedReason($data['status'], $data['refused_reason_id'] ?? null);
+        $allowsEditAmount = $refusedReason?->is_edit_amount === true;
+
+        if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
             throw ValidationException::withMessages([
-                'status' => ['total_amount and has_return fields are only allowed when status is DELIVERED.'],
+                'total_amount' => ['total_amount can only be edited when refused reason allows amount edit.'],
             ]);
         }
 
         $orders = Order::query()->whereIn('id', $data['order_ids'])->get();
 
-        $updated = DB::transaction(function () use ($orders, $data): array {
+        $updated = DB::transaction(function () use ($orders, $data, $refusedReason, $allowsEditAmount): array {
             $result = [];
 
             foreach ($orders as $order) {
@@ -309,25 +306,27 @@ class OrderController extends Controller
                     continue;
                 }
 
+                $this->authorizeNotShipperCollected($order);
                 $this->authorizeFinalStatusUpdate(request(), $order);
 
-                $payload = [
+                $manualPayload = [
                     'status' => $data['status'],
-                    'latest_status_note' => $data['reason'] ?? null,
+                    'latest_status_note' => $this->resolveLatestStatusNote($data['reason'] ?? null, $refusedReason),
                 ];
 
-                if ($data['status'] === 'DELIVERED' && array_key_exists('total_amount', $data)) {
-                    $payload['total_amount'] = $data['total_amount'];
+                if ($allowsEditAmount && array_key_exists('total_amount', $data)) {
+                    $manualPayload['total_amount'] = $data['total_amount'];
                 }
 
-                if ($data['status'] === 'DELIVERED' && array_key_exists('has_return', $data)) {
-                    $payload['has_return'] = $data['has_return'];
-                    $payload['has_return_date'] = $data['has_return']
-                        ? ($data['has_return_date'] ?? now()->toDateString())
-                        : null;
+                $this->authorizeEditableColumns(request(), array_keys($manualPayload));
+
+                $payload = $manualPayload;
+
+                if ($refusedReason instanceof RefusedReason) {
+                    $payload = $this->applyRefusedReasonPolicies($payload, $order, $refusedReason);
                 }
 
-                $this->authorizeEditableColumns(request(), array_keys($payload));
+                $this->authorizeNoPriceEditOnFinalStatus($order, $payload);
 
                 $order->update($payload);
                 $result[] = $order->id;
@@ -465,6 +464,7 @@ class OrderController extends Controller
     public function update(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.update');
+        $this->authorizeNotShipperCollected($order);
         $this->authorizeFinalStatusUpdate($request, $order);
 
         $data = $request->validate([
@@ -480,13 +480,17 @@ class OrderController extends Controller
             'total_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'status' => ['sometimes', 'required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'allow_open' => ['sometimes', 'boolean'],
-            'has_return' => ['sometimes', 'nullable', 'boolean'],
-            'has_return_date' => ['sometimes', 'nullable', 'date'],
             'latest_status_note' => ['nullable', 'string'],
             'order_note' => ['nullable', 'string'],
         ]);
 
         $this->authorizeEditableColumns($request, array_keys($data));
+
+        if (array_key_exists('shipper_user_id', $data)) {
+            $this->authorizeShipperChangeAllowed($order);
+        }
+
+        $this->authorizeNoPriceEditOnFinalStatus($order, $data);
 
         $data = $this->resolveDefaultShipper($data, $order);
 
@@ -509,43 +513,43 @@ class OrderController extends Controller
     public function changeStatus(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.change-status');
+        $this->authorizeNotShipperCollected($order);
         $this->authorizeFinalStatusUpdate($request, $order);
 
         $data = $request->validate([
             'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'reason' => ['nullable', 'string'],
+            'refused_reason_id' => ['nullable', 'integer', 'exists:refused_reasons,id'],
             'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'has_return' => ['sometimes', 'boolean'],
-            'has_return_date' => ['nullable', 'date'],
         ]);
 
-        $payload = [
+        $refusedReason = $this->resolveRefusedReason($data['status'], $data['refused_reason_id'] ?? null);
+        $allowsEditAmount = $refusedReason?->is_edit_amount === true;
+
+        $manualPayload = [
             'status' => $data['status'],
-            'latest_status_note' => $data['reason'] ?? null,
+            'latest_status_note' => $this->resolveLatestStatusNote($data['reason'] ?? null, $refusedReason),
         ];
 
-        if ($data['status'] !== 'DELIVERED' && (
-            array_key_exists('total_amount', $data)
-            || array_key_exists('has_return', $data)
-            || array_key_exists('has_return_date', $data)
-        )) {
+        if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
             throw ValidationException::withMessages([
-                'status' => ['total_amount and has_return fields are only allowed when status is DELIVERED.'],
+                'total_amount' => ['total_amount can only be edited when refused reason allows amount edit.'],
             ]);
         }
 
-        if ($data['status'] === 'DELIVERED' && array_key_exists('total_amount', $data)) {
-            $payload['total_amount'] = $data['total_amount'];
+        if ($allowsEditAmount && array_key_exists('total_amount', $data)) {
+            $manualPayload['total_amount'] = $data['total_amount'];
         }
 
-        if ($data['status'] === 'DELIVERED' && array_key_exists('has_return', $data)) {
-            $payload['has_return'] = $data['has_return'];
-            $payload['has_return_date'] = $data['has_return']
-                ? ($data['has_return_date'] ?? now()->toDateString())
-                : null;
+        $this->authorizeEditableColumns($request, array_keys($manualPayload));
+
+        $payload = $manualPayload;
+
+        if ($refusedReason instanceof RefusedReason) {
+            $payload = $this->applyRefusedReasonPolicies($payload, $order, $refusedReason);
         }
 
-        $this->authorizeEditableColumns($request, array_keys($payload));
+        $this->authorizeNoPriceEditOnFinalStatus($order, $payload);
 
         $order->update($payload);
 
@@ -558,6 +562,8 @@ class OrderController extends Controller
     public function changeShipper(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.change-shipper');
+        $this->authorizeNotShipperCollected($order);
+        $this->authorizeShipperChangeAllowed($order);
         $this->authorizeFinalStatusUpdate($request, $order);
 
         $data = $request->validate([
@@ -584,6 +590,7 @@ class OrderController extends Controller
     public function changeNote(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.change-note');
+        $this->authorizeNotShipperCollected($order);
         $this->authorizeFinalStatusUpdate($request, $order);
 
         $data = $request->validate([
@@ -601,6 +608,7 @@ class OrderController extends Controller
     public function changeExternalCode(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.change-external-code');
+        $this->authorizeNotShipperCollected($order);
 
         if (in_array($order->status, self::FINAL_STATUSES, true)) {
             throw ValidationException::withMessages([
@@ -625,6 +633,7 @@ class OrderController extends Controller
     public function destroy(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.delete');
+        $this->authorizeNotShipperCollected($order);
 
         $order->delete();
 
@@ -649,6 +658,109 @@ class OrderController extends Controller
             403,
             'Missing permission: order.update-after-final-status'
         );
+    }
+
+    private function authorizeNotShipperCollected(Order $order): void
+    {
+        if ((bool) $order->is_shipper_collected) {
+            throw ValidationException::withMessages([
+                'order' => ['Order is locked because it has already been collected by the shipper.'],
+            ]);
+        }
+    }
+
+    private function authorizeShipperChangeAllowed(Order $order): void
+    {
+        if (in_array($order->status, self::FINAL_STATUSES, true)) {
+            throw ValidationException::withMessages([
+                'shipper_user_id' => ['Shipper cannot be changed when order status is DELIVERED or UNDELIVERED.'],
+            ]);
+        }
+    }
+
+    private function authorizeNoPriceEditOnFinalStatus(Order $order, array $payload): void
+    {
+        if (! in_array($order->status, self::FINAL_STATUSES, true)) {
+            return;
+        }
+
+        $priceRelatedFields = [
+            'total_amount',
+            'shipping_fee',
+            'commission_amount',
+            'company_amount',
+            'cod_amount',
+            'governorate_id',
+        ];
+
+        foreach ($priceRelatedFields as $field) {
+            if (array_key_exists($field, $payload)) {
+                throw ValidationException::withMessages([
+                    'total_amount' => ['Price fields cannot be changed when order status is DELIVERED or UNDELIVERED.'],
+                ]);
+            }
+        }
+    }
+
+    private function resolveRefusedReason(string $status, ?int $refusedReasonId): ?RefusedReason
+    {
+        if ($refusedReasonId === null) {
+            return null;
+        }
+
+        $refusedReason = RefusedReason::query()->find($refusedReasonId);
+
+        if (! $refusedReason instanceof RefusedReason) {
+            throw ValidationException::withMessages([
+                'refused_reason_id' => ['Selected refused reason was not found.'],
+            ]);
+        }
+
+        if (! $refusedReason->is_active) {
+            throw ValidationException::withMessages([
+                'refused_reason_id' => ['Selected refused reason is not active.'],
+            ]);
+        }
+
+        if ($refusedReason->status !== $status) {
+            throw ValidationException::withMessages([
+                'refused_reason_id' => ['Selected refused reason does not belong to this status.'],
+            ]);
+        }
+
+        return $refusedReason;
+    }
+
+    private function resolveLatestStatusNote(?string $freeTextReason, ?RefusedReason $refusedReason): ?string
+    {
+        if ($refusedReason instanceof RefusedReason) {
+            return $refusedReason->reason;
+        }
+
+        $reason = trim((string) ($freeTextReason ?? ''));
+
+        return $reason === '' ? null : $reason;
+    }
+
+    private function applyRefusedReasonPolicies(array $payload, Order $order, RefusedReason $refusedReason): array
+    {
+        if ((bool) $refusedReason->is_clear) {
+            $payload['latest_status_note'] = $refusedReason->reason;
+        }
+
+        if (! (bool) $refusedReason->is_return) {
+            return $payload;
+        }
+
+        // Return-like refused reasons close all related financial and workflow states.
+        return [
+            ...$payload,
+            'total_amount' => 0,
+            'shipping_fee' => 0,
+            'commission_amount' => 0,
+            'company_amount' => 0,
+            'cod_amount' => 0,
+        ];
     }
 
     private function authorizeEditableColumns(Request $request, array $columns): void
@@ -756,7 +868,6 @@ class OrderController extends Controller
             'shipper_user_id',
             'client_user_id',
             'allow_open',
-            'has_return',
             'is_in_shipper_collection',
             'is_shipper_collected',
             'is_in_client_settlement',
@@ -780,7 +891,7 @@ class OrderController extends Controller
 
             match ($column) {
                 'code', 'external_code', 'receiver_name', 'phone', 'phone_2', 'address' => $query->where($column, 'like', '%'.(string) $value.'%'),
-                'status', 'approval_status', 'governorate_id', 'city_id', 'shipper_user_id', 'client_user_id', 'allow_open', 'has_return', 'is_in_shipper_collection', 'is_shipper_collected', 'is_in_client_settlement', 'is_client_settled', 'is_in_shipper_return', 'is_shipper_returned', 'is_in_client_return', 'is_client_returned' => $query->where($column, $value),
+                'status', 'approval_status', 'governorate_id', 'city_id', 'shipper_user_id', 'client_user_id', 'allow_open', 'is_in_shipper_collection', 'is_shipper_collected', 'is_in_client_settlement', 'is_client_settled', 'is_in_shipper_return', 'is_shipper_returned', 'is_in_client_return', 'is_client_returned' => $query->where($column, $value),
                 default => null,
             };
         }

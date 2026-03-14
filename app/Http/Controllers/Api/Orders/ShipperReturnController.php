@@ -79,15 +79,12 @@ class ShipperReturnController extends Controller
                 'address',
                 'status',
                 'shipper_user_id',
-                'has_return',
-                'has_return_date',
                 'is_in_shipper_return',
                 'is_shipper_returned',
                 'shipper_returned_at',
             ])
             ->with(['shipper:id,name'])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
-            ->where('has_return', true)
             ->whereNotNull('shipper_user_id')
             ->where('is_in_shipper_return', false)
             ->where('is_shipper_returned', false)
@@ -354,8 +351,6 @@ class ShipperReturnController extends Controller
             'status' => $order->status,
             'shipper_user_id' => $order->shipper_user_id,
             'shipper_name' => $order->shipper?->name,
-            'has_return' => (bool) $order->has_return,
-            'has_return_date' => $order->has_return_date,
             'is_shipper_returned' => (bool) $order->is_shipper_returned,
             'shipper_returned_at' => $shipperReturnedAt instanceof \DateTimeInterface ? $shipperReturnedAt->format('Y-m-d') : ($shipperReturnedAt !== null ? (string) $shipperReturnedAt : null),
         ];
@@ -368,14 +363,12 @@ class ShipperReturnController extends Controller
                 'id',
                 'shipper_user_id',
                 'status',
-                'has_return',
                 'is_in_shipper_return',
                 'is_shipper_returned',
             ])
             ->where('shipper_user_id', $shipperUserId)
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
-            ->where('has_return', true)
             ->where('is_in_shipper_return', false)
             ->where('is_shipper_returned', false)
             ->get();

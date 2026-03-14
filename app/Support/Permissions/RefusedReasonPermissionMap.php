@@ -21,6 +21,8 @@ class RefusedReasonPermissionMap
         'status' => 'refused-reason.column.status.view',
         'is_active' => 'refused-reason.column.is_active.view',
         'is_clear' => 'refused-reason.column.is_clear.view',
+        'is_return' => 'refused-reason.column.is_return.view',
+        'is_edit_amount' => 'refused-reason.column.is_edit_amount.view',
         'created_at' => 'refused-reason.column.created_at.view',
         'updated_at' => 'refused-reason.column.updated_at.view',
     ];
@@ -30,6 +32,8 @@ class RefusedReasonPermissionMap
         'status' => 'refused-reason.column.status.edit',
         'is_active' => 'refused-reason.column.is_active.edit',
         'is_clear' => 'refused-reason.column.is_clear.edit',
+        'is_return' => 'refused-reason.column.is_return.edit',
+        'is_edit_amount' => 'refused-reason.column.is_edit_amount.edit',
     ];
 
     /**

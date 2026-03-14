@@ -11,6 +11,8 @@ class RefusedReason extends Model
         'status',
         'is_active',
         'is_clear',
+        'is_return',
+        'is_edit_amount',
     ];
 
     protected function casts(): array
@@ -18,6 +20,8 @@ class RefusedReason extends Model
         return [
             'is_active' => 'boolean',
             'is_clear'  => 'boolean',
+            'is_return' => 'boolean',
+            'is_edit_amount' => 'boolean',
         ];
     }
 }

@@ -19,7 +19,12 @@ return new class extends Migration
                 'HOLD',
                 'UNDELIVERED'])->default('OUT_FOR_DELIVERY');
             $table->boolean('is_active')->default(true);
+            
             $table->boolean('is_clear')->default(false);
+            $table->boolean('is_return')->default(false);
+            $table->boolean('is_edit_amount')->default(false);
+            
+            
             $table->timestamps();
         });
     }

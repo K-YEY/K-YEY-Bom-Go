@@ -80,8 +80,6 @@ class ClientReturnController extends Controller
                 'status',
                 'client_user_id',
                 'shipper_user_id',
-                'has_return',
-                'has_return_date',
                 'is_shipper_returned',
                 'shipper_returned_at',
                 'is_in_client_return',
@@ -90,7 +88,6 @@ class ClientReturnController extends Controller
             ])
             ->with(['client:id,name', 'shipper:id,name'])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
-            ->where('has_return', true)
             ->where('is_shipper_returned', true)
             ->where('is_in_client_return', false)
             ->where('is_client_returned', false)
@@ -361,8 +358,6 @@ class ClientReturnController extends Controller
             'client_name' => $order->client?->name,
             'shipper_user_id' => $order->shipper_user_id,
             'shipper_name' => $order->shipper?->name,
-            'has_return' => (bool) $order->has_return,
-            'has_return_date' => $order->has_return_date,
             'is_shipper_returned' => (bool) $order->is_shipper_returned,
             'shipper_returned_at' => $shipperReturnedAt instanceof \DateTimeInterface ? $shipperReturnedAt->format('Y-m-d') : ($shipperReturnedAt !== null ? (string) $shipperReturnedAt : null),
             'is_client_returned' => (bool) $order->is_client_returned,
@@ -377,7 +372,6 @@ class ClientReturnController extends Controller
                 'id',
                 'client_user_id',
                 'status',
-                'has_return',
                 'is_shipper_returned',
                 'is_in_client_return',
                 'is_client_returned',
@@ -385,7 +379,6 @@ class ClientReturnController extends Controller
             ->where('client_user_id', $clientUserId)
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
-            ->where('has_return', true)
             ->where('is_shipper_returned', true)
             ->where('is_in_client_return', false)
             ->where('is_client_returned', false)

@@ -64,9 +64,6 @@ return new class extends Migration
 
             $table->text('approval_note')->nullable();
 
-            $table->boolean('has_return')->default(false);
-            $table->date('has_return_date')->nullable()->index();
-
             $table->boolean('is_in_shipper_collection')->default(false)->index();
             $table->boolean('is_shipper_collected')->default(false)->index();
             $table->date('shipper_collected_at')->nullable()->index();
