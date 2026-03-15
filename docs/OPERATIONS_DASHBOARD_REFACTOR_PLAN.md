@@ -16,6 +16,34 @@ Workflow coverage target:
 - Approval/pending/completed/cancelled flows
 - Role-based actions and sensitive operations (approve/reject/unlock)
 
+## Implementation Status (March 2026)
+
+Completed in codebase:
+
+- Operations dashboard is now the primary authenticated landing route.
+- Dashboard surface is API-first with dedicated aggregated backend endpoints:
+  - GET /api/dashboard/operations/summary
+  - GET /api/dashboard/operations/pending-approvals
+  - GET /api/dashboard/operations/workflow-queues
+  - GET /api/dashboard/operations/operations-requests
+  - GET /api/dashboard/operations/exceptions
+  - GET /api/dashboard/operations/recent-activity
+- Dashboard modules are split into focused sections:
+  - OperationsPendingApprovals
+  - OperationsWorkflowQueues
+  - OperationsOpsRequestsPanel
+  - OperationsExceptionsPanel
+  - OperationsRecentActivity
+- Calendar/chat demo pages and references were removed.
+- Profile is now a real page backed by backend /api/profile (view + update).
+- User menu, shortcuts, search suggestions, and route redirects were migrated away from demo profile/account routes.
+- Navigation composition was reduced to operations/admin essentials only.
+- Legacy template page directories (old pages/\* demos, front-pages, wizard-examples, invoice/logistics app demos) were removed from the active codebase.
+
+Notes:
+
+- This document originally captured target design; several "recommended" items below are now implemented and can be treated as historical planning context.
+
 ## 1) Current-State Audit
 
 ### 1.1 Frontend dashboard composition

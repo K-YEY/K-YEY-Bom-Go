@@ -9,6 +9,7 @@ use App\Support\Permissions\ActivityLogPermissionMap;
 use App\Support\Permissions\AreaPlanPermissionMap;
 use App\Support\Permissions\CollectionsReturnsSettlementsPermissionMap;
 use App\Support\Permissions\ContentPermissionMap;
+use App\Support\Permissions\DashboardPermissionMap;
 use App\Support\Permissions\ExpensePermissionMap;
 use App\Support\Permissions\OperationsPermissionMap;
 use App\Support\Permissions\OrdersPermissionMap;
@@ -34,6 +35,7 @@ class ExpenseAuthorizationSeeder extends Seeder
             ...OperationsPermissionMap::allPermissionDefinitions(),
             ...RefusedReasonPermissionMap::allPermissionDefinitions(),
             ...OrdersPermissionMap::allPermissionDefinitions(),
+            ...DashboardPermissionMap::allPermissionDefinitions(),
             ...CollectionsReturnsSettlementsPermissionMap::allPermissionDefinitions(),
             ...ActivityLogPermissionMap::allPermissionDefinitions(),
         ];

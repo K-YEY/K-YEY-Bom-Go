@@ -34,5 +34,9 @@ class DatabaseSeeder extends Seeder
         if (! $admin->hasRole('super-admin')) {
             $admin->assignRole('super-admin');
         }
+
+        $this->call([
+            FakeDataSeeder::class,
+        ]);
     }
 }

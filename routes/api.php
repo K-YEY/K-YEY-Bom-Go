@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Operations\VisitController;
 use App\Http\Controllers\Api\Orders\ActivityLogController;
 use App\Http\Controllers\Api\Orders\ClientReturnController;
 use App\Http\Controllers\Api\Orders\ClientSettlementController;
+use App\Http\Controllers\Api\Orders\DashboardOrderController;
 use App\Http\Controllers\Api\Orders\OrderController;
 use App\Http\Controllers\Api\Orders\ShipperCollectionController;
 use App\Http\Controllers\Api\Orders\ShipperReturnController;
@@ -67,6 +68,7 @@ Route::middleware(['auth:sanctum', UpdateLoginSessionLastSeen::class])->group(fu
     Route::patch('orders/{order}/change-external-code', [OrderController::class, 'changeExternalCode']);
     Route::get('orders/{order}/history', [OrderController::class, 'history']);
     Route::get('orders/{order}/shipping-label', [OrderController::class, 'shippingLabel']);
+    Route::get('dashboard/orders', [DashboardOrderController::class, 'summary']);
     Route::apiResource('orders', OrderController::class);
     Route::get('shipper-collections/eligible-orders', [ShipperCollectionController::class, 'eligibleOrders']);
     Route::patch('shipper-collections/{shipperCollection}/approve', [ShipperCollectionController::class, 'approve']);

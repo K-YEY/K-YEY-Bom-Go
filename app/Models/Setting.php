@@ -52,9 +52,11 @@ class Setting extends Model
             ],
 
             'site_identity' => [
+                'site_maintenance_mode' => 'false',
                 'site_name' => 'Shipping Platform',
                 'site_phone' => '',
                 'site_address' => '',
+                'site_email' => '',
             ],
 
             'site_logos' => [

@@ -17,6 +17,7 @@ declare global {
   const autoResetRef: typeof import('@vueuse/core')['autoResetRef']
   const avatarText: typeof import('./resources/ts/@core/utils/formatters')['avatarText']
   const betweenValidator: typeof import('./resources/ts/@core/utils/validators')['betweenValidator']
+  const buildAbilityRulesFromAcl: typeof import('./resources/ts/utils/acl')['buildAbilityRulesFromAcl']
   const computed: typeof import('vue')['computed']
   const computedAsync: typeof import('@vueuse/core')['computedAsync']
   const computedEager: typeof import('@vueuse/core')['computedEager']

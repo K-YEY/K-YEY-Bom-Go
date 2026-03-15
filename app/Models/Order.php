@@ -49,6 +49,8 @@ class Order extends Model
         'shipper_returned_at',
         'is_in_client_return',
         'is_client_returned',
+        'has_return',
+        'has_return_at',
         'client_returned_at',
         'shipper_date',
     ];
@@ -77,6 +79,8 @@ class Order extends Model
             'shipper_returned_at' => 'date',
             'is_in_client_return' => 'boolean',
             'is_client_returned' => 'boolean',
+            'has_return' => 'boolean',
+            'has_return_at' => 'date',
             'client_returned_at' => 'date',
             'shipper_date' => 'date',
         ];
