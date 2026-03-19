@@ -34,6 +34,18 @@ return new class extends Migration
 
             $table->unique(['plan_id', 'governorate_id']);
         });
+
+        Schema::table('clients', function (Blueprint $table) {
+            $table->foreign('plan_id')
+                ->references('id')
+                ->on('plans')
+                ->nullOnDelete();
+
+            $table->foreign('shipping_content_id')
+                ->references('id')
+                ->on('content')
+                ->nullOnDelete();
+        });
     }
 
     /**
@@ -41,7 +53,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('plans');
         Schema::dropIfExists('plan_prices');
+
+        Schema::table('clients', function (Blueprint $table) {
+            $table->dropForeign(['plan_id']);
+            $table->dropForeign(['shipping_content_id']);
+        });
+
+        Schema::dropIfExists('plans');
     }
 };

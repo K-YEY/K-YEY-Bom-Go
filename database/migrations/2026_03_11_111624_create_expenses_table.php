@@ -11,6 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('expense_categories', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->text('notes')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
         Schema::create('expenses', function (Blueprint $table) {
             $table->id();
         
@@ -48,14 +56,6 @@ return new class extends Migration
             $table->softDeletes();
         
             $table->index(['expense_date', 'status']);
-        });
-        
-        Schema::create('expense_categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->unique();
-            $table->text('notes')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
         });
     }
 

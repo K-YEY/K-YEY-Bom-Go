@@ -47,39 +47,43 @@ class FakeDataSeeder extends Seeder
 
         $shipperUsers = collect();
         for ($i = 1; $i <= 6; $i++) {
-            $user = User::query()->create([
-                'name' => "Shipper {$i}",
-                'username' => "shipper{$i}",
-                'phone' => '015000000'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
-                'password' => Hash::make('12345678'),
-                'is_blocked' => false,
-            ]);
+            $user = User::query()->updateOrCreate(
+                ['username' => "shipper{$i}"],
+                [
+                    'name' => "Shipper {$i}",
+                    'phone' => '015000000'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                    'password' => Hash::make('12345678'),
+                    'is_blocked' => false,
+                ]
+            );
 
             $user->assignRole('operations-manager');
 
-            Shipper::query()->create([
-                'user_id' => $user->id,
-                'commission_rate' => $faker->randomFloat(2, 5, 20),
-            ]);
+            Shipper::query()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['commission_rate' => $faker->randomFloat(2, 5, 20)]
+            );
 
             $shipperUsers->push($user);
         }
 
         $contents = collect();
         foreach (['Documents', 'Electronics', 'Clothes', 'Cosmetics', 'Accessories'] as $contentName) {
-            $contents->push(Content::query()->create(['name' => $contentName]));
+            $contents->push(Content::query()->firstOrCreate(['name' => $contentName]));
         }
 
         $governorates = collect();
         foreach (['Cairo', 'Giza', 'Alexandria', 'Dakahlia'] as $idx => $govName) {
-            $gov = Governorate::query()->create([
-                'name' => $govName,
-                'follow_up_hours' => $faker->numberBetween(6, 72),
-                'default_shipper_user_id' => $shipperUsers[$idx % $shipperUsers->count()]->id,
-            ]);
+            $gov = Governorate::query()->updateOrCreate(
+                ['name' => $govName],
+                [
+                    'follow_up_hours' => $faker->numberBetween(6, 72),
+                    'default_shipper_user_id' => $shipperUsers[$idx % $shipperUsers->count()]->id,
+                ]
+            );
 
             for ($c = 1; $c <= 3; $c++) {
-                City::query()->create([
+                City::query()->firstOrCreate([
                     'name' => "{$govName} City {$c}",
                     'governorate_id' => $gov->id,
                 ]);
@@ -90,64 +94,76 @@ class FakeDataSeeder extends Seeder
 
         $plans = collect();
         foreach ([['Starter', 50], ['Growth', 200], ['Enterprise', 1000]] as [$name, $count]) {
-            $plans->push(Plan::query()->create([
-                'name' => $name,
-                'order_count' => $count,
-            ]));
+            $plans->push(Plan::query()->updateOrCreate(
+                ['name' => $name],
+                ['order_count' => $count]
+            ));
         }
 
         $planPrices = collect();
         foreach ($plans as $plan) {
             foreach ($governorates as $gov) {
-                $planPrices->push(PlanPrice::query()->create([
-                    'plan_id' => $plan->id,
-                    'governorate_id' => $gov->id,
-                    'price' => $faker->randomFloat(2, 20, 120),
-                ]));
+                $planPrices->push(PlanPrice::query()->updateOrCreate(
+                    [
+                        'plan_id' => $plan->id,
+                        'governorate_id' => $gov->id,
+                    ],
+                    [
+                        'price' => $faker->randomFloat(2, 20, 120),
+                    ]
+                ));
             }
         }
 
         $clientUsers = collect();
         for ($i = 1; $i <= 12; $i++) {
-            $user = User::query()->create([
-                'name' => "Client {$i}",
-                'username' => "client{$i}",
-                'phone' => '010000000'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
-                'password' => Hash::make('12345678'),
-                'is_blocked' => false,
-            ]);
+            $user = User::query()->updateOrCreate(
+                ['username' => "client{$i}"],
+                [
+                    'name' => "Client {$i}",
+                    'phone' => '010000000'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                    'password' => Hash::make('12345678'),
+                    'is_blocked' => false,
+                ]
+            );
 
             $user->assignRole('account-manager');
 
-            Client::query()->create([
-                'user_id' => $user->id,
-                'address' => $faker->streetAddress(),
-                'plan_id' => $plans->random()->id,
-                'shipping_content_id' => $contents->random()->id,
-            ]);
+            Client::query()->updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'address' => $faker->streetAddress(),
+                    'plan_id' => $plans->random()->id,
+                    'shipping_content_id' => $contents->random()->id,
+                ]
+            );
 
             $clientUsers->push($user);
         }
 
-        foreach (['Admin', 'Supervisor', 'Accounting', 'Dispatch'] as $idx => $name) {
-            $user = User::query()->create([
-                'name' => $name,
-                'username' => strtolower($name),
-                'phone' => '011111111'.$idx,
-                'password' => Hash::make('12345678'),
-                'is_blocked' => false,
-            ]);
+        foreach (['Supervisor', 'Accounting', 'Dispatch'] as $idx => $name) {
+            $user = User::query()->updateOrCreate(
+                ['username' => strtolower($name)],
+                [
+                    'name' => $name,
+                    'phone' => '011111111'.$idx,
+                    'password' => Hash::make('12345678'),
+                    'is_blocked' => false,
+                ]
+            );
 
             $user->assignRole('expense-manager');
         }
 
         $expenseCategories = collect();
         foreach (['Fuel', 'Office', 'Maintenance', 'Salaries', 'Marketing'] as $name) {
-            $expenseCategories->push(ExpenseCategory::query()->create([
-                'name' => $name,
-                'notes' => $faker->sentence(),
-                'is_active' => true,
-            ]));
+            $expenseCategories->push(ExpenseCategory::query()->updateOrCreate(
+                ['name' => $name],
+                [
+                    'notes' => $faker->sentence(),
+                    'is_active' => true,
+                ]
+            ));
         }
 
         foreach (range(1, 40) as $i) {
@@ -175,27 +191,31 @@ class FakeDataSeeder extends Seeder
             ['No cash', 'HOLD'],
             ['Rescheduled request', 'HOLD'],
         ] as [$reason, $status]) {
-            RefusedReason::query()->create([
-                'reason' => $reason,
-                'status' => $status,
-                'is_active' => true,
-                'is_clear' => $faker->boolean(20),
-                'is_return' => $faker->boolean(60),
-                'is_edit_amount' => $faker->boolean(25),
-            ]);
+            RefusedReason::query()->updateOrCreate(
+                ['reason' => $reason],
+                [
+                    'status' => $status,
+                    'is_active' => true,
+                    'is_clear' => $faker->boolean(20),
+                    'is_return' => $faker->boolean(60),
+                    'is_edit_amount' => $faker->boolean(25),
+                ]
+            );
         }
 
         $materials = collect();
         foreach (range(1, 18) as $i) {
-            $materials->push(Material::query()->create([
-                'name' => 'Material '.$i,
-                'code' => 'MAT-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
-                'cost_price' => $faker->randomFloat(2, 5, 300),
-                'sale_price' => $faker->randomFloat(2, 10, 500),
-                'stock' => $faker->numberBetween(10, 300),
-                'is_active' => true,
-                'notes' => $faker->optional()->sentence(),
-            ]));
+            $materials->push(Material::query()->updateOrCreate(
+                ['code' => 'MAT-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT)],
+                [
+                    'name' => 'Material '.$i,
+                    'cost_price' => $faker->randomFloat(2, 5, 300),
+                    'sale_price' => $faker->randomFloat(2, 10, 500),
+                    'stock' => $faker->numberBetween(10, 300),
+                    'is_active' => true,
+                    'notes' => $faker->optional()->sentence(),
+                ]
+            ));
         }
 
         $materialRequests = collect();

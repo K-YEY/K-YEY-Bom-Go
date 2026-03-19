@@ -32,11 +32,14 @@ use App\Http\Middleware\UpdateLoginSessionLastSeen;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::middleware(['auth:sanctum', UpdateLoginSessionLastSeen::class])->group(function (): void {
     Route::get('acl', [AclMatrixController::class, 'matrix']);
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
     Route::apiResource('expenses', ExpenseController::class);
+    Route::patch('users/{user}/toggle-block', [UserController::class, 'toggleBlock']);
+    Route::patch('clients/{client}/change-plan', [ClientController::class, 'changePlan']);
     Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
     Route::get('profile', [ProfileController::class, 'show']);
     Route::patch('profile', [ProfileController::class, 'update']);

@@ -104,8 +104,25 @@ class DashboardOrderController extends Controller
             $visibleCards[$key] = $value;
         }
 
+        $topGovernorates = Order::query()
+            ->join('governorates', 'governorates.id', '=', 'orders.governorate_id')
+            ->selectRaw('governorates.name as name, COUNT(*) as total_orders')
+            ->groupBy('governorates.id', 'governorates.name')
+            ->orderByDesc('total_orders')
+            ->limit(7)
+            ->get()
+            ->map(static fn (object $row): array => [
+                'name' => (string) ($row->name ?? '-'),
+                'total_orders' => (int) ($row->total_orders ?? 0),
+            ])
+            ->values()
+            ->all();
+
         return response()->json([
             'data' => $visibleCards,
+            'charts' => [
+                'top_governorates' => $topGovernorates,
+            ],
             'meta' => [
                 'total_cards' => count($cards),
                 'visible_cards' => count($visibleCards),

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\User;
 use App\Support\Permissions\AccountPermissionMap;
 use App\Support\Permissions\ActivityLogPermissionMap;
 use App\Support\Permissions\AreaPlanPermissionMap;
@@ -397,6 +398,11 @@ class ExpenseAuthorizationSeeder extends Seeder
             'is_active' => true,
         ]);
         $activityLogViewerRole->syncPermissions($activityLogPermissions);
+
+        $primaryAdmin = User::query()->find(1);
+        if ($primaryAdmin) {
+            $primaryAdmin->assignRole($superAdminRole);
+        }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

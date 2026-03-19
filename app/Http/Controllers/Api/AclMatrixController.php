@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\Permissions\AccountPermissionMap;
 use App\Support\Permissions\ActivityLogPermissionMap;
 use App\Support\Permissions\AreaPlanPermissionMap;
-use App\Support\Permissions\AccountPermissionMap;
 use App\Support\Permissions\CollectionsReturnsSettlementsPermissionMap;
 use App\Support\Permissions\ContentPermissionMap;
 use App\Support\Permissions\ExpensePermissionMap;
@@ -48,6 +48,7 @@ class AclMatrixController extends Controller
                 'client-settlement.page' => $user->can('client-settlement.page'),
                 'client-return.page' => $user->can('client-return.page'),
                 'activity-log.page' => $user->can('activity-log.page'),
+                'order.dashboard.page' => $user->can('order.dashboard.page'),
             ],
             'actions' => [
                 ...$this->permissionState($user, array_column(ExpensePermissionMap::ACTION_PERMISSIONS, 'name')),

@@ -12,6 +12,28 @@ use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
+    public function logout(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $token = $user?->currentAccessToken();
+
+        if ($token) {
+            $sessionId = $token->id;
+            LoginSession::query()
+                ->where('user_id', $user->id)
+                ->where('session_id', $sessionId)
+                ->update([
+                    'logout_at' => now(),
+                    'is_active' => false,
+                    'is_current' => false,
+                ]);
+
+            $token->delete();
+        }
+
+        return response()->json(['message' => 'Logged out successfully.']);
+    }
+
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([

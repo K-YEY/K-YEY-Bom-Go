@@ -10,6 +10,22 @@ use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
+    /**
+     * Change client plan (plan_id).
+     */
+    public function changePlan(Request $request, Client $client): JsonResponse
+    {
+        $this->authorizePermission($request, 'client.update');
+        $data = $request->validate([
+            'plan_id' => ['required', 'integer', 'exists:plans,id'],
+        ]);
+        $client->plan_id = $data['plan_id'];
+        $client->save();
+        return response()->json([
+            'message' => 'Client plan updated.',
+            'plan_id' => $client->plan_id,
+        ]);
+    }
     public function index(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'client.page');

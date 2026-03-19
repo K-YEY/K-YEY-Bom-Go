@@ -13,6 +13,19 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    /**
+     * Toggle user block status (is_blocked).
+     */
+    public function toggleBlock(Request $request, User $user): JsonResponse
+    {
+        $this->authorizePermission($request, 'user.update');
+        $user->is_blocked = !$user->is_blocked;
+        $user->save();
+        return response()->json([
+            'message' => 'User block status toggled.',
+            'is_blocked' => $user->is_blocked,
+        ]);
+    }
     public function index(): JsonResponse
     {
         $request = request();

@@ -43,11 +43,11 @@ return new class extends Migration
             $table->text('latest_status_note')->nullable();
             $table->longText('order_note')->nullable();
 
-            $table->foreignId('shipper_user_id')->nullable()->constrained('users')->nullOnDelete()->index();
-            $table->foreignId('client_user_id')->constrained('users')->cascadeOnDelete()->index();
+            $table->foreignId('shipper_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('client_user_id')->constrained('users')->cascadeOnDelete();
             $table->boolean('allow_open')->default(true)->index();
 
-            $table->foreignId('shipping_content_id')->constrained('content')->nullOnDelete()->index();
+            $table->foreignId('shipping_content_id')->nullable()->constrained('content')->nullOnDelete();
 
             $table->enum('approval_status', [
                 'PENDING',
@@ -252,15 +252,15 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('orders');
-        Schema::dropIfExists('shipper_collections');
-        Schema::dropIfExists('shipper_collection_orders');
-        Schema::dropIfExists('shipper_returns');
-        Schema::dropIfExists('shipper_return_orders');
-        Schema::dropIfExists('client_settlements');
-        Schema::dropIfExists('client_settlement_orders');
-        Schema::dropIfExists('client_returns');
         Schema::dropIfExists('client_return_orders');
+        Schema::dropIfExists('client_returns');
+        Schema::dropIfExists('client_settlement_orders');
+        Schema::dropIfExists('client_settlements');
+        Schema::dropIfExists('shipper_return_orders');
+        Schema::dropIfExists('shipper_returns');
+        Schema::dropIfExists('shipper_collection_orders');
+        Schema::dropIfExists('shipper_collections');
+        Schema::dropIfExists('orders');
 
     }
 };

@@ -23,6 +23,7 @@ use App\Models\ShipperReturn;
 use App\Models\User;
 use App\Models\Visit;
 use App\Observers\EntityObserver;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -40,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::before(static fn (User $user, string $ability): ?bool => $user->id === 1 ? true : null);
+
         // Register entity observer for activity logging
         Expense::observe(EntityObserver::class);
         ExpenseCategory::observe(EntityObserver::class);

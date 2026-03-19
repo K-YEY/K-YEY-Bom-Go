@@ -35,8 +35,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('address')->nullable();
-            $table->foreignId('plan_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('shipping_content_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('plan_id')->nullable()->index();
+            $table->foreignId('shipping_content_id')->nullable()->index();
             $table->timestamps();
         });
 
@@ -76,9 +76,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('shippers');
-        Schema::dropIfExists('clients');
         Schema::dropIfExists('login_sessions');
+        Schema::dropIfExists('clients');
+        Schema::dropIfExists('shippers');
+        Schema::dropIfExists('users');
     }
 };
