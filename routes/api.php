@@ -14,7 +14,7 @@ use App\Http\Controllers\Api\Operations\VisitController;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\Orders\ClientReturnController;
 use App\Http\Controllers\Api\Orders\ClientSettlementController;
-use App\Http\Controllers\Api\Orders\DashboardOrderController;
+use App\Http\Controllers\Api\Dashboard\DashboardOrderController;
 use App\Http\Controllers\Api\Orders\OrderController;
 use App\Http\Controllers\Api\Orders\ShipperCollectionController;
 use App\Http\Controllers\Api\Orders\ShipperReturnController;

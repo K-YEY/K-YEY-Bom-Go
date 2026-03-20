@@ -29,6 +29,7 @@ class CollectionsReturnsSettlementsPermissionMap
         'net_amount' => 'shipper-collection.column.net_amount.view',
         'status' => 'shipper-collection.column.status.view',
         'approval_status' => 'shipper-collection.column.approval_status.view',
+        'shipper' => 'shipper-collection.column.shipper_user_id.view',
         'created_at' => 'shipper-collection.column.created_at.view',
         'updated_at' => 'shipper-collection.column.updated_at.view',
     ];
@@ -63,6 +64,7 @@ class CollectionsReturnsSettlementsPermissionMap
         'notes' => 'shipper-return.column.notes.view',
         'status' => 'shipper-return.column.status.view',
         'approval_status' => 'shipper-return.column.approval_status.view',
+        'shipper' => 'shipper-return.column.shipper_user_id.view',
         'created_at' => 'shipper-return.column.created_at.view',
         'updated_at' => 'shipper-return.column.updated_at.view',
     ];
@@ -99,6 +101,7 @@ class CollectionsReturnsSettlementsPermissionMap
         'net_amount' => 'client-settlement.column.net_amount.view',
         'status' => 'client-settlement.column.status.view',
         'approval_status' => 'client-settlement.column.approval_status.view',
+        'client' => 'client-settlement.column.client_user_id.view',
         'created_at' => 'client-settlement.column.created_at.view',
         'updated_at' => 'client-settlement.column.updated_at.view',
     ];
@@ -133,6 +136,7 @@ class CollectionsReturnsSettlementsPermissionMap
         'notes' => 'client-return.column.notes.view',
         'status' => 'client-return.column.status.view',
         'approval_status' => 'client-return.column.approval_status.view',
+        'client' => 'client-return.column.client_user_id.view',
         'created_at' => 'client-return.column.created_at.view',
         'updated_at' => 'client-return.column.updated_at.view',
     ];

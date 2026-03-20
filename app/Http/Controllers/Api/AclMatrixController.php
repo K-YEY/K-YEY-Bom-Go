@@ -8,6 +8,7 @@ use App\Support\Permissions\ActivityLogPermissionMap;
 use App\Support\Permissions\AreaPlanPermissionMap;
 use App\Support\Permissions\CollectionsReturnsSettlementsPermissionMap;
 use App\Support\Permissions\ContentPermissionMap;
+use App\Support\Permissions\DashboardPermissionMap;
 use App\Support\Permissions\ExpensePermissionMap;
 use App\Support\Permissions\OperationsPermissionMap;
 use App\Support\Permissions\OrdersPermissionMap;
@@ -63,6 +64,8 @@ class AclMatrixController extends Controller
                 ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::CLIENT_SETTLEMENT_ACTION_PERMISSIONS, 'name')),
                 ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::CLIENT_RETURN_ACTION_PERMISSIONS, 'name')),
                 ...$this->permissionState($user, array_column(ActivityLogPermissionMap::ACTION_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(DashboardPermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_values(DashboardPermissionMap::CARD_VIEW_PERMISSIONS)),
             ],
             'setting_pages' => $this->permissionState($user, array_column(SettingPermissionMap::PAGE_PERMISSIONS, 'name')),
             'expense_columns' => [

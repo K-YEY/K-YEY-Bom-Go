@@ -45,6 +45,10 @@ class OrdersPermissionMap
         'client_user_id' => 'order.column.client_user_id.view',
         'allow_open' => 'order.column.allow_open.view',
         'registered_at' => 'order.column.registered_at.view',
+        'governorate' => 'order.column.governorate_id.view',
+        'city' => 'order.column.city_id.view',
+        'shipper' => 'order.column.shipper_user_id.view',
+        'client' => 'order.column.client_user_id.view',
         'created_at' => 'order.column.created_at.view',
         'updated_at' => 'order.column.updated_at.view',
     ];

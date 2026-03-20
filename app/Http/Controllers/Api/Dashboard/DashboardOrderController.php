@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Orders;
+namespace App\Http\Controllers\Api\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
