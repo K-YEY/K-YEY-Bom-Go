@@ -5,15 +5,15 @@ namespace App\Support\Permissions;
 class AreaPlanPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'governorate.page', 'group' => 'governorates', 'label' => 'Access Governorate page', 'type' => 'page'],
+        ['name' => 'area.page', 'group' => 'areas', 'label' => 'Access Area page', 'type' => 'page'],
         ['name' => 'plan.page', 'group' => 'plans', 'label' => 'Access Plan page', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'governorate.view', 'group' => 'governorates', 'label' => 'View governorates', 'type' => 'action'],
-        ['name' => 'governorate.create', 'group' => 'governorates', 'label' => 'Create governorate', 'type' => 'button'],
-        ['name' => 'governorate.update', 'group' => 'governorates', 'label' => 'Update governorate', 'type' => 'button'],
-        ['name' => 'governorate.delete', 'group' => 'governorates', 'label' => 'Delete governorate', 'type' => 'button'],
+        ['name' => 'area.view', 'group' => 'areas', 'label' => 'View areas', 'type' => 'action'],
+        ['name' => 'area.create', 'group' => 'areas', 'label' => 'Create area', 'type' => 'button'],
+        ['name' => 'area.update', 'group' => 'areas', 'label' => 'Update area', 'type' => 'button'],
+        ['name' => 'area.delete', 'group' => 'areas', 'label' => 'Delete area', 'type' => 'button'],
 
         ['name' => 'plan.view', 'group' => 'plans', 'label' => 'View plans', 'type' => 'action'],
         ['name' => 'plan.create', 'group' => 'plans', 'label' => 'Create plan', 'type' => 'button'],
@@ -23,32 +23,32 @@ class AreaPlanPermissionMap
 
     public const GOVERNORATE_VIEW_COLUMNS = [
         'id' => null,
-        'name' => 'governorate.column.name.view',
-        'follow_up_hours' => 'governorate.column.follow_up_hours.view',
-        'default_shipper_user_id' => 'governorate.column.default_shipper_user_id.view',
-        'defaultShipper' => 'governorate.column.default_shipper.view',
-        'cities' => 'governorate.column.cities.view',
-        'created_at' => 'governorate.column.created_at.view',
-        'updated_at' => 'governorate.column.updated_at.view',
+        'name' => 'area.column.name.view',
+        'follow_up_hours' => 'area.column.follow_up_hours.view',
+        'default_shipper_user_id' => 'area.column.default_shipper_user_id.view',
+        'defaultShipper' => 'area.column.default_shipper.view',
+        'cities' => 'area.column.cities.view',
+        'created_at' => 'area.column.created_at.view',
+        'updated_at' => 'area.column.updated_at.view',
     ];
 
     public const GOVERNORATE_EDIT_COLUMNS = [
-        'name' => 'governorate.column.name.edit',
-        'follow_up_hours' => 'governorate.column.follow_up_hours.edit',
-        'default_shipper_user_id' => 'governorate.column.default_shipper_user_id.edit',
-        'cities' => 'governorate.column.cities.edit',
+        'name' => 'area.column.name.edit',
+        'follow_up_hours' => 'area.column.follow_up_hours.edit',
+        'default_shipper_user_id' => 'area.column.default_shipper_user_id.edit',
+        'cities' => 'area.column.cities.edit',
     ];
 
     public const CITY_VIEW_COLUMNS = [
         'id' => null,
-        'name' => 'city.column.name.view',
-        'governorate_id' => 'city.column.governorate_id.view',
-        'created_at' => 'city.column.created_at.view',
-        'updated_at' => 'city.column.updated_at.view',
+        'name' => 'area.column.city_name.view',
+        'governorate_id' => 'area.column.area_id.view',
+        'created_at' => 'area.column.city_created_at.view',
+        'updated_at' => 'area.column.city_updated_at.view',
     ];
 
     public const CITY_EDIT_COLUMNS = [
-        'name' => 'city.column.name.edit',
+        'name' => 'area.column.city_name.edit',
     ];
 
     public const PLAN_VIEW_COLUMNS = [
@@ -69,15 +69,15 @@ class AreaPlanPermissionMap
     public const PLAN_PRICE_VIEW_COLUMNS = [
         'id' => null,
         'plan_id' => 'plan-price.column.plan_id.view',
-        'governorate_id' => 'plan-price.column.governorate_id.view',
+        'governorate_id' => 'plan-price.column.area_id.view',
         'price' => 'plan-price.column.price.view',
-        'governorate' => 'plan-price.column.governorate.view',
+        'governorate' => 'plan-price.column.area.view',
         'created_at' => 'plan-price.column.created_at.view',
         'updated_at' => 'plan-price.column.updated_at.view',
     ];
 
     public const PLAN_PRICE_EDIT_COLUMNS = [
-        'governorate_id' => 'plan-price.column.governorate_id.edit',
+        'governorate_id' => 'plan-price.column.area_id.edit',
         'price' => 'plan-price.column.price.edit',
     ];
 
@@ -98,8 +98,8 @@ class AreaPlanPermissionMap
 
             $permissions[] = [
                 'name' => $permission,
-                'group' => 'governorates',
-                'label' => "View governorate {$column} column",
+                'group' => 'areas',
+                'label' => "View area {$column} column",
                 'type' => 'column',
             ];
         }
@@ -107,8 +107,8 @@ class AreaPlanPermissionMap
         foreach (self::GOVERNORATE_EDIT_COLUMNS as $column => $permission) {
             $permissions[] = [
                 'name' => $permission,
-                'group' => 'governorates',
-                'label' => "Edit governorate {$column} column",
+                'group' => 'areas',
+                'label' => "Edit area {$column} column",
                 'type' => 'column',
             ];
         }
@@ -120,7 +120,7 @@ class AreaPlanPermissionMap
 
             $permissions[] = [
                 'name' => $permission,
-                'group' => 'cities',
+                'group' => 'areas',
                 'label' => "View city {$column} column",
                 'type' => 'column',
             ];
@@ -129,7 +129,7 @@ class AreaPlanPermissionMap
         foreach (self::CITY_EDIT_COLUMNS as $column => $permission) {
             $permissions[] = [
                 'name' => $permission,
-                'group' => 'cities',
+                'group' => 'areas',
                 'label' => "Edit city {$column} column",
                 'type' => 'column',
             ];

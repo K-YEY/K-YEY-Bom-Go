@@ -14,8 +14,8 @@ class GovernorateController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $this->authorizePermission($request, 'governorate.page');
-        $this->authorizePermission($request, 'governorate.view');
+        $this->authorizePermission($request, 'area.page');
+        $this->authorizePermission($request, 'area.view');
 
         $governorates = Governorate::query()
             ->with(['cities:id,governorate_id,name', 'defaultShipper:id,name'])
@@ -29,7 +29,7 @@ class GovernorateController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorizePermission($request, 'governorate.create');
+        $this->authorizePermission($request, 'area.create');
 
         $data = $request->validate([
             'name'                    => ['required', 'string', 'max:255', 'unique:governorates,name'],
@@ -62,15 +62,15 @@ class GovernorateController extends Controller
         $governorate->load(['cities:id,governorate_id,name', 'defaultShipper:id,name']);
 
         return response()->json([
-            'message' => 'Governorate created successfully.',
+            'message' => 'Area created successfully.',
             'data' => $this->filterVisibleGovernorateColumns($request, $governorate),
         ], 201);
     }
 
     public function show(Request $request, Governorate $governorate): JsonResponse
     {
-        $this->authorizePermission($request, 'governorate.page');
-        $this->authorizePermission($request, 'governorate.view');
+        $this->authorizePermission($request, 'area.page');
+        $this->authorizePermission($request, 'area.view');
 
         $governorate->load(['cities:id,governorate_id,name', 'defaultShipper:id,name']);
 
@@ -79,7 +79,7 @@ class GovernorateController extends Controller
 
     public function update(Request $request, Governorate $governorate): JsonResponse
     {
-        $this->authorizePermission($request, 'governorate.update');
+        $this->authorizePermission($request, 'area.update');
 
         $data = $request->validate([
             'name'                    => ['required', 'string', 'max:255', Rule::unique('governorates', 'name')->ignore($governorate->id)],
@@ -123,18 +123,18 @@ class GovernorateController extends Controller
         $governorate->load(['cities:id,governorate_id,name', 'defaultShipper:id,name']);
 
         return response()->json([
-            'message' => 'Governorate updated successfully.',
+            'message' => 'Area updated successfully.',
             'data' => $this->filterVisibleGovernorateColumns($request, $governorate),
         ]);
     }
 
     public function destroy(Request $request, Governorate $governorate): JsonResponse
     {
-        $this->authorizePermission($request, 'governorate.delete');
+        $this->authorizePermission($request, 'area.delete');
 
         $governorate->delete();
 
-        return response()->json(['message' => 'Governorate deleted successfully.']);
+        return response()->json(['message' => 'Area deleted successfully.']);
     }
 
     private function authorizePermission(Request $request, string $permission): void

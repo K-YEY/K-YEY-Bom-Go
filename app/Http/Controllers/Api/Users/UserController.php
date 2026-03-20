@@ -16,6 +16,26 @@ class UserController extends Controller
     /**
      * Toggle user block status (is_blocked).
      */
+    /**
+     * Update user roles.
+     */
+    public function updateRoles(Request $request, User $user): JsonResponse
+    {
+        $this->authorizePermission($request, 'user.update');
+        
+        $data = $request->validate([
+            'roles' => ['required', 'array'],
+            'roles.*' => ['required', 'string', 'exists:roles,name'],
+        ]);
+
+        $user->syncRoles($data['roles']);
+
+        return response()->json([
+            'message' => 'User roles updated successfully.',
+            'data' => $user->load('roles:id,name,label'),
+        ]);
+    }
+
     public function toggleBlock(Request $request, User $user): JsonResponse
     {
         $this->authorizePermission($request, 'user.update');
@@ -26,25 +46,77 @@ class UserController extends Controller
             'is_blocked' => $user->is_blocked,
         ]);
     }
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $request = request();
         $this->authorizePermission($request, 'user.page');
         $this->authorizePermission($request, 'user.view');
 
-        $users = User::query()
+        $query = User::query()
             ->with([
                 'roles:id,name,label',
                 'shipper',
-                'client',
-                'loginSessions:id,user_id,session_id,ip_address,user_agent,device_name,device_type,browser,platform,country,city,login_at,last_seen_at,logout_at,is_active,is_current,created_at,updated_at',
-            ])
-            ->orderByDesc('id')
-            ->get();
+                'client.plan',
+                'client.shippingContent',
+                'loginSessions',
+            ]);
 
-        return response()->json(
-            $users->map(fn (User $user): array => $this->formatUserPayload($request, $user))->values()
-        );
+        // Filter by role
+        if ($request->filled('role')) {
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->where('name', $request->role);
+            });
+        }
+
+        // Search query
+        if ($request->filled('q')) {
+            $search = $request->q;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by status (is_blocked)
+        if ($request->filled('status')) {
+            $isBlocked = $request->status === 'blocked';
+            $query->where('is_blocked', $isBlocked);
+        }
+
+        // Sorting
+        $sortBy = $request->input('sortBy', 'id');
+        $orderBy = $request->input('orderBy', 'desc');
+        $query->orderBy($sortBy, $orderBy);
+
+        // Pagination
+        $itemsPerPage = (int)$request->input('itemsPerPage', 10);
+        
+        if ($itemsPerPage === -1) {
+            $users = $query->get();
+            $data = $users->map(fn (User $user) => $this->formatUserPayload($request, $user));
+            return response()->json(['data' => $data, 'total' => $data->count()]);
+        }
+
+        $paginator = $query->paginate($itemsPerPage);
+        
+        // Stats for widgets (Safe counts to avoid RoleDoesNotExist exception)
+        $totalUsersCount = User::count();
+        $shippersCount = User::whereHas('roles', fn($q) => $q->where('name', 'shipper'))->count();
+        $clientsCount = User::whereHas('roles', fn($q) => $q->where('name', 'client'))->count();
+        $blockedCount = User::where('is_blocked', true)->count();
+
+        return response()->json([
+            'data' => collect($paginator->items())->map(fn (User $user) => $this->formatUserPayload($request, $user)),
+            'total' => $paginator->total(),
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'stats' => [
+                'total' => $totalUsersCount,
+                'shippers' => $shippersCount,
+                'clients' => $clientsCount,
+                'blocked' => $blockedCount,
+            ]
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -56,36 +128,38 @@ class UserController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'phone' => ['nullable', 'string', 'max:50', 'unique:users,phone'],
             'avatar' => ['nullable', 'string', 'max:255'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', 'min:6'],
             'is_blocked' => ['nullable', 'boolean'],
-            'account_type' => ['required', Rule::in([0, 1, 2, '0', '1', '2'])],
+            'account_type' => ['nullable', Rule::in([0, 1, 2, '0', '1', '2'])],
+            'roles' => ['nullable', 'array'],
+            'roles.*' => ['string', 'exists:roles,name'],
         ]);
 
-        $normalizedAccountType = $this->normalizeAccountType($data['account_type']);
+        $normalizedAccountType = $this->normalizeAccountType($data['account_type'] ?? '0');
 
         $typeSpecificData = $request->validate([
             'commission_rate' => [
                 Rule::requiredIf($normalizedAccountType === 'shipper'),
-                Rule::prohibitedIf($normalizedAccountType !== 'shipper'),
+                'nullable',
                 'numeric',
                 'min:0',
                 'max:999.99',
             ],
             'address' => [
                 Rule::requiredIf($normalizedAccountType === 'client'),
-                Rule::prohibitedIf($normalizedAccountType !== 'client'),
+                'nullable',
                 'string',
                 'max:255',
             ],
             'plan_id' => [
                 Rule::requiredIf($normalizedAccountType === 'client'),
-                Rule::prohibitedIf($normalizedAccountType !== 'client'),
+                'nullable',
                 'integer',
                 'exists:plans,id',
             ],
             'shipping_content_id' => [
                 Rule::requiredIf($normalizedAccountType === 'client'),
-                Rule::prohibitedIf($normalizedAccountType !== 'client'),
+                'nullable',
                 'integer',
                 'exists:content,id',
             ],
@@ -93,21 +167,23 @@ class UserController extends Controller
 
         $data = array_merge($data, $typeSpecificData);
 
-        $this->authorizeEditableColumns($request, array_keys($data));
-        $this->authorizeAccountTypeButton($request, (int) $data['account_type']);
+        $user = DB::transaction(function () use ($data, $normalizedAccountType): User {
+            $user = User::query()->create([
+                'name' => $data['name'],
+                'username' => $data['username'],
+                'phone' => $data['phone'] ?? null,
+                'avatar' => $data['avatar'] ?? null,
+                'password' => $data['password'],
+                'is_blocked' => $data['is_blocked'] ?? false,
+            ]);
 
-        $user = DB::transaction(function () use ($data): User {
-            $userData = collect($data)->only([
-                'name',
-                'username',
-                'phone',
-                'avatar',
-                'password',
-                'is_blocked',
-            ])->toArray();
+            // Sync specifically selected roles if provided, otherwise fallback to account_type logic
+            if (!empty($data['roles'])) {
+                $user->syncRoles($data['roles']);
+            }
 
-            $user = User::query()->create($userData);
-            $this->applyAccountType($user, $this->normalizeAccountType($data['account_type']), $data);
+            // Always apply account type logic to ensure client/shipper tables are populated
+            $this->applyAccountType($user, $normalizedAccountType, $data);
 
             return $user;
         });
@@ -115,7 +191,8 @@ class UserController extends Controller
         $user->load([
             'roles:id,name,label',
             'shipper',
-            'client',
+            'client.plan',
+            'client.shippingContent',
             'loginSessions:id,user_id,session_id,ip_address,user_agent,device_name,device_type,browser,platform,country,city,login_at,last_seen_at,logout_at,is_active,is_current,created_at,updated_at',
         ]);
 
@@ -134,7 +211,8 @@ class UserController extends Controller
         $user->load([
             'roles:id,name,label',
             'shipper',
-            'client',
+            'client.plan',
+            'client.shippingContent',
             'loginSessions:id,user_id,session_id,ip_address,user_agent,device_name,device_type,browser,platform,country,city,login_at,last_seen_at,logout_at,is_active,is_current,created_at,updated_at',
         ]);
 
@@ -197,7 +275,8 @@ class UserController extends Controller
         $user->load([
             'roles:id,name,label',
             'shipper',
-            'client',
+            'client.plan',
+            'client.shippingContent',
             'loginSessions:id,user_id,session_id,ip_address,user_agent,device_name,device_type,browser,platform,country,city,login_at,last_seen_at,logout_at,is_active,is_current,created_at,updated_at',
         ]);
 

@@ -65,6 +65,7 @@ class OperationsPermissionMap
     public const MATERIAL_REQUEST_VIEW_COLUMNS = [
         'id' => null,
         'client_id' => 'material-request.column.client_id.view',
+        'shipper_id' => 'material-request.column.shipper_id.view',
         'delivery_type' => 'material-request.column.delivery_type.view',
         'combined_visit' => 'material-request.column.combined_visit.view',
         'materials_total' => 'material-request.column.materials_total.view',
@@ -78,12 +79,15 @@ class OperationsPermissionMap
         'rejected_at' => 'material-request.column.rejected_at.view',
         'approval_note' => 'material-request.column.approval_note.view',
         'items' => 'material-request.column.items.view',
+        'client' => 'material-request.column.client_id.view',
+        'shipper' => 'material-request.column.shipper_id.view',
         'created_at' => 'material-request.column.created_at.view',
         'updated_at' => 'material-request.column.updated_at.view',
     ];
 
     public const MATERIAL_REQUEST_EDIT_COLUMNS = [
         'client_id' => 'material-request.column.client_id.edit',
+        'shipper_id' => 'material-request.column.shipper_id.edit',
         'delivery_type' => 'material-request.column.delivery_type.edit',
         'combined_visit' => 'material-request.column.combined_visit.edit',
         'materials_total' => 'material-request.column.materials_total.edit',
@@ -134,6 +138,8 @@ class OperationsPermissionMap
         'rejected_at' => 'pickup-request.column.rejected_at.view',
         'approval_note' => 'pickup-request.column.approval_note.view',
         'notes' => 'pickup-request.column.notes.view',
+        'client' => 'pickup-request.column.client_id.view',
+        'shipper' => 'pickup-request.column.shipper_id.view',
         'created_at' => 'pickup-request.column.created_at.view',
         'updated_at' => 'pickup-request.column.updated_at.view',
     ];
@@ -162,6 +168,8 @@ class OperationsPermissionMap
         'pickup_request_id' => 'visit.column.pickup_request_id.view',
         'material_request_id' => 'visit.column.material_request_id.view',
         'visit_cost' => 'visit.column.visit_cost.view',
+        'client' => 'visit.column.client_id.view',
+        'shipper' => 'visit.column.shipper_id.view',
         'created_at' => 'visit.column.created_at.view',
         'updated_at' => 'visit.column.updated_at.view',
     ];

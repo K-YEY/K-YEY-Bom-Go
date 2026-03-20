@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\Operations\MaterialRequestController;
 use App\Http\Controllers\Api\Operations\MaterialRequestItemController;
 use App\Http\Controllers\Api\Operations\PickupRequestController;
 use App\Http\Controllers\Api\Operations\VisitController;
-use App\Http\Controllers\Api\Orders\ActivityLogController;
+use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\Orders\ClientReturnController;
 use App\Http\Controllers\Api\Orders\ClientSettlementController;
 use App\Http\Controllers\Api\Orders\DashboardOrderController;
@@ -39,6 +39,7 @@ Route::middleware(['auth:sanctum', UpdateLoginSessionLastSeen::class])->group(fu
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
     Route::apiResource('expenses', ExpenseController::class);
     Route::patch('users/{user}/toggle-block', [UserController::class, 'toggleBlock']);
+    Route::patch('users/{user}/roles', [UserController::class, 'updateRoles']);
     Route::patch('clients/{client}/change-plan', [ClientController::class, 'changePlan']);
     Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
     Route::get('profile', [ProfileController::class, 'show']);

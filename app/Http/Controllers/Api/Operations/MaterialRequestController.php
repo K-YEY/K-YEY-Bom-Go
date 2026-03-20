@@ -19,7 +19,7 @@ class MaterialRequestController extends Controller
         $this->authorizePermission($request, 'material-request.view');
 
         $rows = MaterialRequest::query()
-            ->with(['items.material:id,name,code', 'client:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,material_request_id'])
+            ->with(['items.material:id,name,code', 'client:id,name', 'shipper:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,material_request_id'])
             ->orderByDesc('id')
             ->get();
 
@@ -34,6 +34,7 @@ class MaterialRequestController extends Controller
 
         $data = $request->validate([
             'client_id' => ['required', 'integer', 'exists:users,id'],
+            'shipper_id' => ['nullable', 'integer', 'exists:users,id'],
             'delivery_type' => ['nullable', Rule::in(['PICKUP', 'DELIVERY'])],
             'combined_visit' => ['nullable', 'boolean'],
             'materials_total' => ['nullable', 'numeric', 'min:0'],
@@ -62,7 +63,7 @@ class MaterialRequestController extends Controller
             return $row;
         });
 
-        $row->load(['items.material:id,name,code', 'client:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,material_request_id']);
+        $row->load(['items.material:id,name,code', 'client:id,name', 'shipper:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,material_request_id']);
 
         return response()->json([
             'message' => 'Material request created successfully.',
@@ -75,7 +76,7 @@ class MaterialRequestController extends Controller
         $this->authorizePermission($request, 'material-request.page');
         $this->authorizePermission($request, 'material-request.view');
 
-        $materialRequest->load(['items.material:id,name,code', 'client:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,material_request_id']);
+        $materialRequest->load(['items.material:id,name,code', 'client:id,name', 'shipper:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,material_request_id']);
 
         return response()->json($this->filterVisibleColumns($request, $materialRequest));
     }
@@ -86,6 +87,7 @@ class MaterialRequestController extends Controller
 
         $data = $request->validate([
             'client_id' => ['sometimes', 'required', 'integer', 'exists:users,id'],
+            'shipper_id' => ['nullable', 'integer', 'exists:users,id'],
             'delivery_type' => ['sometimes', 'required', Rule::in(['PICKUP', 'DELIVERY'])],
             'combined_visit' => ['nullable', 'boolean'],
             'materials_total' => ['nullable', 'numeric', 'min:0'],
@@ -114,7 +116,7 @@ class MaterialRequestController extends Controller
         });
 
         $materialRequest->refresh();
-        $materialRequest->load(['items.material:id,name,code', 'client:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,material_request_id']);
+        $materialRequest->load(['items.material:id,name,code', 'client:id,name', 'shipper:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,material_request_id']);
 
         return response()->json([
             'message' => 'Material request updated successfully.',

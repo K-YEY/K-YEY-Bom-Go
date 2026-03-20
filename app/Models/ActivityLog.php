@@ -39,4 +39,23 @@ class ActivityLog extends Model
     {
         return $this->belongsTo(LoginSession::class);
     }
+
+    /* --- Accessors for Frontend Compatibility --- */
+
+    public function getActivityAttribute(): string
+    {
+        return $this->label ?? $this->action ?? 'Unknown Activity';
+    }
+
+    public function getDescriptionAttribute(): string
+    {
+        return $this->action ?? '';
+    }
+
+    public function getTypeAttribute(): string
+    {
+        return $this->event_type ?? 'INFO';
+    }
+
+    protected $appends = ['activity', 'description', 'type'];
 }

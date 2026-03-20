@@ -102,7 +102,7 @@ Backend workflow APIs already exist and include permission checks:
 - Client return: app/Http/Controllers/Api/Orders/ClientReturnController.php
 - Pickup: app/Http/Controllers/Api/Operations/PickupRequestController.php
 - Material request: app/Http/Controllers/Api/Operations/MaterialRequestController.php
-- Activity logs: app/Http/Controllers/Api/Orders/ActivityLogController.php
+- Activity logs: app/Http/Controllers/Api/ActivityLogController.php
 - Settings and ACL matrix: routes/api.php
 
 Note: unlock semantics and approval gating are already handled server-side in collections/returns/settlements controllers.

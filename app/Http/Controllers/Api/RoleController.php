@@ -16,6 +16,9 @@ class RoleController
     {
         $roles = Role::query()
             ->with(['permissions:id,name,group,label,type'])
+            ->with(['users' => function($query) {
+                $query->select('users.id', 'users.name', 'users.avatar')->limit(5);
+            }])
             ->withCount(['permissions', 'users'])
             ->orderBy('name')
             ->get(['id', 'name', 'guard_name', 'label', 'is_active', 'created_at', 'updated_at']);
@@ -38,10 +41,13 @@ class RoleController
         $permissionNames = $this->resolvePermissionNames($data['permissions'] ?? []);
 
         $role = DB::transaction(function () use ($data, $permissionNames): Role {
+            $roleName = $data['name'];
+            $roleLabel = ucfirst($roleName);
+
             $role = Role::query()->create([
-                'name' => $data['name'],
+                'name' => $roleName,
                 'guard_name' => 'web',
-                'label' => $data['label'] ?? null,
+                'label' => $data['label'] ?? $roleLabel,
                 'is_active' => $data['is_active'] ?? true,
             ]);
 
@@ -83,9 +89,12 @@ class RoleController
             : null;
 
         DB::transaction(function () use ($data, $role, $permissionNames): void {
+            $roleName = $data['name'] ?? $role->name;
+            $roleLabel = ucfirst($roleName);
+
             $role->update([
-                'name' => $data['name'] ?? $role->name,
-                'label' => array_key_exists('label', $data) ? $data['label'] : $role->label,
+                'name' => $roleName,
+                'label' => array_key_exists('label', $data) ? $data['label'] : $roleLabel,
                 'is_active' => $data['is_active'] ?? $role->is_active,
             ]);
 

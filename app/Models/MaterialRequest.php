@@ -8,6 +8,7 @@ class MaterialRequest extends Model
 {
     protected $fillable = [
         'client_id',
+        'shipper_id',
         'delivery_type',
         'combined_visit',
         'materials_total',
@@ -36,6 +37,11 @@ class MaterialRequest extends Model
     public function client()
     {
         return $this->belongsTo(User::class, 'client_id');
+    }
+
+    public function shipper()
+    {
+        return $this->belongsTo(User::class, 'shipper_id');
     }
 
     public function items()

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Orders;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
@@ -21,11 +21,12 @@ class ActivityLogController extends Controller
                 'loginSession:id,ip_address,country,city',
             ])
             ->orderByDesc('id')
-            ->paginate(50);
+            ->paginate($request->input('itemsPerPage', 50));
 
-        return response()->json(
-            $logs->map(fn (ActivityLog $log): array => $this->filterVisibleColumns($request, $log))
-        );
+        return response()->json([
+            'data' => collect($logs->items())->map(fn (ActivityLog $log): array => $this->filterVisibleColumns($request, $log)),
+            'total' => $logs->total(),
+        ]);
     }
 
     public function show(Request $request, ActivityLog $activityLog): JsonResponse

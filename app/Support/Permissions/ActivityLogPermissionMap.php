@@ -15,6 +15,8 @@ class ActivityLogPermissionMap
     public const VIEW_COLUMNS = [
         'id' => null,
         'user_id' => 'activity-log.column.user_id.view',
+        'user' => 'activity-log.column.user_id.view',
+        'login_session' => 'activity-log.column.user_id.view',
         'activity' => 'activity-log.column.activity.view',
         'description' => 'activity-log.column.description.view',
         'type' => 'activity-log.column.type.view',
