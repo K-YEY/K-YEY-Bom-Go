@@ -3,108 +3,96 @@
 namespace App\Http\Controllers\Api\Dashboard;
 
 use App\Http\Controllers\Controller;
-use App\Models\Expense;
 use App\Models\Order;
-use App\Support\Permissions\DashboardPermissionMap;
+use App\Models\Governorate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardOrderController extends Controller
 {
     public function summary(Request $request): JsonResponse
     {
-        $this->authorizePermission($request, 'order.dashboard.page');
         $this->authorizePermission($request, 'order.dashboard.view');
 
-        $deliveredOrUndeliveredExpr = "status IN ('DELIVERED', 'UNDELIVERED')";
-        $shipperReturnRelevantExpr = "((status = 'DELIVERED' AND has_return = 1) OR status = 'UNDELIVERED')";
-        $collectionAmountExpr = '(CASE WHEN (total_amount - commission_amount) > 0 THEN (total_amount - commission_amount) ELSE 0 END)';
-        $collectionWithCompanyExpr = "({$collectionAmountExpr} + company_amount)";
+        $validated = $request->validate([
+            'client_user_id' => 'nullable|integer',
+            'shipper_user_id' => 'nullable|integer',
+            'governorate_id' => 'nullable|integer',
+            'city_id' => 'nullable|integer',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'date_field' => 'nullable|string|in:registered_at,created_at,shipper_collected_at,client_settled_at,shipper_returned_at,client_returned_at',
+        ]);
 
-        $row = Order::query()
-            ->selectRaw('COUNT(*) as all_order')
-            ->selectRaw("SUM(CASE WHEN status = 'OUT_FOR_DELIVERY' THEN 1 ELSE 0 END) as out_for_delivery")
-            ->selectRaw("SUM(CASE WHEN status = 'HOLD' THEN 1 ELSE 0 END) as hold")
-            ->selectRaw("SUM(CASE WHEN status = 'DELIVERED' THEN 1 ELSE 0 END) as delivered")
-            ->selectRaw("SUM(CASE WHEN status = 'UNDELIVERED' THEN 1 ELSE 0 END) as undelivered")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NULL THEN 1 ELSE 0 END) as uncollected_shipper")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NOT NULL THEN 1 ELSE 0 END) as collected_shipper")
-            ->selectRaw("SUM(CASE WHEN {$shipperReturnRelevantExpr} AND shipper_returned_at IS NULL THEN 1 ELSE 0 END) as unreturn_shipper")
-            ->selectRaw("SUM(CASE WHEN {$shipperReturnRelevantExpr} AND shipper_returned_at IS NOT NULL THEN 1 ELSE 0 END) as return_shipper")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NOT NULL AND client_settled_at IS NULL THEN 1 ELSE 0 END) as uncollected_client")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NOT NULL AND client_settled_at IS NOT NULL THEN 1 ELSE 0 END) as collected_client")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND client_returned_at IS NOT NULL THEN 1 ELSE 0 END) as return_client")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_returned_at IS NOT NULL AND client_returned_at IS NULL THEN 1 ELSE 0 END) as unreturn_client")
-            ->selectRaw("SUM(CASE WHEN status = 'OUT_FOR_DELIVERY' THEN total_amount ELSE 0 END) as out_for_delivery_total")
-            ->selectRaw("SUM(CASE WHEN status = 'HOLD' THEN total_amount ELSE 0 END) as hold_total")
-            ->selectRaw("SUM(CASE WHEN status = 'DELIVERED' THEN total_amount ELSE 0 END) as delivered_total")
-            ->selectRaw("SUM(CASE WHEN status = 'UNDELIVERED' THEN total_amount ELSE 0 END) as undelivered_total")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NULL THEN {$collectionWithCompanyExpr} ELSE 0 END) as uncollected_shipper_total")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NOT NULL THEN {$collectionAmountExpr} ELSE 0 END) as collected_shipper_total")
-            ->selectRaw("SUM(CASE WHEN {$shipperReturnRelevantExpr} AND shipper_returned_at IS NOT NULL THEN total_amount ELSE 0 END) as unreturn_shipper_total")
-            ->selectRaw("SUM(CASE WHEN {$shipperReturnRelevantExpr} AND shipper_returned_at IS NOT NULL THEN {$collectionWithCompanyExpr} ELSE 0 END) as return_shipper_total")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NOT NULL AND client_settled_at IS NULL THEN {$collectionAmountExpr} ELSE 0 END) as uncollected_client_total")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NOT NULL AND client_settled_at IS NOT NULL THEN {$collectionAmountExpr} ELSE 0 END) as collected_client_total")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NOT NULL AND client_settled_at IS NULL THEN {$collectionAmountExpr} ELSE 0 END) as cash_ready")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_collected_at IS NULL THEN {$collectionWithCompanyExpr} ELSE 0 END) as net")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND client_returned_at IS NOT NULL THEN cod_amount ELSE 0 END) as return_client_total")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND shipper_returned_at IS NOT NULL AND client_returned_at IS NULL THEN cod_amount ELSE 0 END) as unreturn_client_total")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} THEN shipping_fee ELSE 0 END) as total_fees")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} THEN commission_amount ELSE 0 END) as total_shipper_fees")
-            ->selectRaw("SUM(CASE WHEN {$deliveredOrUndeliveredExpr} AND ({$collectionAmountExpr} > 0 OR shipper_collected_at IS NOT NULL) THEN company_amount ELSE 0 END) as total_cop")
-            ->first();
+        $dateField = $validated['date_field'] ?? 'registered_at';
 
-        $totalExpenses = (float) Expense::query()->sum('amount');
-        $totalCop = (float) ($row?->total_cop ?? 0);
+        $query = Order::query();
 
-        $cards = [
-            'all_order' => (int) ($row?->all_order ?? 0),
-            'out_for_delivery' => (int) ($row?->out_for_delivery ?? 0),
-            'hold' => (int) ($row?->hold ?? 0),
-            'delivered' => (int) ($row?->delivered ?? 0),
-            'undelivered' => (int) ($row?->undelivered ?? 0),
-            'uncollected_shipper' => (int) ($row?->uncollected_shipper ?? 0),
-            'collected_shipper' => (int) ($row?->collected_shipper ?? 0),
-            'unreturn_shipper' => (int) ($row?->unreturn_shipper ?? 0),
-            'return_shipper' => (int) ($row?->return_shipper ?? 0),
-            'uncollected_client' => (int) ($row?->uncollected_client ?? 0),
-            'collected_client' => (int) ($row?->collected_client ?? 0),
-            'return_client' => (int) ($row?->return_client ?? 0),
-            'unreturn_client' => (int) ($row?->unreturn_client ?? 0),
-            'out_for_delivery_total' => $this->toMoney($row?->out_for_delivery_total),
-            'hold_total' => $this->toMoney($row?->hold_total),
-            'delivered_total' => $this->toMoney($row?->delivered_total),
-            'undelivered_total' => $this->toMoney($row?->undelivered_total),
-            'uncollected_shipper_total' => $this->toMoney($row?->uncollected_shipper_total),
-            'collected_shipper_total' => $this->toMoney($row?->collected_shipper_total),
-            'unreturn_shipper_total' => $this->toMoney($row?->unreturn_shipper_total),
-            'return_shipper_total' => $this->toMoney($row?->return_shipper_total),
-            'uncollected_client_total' => $this->toMoney($row?->uncollected_client_total),
-            'collected_client_total' => $this->toMoney($row?->collected_client_total),
-            'cash_ready' => $this->toMoney($row?->cash_ready),
-            'net' => $this->toMoney($row?->net),
-            'return_client_total' => $this->toMoney($row?->return_client_total),
-            'unreturn_client_total' => $this->toMoney($row?->unreturn_client_total),
-            'total_fees' => $this->toMoney($row?->total_fees),
-            'total_shipper_fees' => $this->toMoney($row?->total_shipper_fees),
-            'total_cop' => $this->toMoney($totalCop),
-            'total_expenses' => $this->toMoney($totalExpenses),
-            'total_revenue' => $this->toMoney($totalCop - $totalExpenses),
-        ];
-
-        $visibleCards = [];
-
-        foreach ($cards as $key => $value) {
-            $permission = DashboardPermissionMap::CARD_VIEW_PERMISSIONS[$key] ?? null;
-
-            if ($permission !== null && ! $request->user()?->can($permission)) {
-                continue;
-            }
-
-            $visibleCards[$key] = $value;
+        // Apply Common Filters
+        if (! empty($validated['client_user_id'])) {
+            $query->where('client_user_id', $validated['client_user_id']);
+        }
+        if (! empty($validated['shipper_user_id'])) {
+            $query->where('shipper_user_id', $validated['shipper_user_id']);
+        }
+        if (! empty($validated['governorate_id'])) {
+            $query->where('governorate_id', $validated['governorate_id']);
+        }
+        if (! empty($validated['city_id'])) {
+            $query->where('city_id', $validated['city_id']);
+        }
+        if (! empty($validated['start_date'])) {
+            $query->where($dateField, '>=', $validated['start_date']);
+        }
+        if (! empty($validated['end_date'])) {
+            $query->where($dateField, '<=', $validated['end_date']);
         }
 
-        $topGovernorates = Order::query()
+        // Single Aggregation Query for absolute accuracy
+        $stats = $query->selectRaw("
+            COUNT(*) as total_orders,
+            COUNT(CASE WHEN status = 'OUT_FOR_DELIVERY' THEN 1 END) as out_for_delivery_orders,
+            COUNT(CASE WHEN status = 'DELIVERED' THEN 1 END) as delivered_orders,
+            COUNT(CASE WHEN status = 'HOLD' THEN 1 END) as hold_orders,
+            COUNT(CASE WHEN status = 'UNDELIVERED' THEN 1 END) as undelivered_orders,
+            
+            COUNT(CASE WHEN approval_status = 'PENDING' THEN 1 END) as pending_approval_orders,
+            COUNT(CASE WHEN approval_status = 'APPROVED' THEN 1 END) as approved_orders,
+            COUNT(CASE WHEN approval_status = 'REJECTED' THEN 1 END) as rejected_orders,
+            
+            COUNT(CASE WHEN is_shipper_collected = 1 THEN 1 END) as shipper_collected_orders,
+            COUNT(CASE WHEN status IN ('DELIVERED', 'UNDELIVERED') AND is_shipper_collected = 0 THEN 1 END) as uncollected_shipper_orders,
+            
+            COUNT(CASE WHEN is_client_settled = 1 THEN 1 END) as client_settled_orders,
+            COUNT(CASE WHEN status IN ('DELIVERED', 'UNDELIVERED') AND is_shipper_collected = 1 AND is_client_settled = 0 THEN 1 END) as uncollected_client_orders,
+            
+            COUNT(CASE WHEN is_shipper_returned = 1 THEN 1 END) as shipper_returned_orders,
+            COUNT(CASE WHEN status IN ('DELIVERED', 'UNDELIVERED') AND is_shipper_returned = 0 THEN 1 END) as unreturn_shipper_orders,
+            
+            COUNT(CASE WHEN is_client_returned = 1 THEN 1 END) as client_returned_orders,
+            COUNT(CASE WHEN is_shipper_returned = 1 AND is_client_returned = 0 THEN 1 END) as unreturn_client_orders,
+            
+            SUM(total_amount) as total_amount_sum,
+            SUM(CASE WHEN status = 'OUT_FOR_DELIVERY' THEN total_amount ELSE 0 END) as out_for_delivery_total_sum,
+            SUM(CASE WHEN status = 'HOLD' THEN total_amount ELSE 0 END) as hold_total_sum,
+            SUM(CASE WHEN status = 'DELIVERED' THEN total_amount ELSE 0 END) as delivered_total_sum,
+            SUM(CASE WHEN status = 'UNDELIVERED' THEN total_amount ELSE 0 END) as undelivered_total_sum,
+
+            SUM(shipping_fee) as shipping_fee_sum,
+            SUM(commission_amount) as commission_amount_sum,
+            SUM(company_amount) as company_amount_sum,
+            SUM(cod_amount) as cod_amount_sum,
+            
+            SUM(CASE WHEN is_shipper_collected = 1 THEN cod_amount ELSE 0 END) as collected_cod_sum,
+            SUM(CASE WHEN status IN ('DELIVERED', 'UNDELIVERED') AND is_shipper_collected = 0 THEN cod_amount ELSE 0 END) as uncollected_shipper_cod_sum,
+            
+            SUM(CASE WHEN is_client_settled = 1 THEN cod_amount ELSE 0 END) as settled_cod_sum,
+            SUM(CASE WHEN status IN ('DELIVERED', 'UNDELIVERED') AND is_shipper_collected = 1 AND is_client_settled = 0 THEN cod_amount ELSE 0 END) as uncollected_client_cod_sum
+        ")->first();
+
+        // Top Governorates Chart Data
+        $topGovernorates = (clone $query)
             ->join('governorates', 'governorates.id', '=', 'orders.governorate_id')
             ->selectRaw('governorates.name as name, COUNT(*) as total_orders')
             ->groupBy('governorates.id', 'governorates.name')
@@ -119,13 +107,45 @@ class DashboardOrderController extends Controller
             ->all();
 
         return response()->json([
-            'data' => $visibleCards,
+            'lifecycle' => [
+                'total' => (int) $stats->total_orders,
+                'out_for_delivery' => (int) $stats->out_for_delivery_orders,
+                'delivered' => (int) $stats->delivered_orders,
+                'hold' => (int) $stats->hold_orders,
+                'undelivered' => (int) $stats->undelivered_orders,
+                'out_for_delivery_amount' => round((float) $stats->out_for_delivery_total_sum, 2),
+                'hold_amount' => round((float) $stats->hold_total_sum, 2),
+                'delivered_amount' => round((float) $stats->delivered_total_sum, 2),
+                'undelivered_amount' => round((float) $stats->undelivered_total_sum, 2),
+            ],
+            'approval' => [
+                'pending' => (int) $stats->pending_approval_orders,
+                'approved' => (int) $stats->approved_orders,
+                'rejected' => (int) $stats->rejected_orders,
+            ],
+            'progress' => [
+                'shipper_collected' => (int) $stats->shipper_collected_orders,
+                'uncollected_shipper' => (int) $stats->uncollected_shipper_orders,
+                'client_settled' => (int) $stats->client_settled_orders,
+                'uncollected_client' => (int) $stats->uncollected_client_orders,
+                'shipper_returned' => (int) $stats->shipper_returned_orders,
+                'unreturn_shipper' => (int) $stats->unreturn_shipper_orders,
+                'client_returned' => (int) $stats->client_returned_orders,
+                'unreturn_client' => (int) $stats->unreturn_client_orders,
+            ],
+            'financial' => [
+                'total_amount' => round((float) $stats->total_amount_sum, 2),
+                'shipping_fee' => round((float) $stats->shipping_fee_sum, 2),
+                'commission' => round((float) $stats->commission_amount_sum, 2),
+                'company_net' => round((float) $stats->company_amount_sum, 2),
+                'total_cod' => round((float) $stats->cod_amount_sum, 2),
+                'collected_cod' => round((float) $stats->collected_cod_sum, 2),
+                'uncollected_shipper_cod' => round((float) $stats->uncollected_shipper_cod_sum, 2),
+                'settled_cod' => round((float) $stats->settled_cod_sum, 2),
+                'unsettled_client_cod' => round((float) $stats->uncollected_client_cod_sum, 2),
+            ],
             'charts' => [
                 'top_governorates' => $topGovernorates,
-            ],
-            'meta' => [
-                'total_cards' => count($cards),
-                'visible_cards' => count($visibleCards),
             ],
         ]);
     }
@@ -133,10 +153,5 @@ class DashboardOrderController extends Controller
     private function authorizePermission(Request $request, string $permission): void
     {
         abort_unless($request->user()?->can($permission), 403, "Missing permission: {$permission}");
-    }
-
-    private function toMoney(mixed $value): float
-    {
-        return round((float) ($value ?? 0), 2);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Orders;
 
+use App\Exports\ReturnedClientsExport;
 use App\Http\Controllers\Controller;
 use App\Models\ClientReturn;
 use App\Models\ClientReturnOrder;
@@ -14,6 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ClientReturnController extends Controller
 {
@@ -54,6 +56,22 @@ class ClientReturnController extends Controller
         return response()->json(
             $returns->map(fn (ClientReturn $return): array => $this->filterVisibleColumns($request, $return))->values()
         );
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorizePermission($request, 'client-return.export');
+
+        $ids = $request->input('ids');
+        if ($ids && is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        if ($ids && is_array($ids)) {
+            return Excel::download(new ReturnedClientsExport(null, $ids), 'client_returns.xlsx');
+        }
+
+        return Excel::download(new ReturnedClientsExport(), 'client_returns_all.xlsx');
     }
 
     public function eligibleOrders(Request $request): JsonResponse
@@ -166,7 +184,7 @@ class ClientReturnController extends Controller
         $this->authorizePermission($request, 'client-return.page');
         $this->authorizePermission($request, 'client-return.view');
 
-        $clientReturn->load(['client:id,name', 'orders']);
+        $clientReturn->load(['client:id,name', 'orders.client:id,name']);
 
         return response()->json($this->filterVisibleColumns($request, $clientReturn));
     }
@@ -413,7 +431,7 @@ class ClientReturnController extends Controller
 
     private function syncReturnOrdersState(ClientReturn $return, ?array $orderIds = null, bool $reset = false): void
     {
-        $orderIds ??= $return->orders()->pluck('order_id')->all();
+        $orderIds ??= $return->orders()->pluck('orders.id')->all();
 
         if ($orderIds === []) {
             return;

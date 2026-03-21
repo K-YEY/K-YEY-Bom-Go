@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Orders;
 
+use App\Exports\CollectedClientsExport;
 use App\Http\Controllers\Controller;
 use App\Models\ClientSettlement;
 use App\Models\ClientSettlementOrder;
@@ -15,6 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ClientSettlementController extends Controller
 {
@@ -55,6 +57,22 @@ class ClientSettlementController extends Controller
         return response()->json(
             $settlements->map(fn (ClientSettlement $settlement): array => $this->filterVisibleColumns($request, $settlement))->values()
         );
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorizePermission($request, 'client-settlement.export');
+
+        $ids = $request->input('ids');
+        if ($ids && is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        if ($ids && is_array($ids)) {
+            return Excel::download(new CollectedClientsExport(null, $ids), 'client_settlements.xlsx');
+        }
+
+        return Excel::download(new CollectedClientsExport(), 'client_settlements_all.xlsx');
     }
 
     public function eligibleOrders(Request $request): JsonResponse
@@ -184,7 +202,7 @@ class ClientSettlementController extends Controller
         $this->authorizePermission($request, 'client-settlement.page');
         $this->authorizePermission($request, 'client-settlement.view');
 
-        $clientSettlement->load(['client:id,name', 'orders']);
+        $clientSettlement->load(['client:id,name', 'orders.client:id,name']);
 
         return response()->json($this->filterVisibleColumns($request, $clientSettlement));
     }
@@ -439,7 +457,7 @@ class ClientSettlementController extends Controller
 
     private function syncSettlementOrdersState(ClientSettlement $settlement, ?array $orderIds = null, bool $reset = false): void
     {
-        $orderIds ??= $settlement->orders()->pluck('order_id')->all();
+        $orderIds ??= $settlement->orders()->pluck('orders.id')->all();
 
         if ($orderIds === []) {
             return;

@@ -37,7 +37,9 @@ class ClientReturn extends Model
 
     public function orders()
     {
-        return $this->hasMany(ClientReturnOrder::class);
+        return $this->belongsToMany(Order::class, 'client_return_orders')
+            ->withPivot(['id', 'added_at'])
+            ->withTimestamps();
     }
 
     public function createdBy()

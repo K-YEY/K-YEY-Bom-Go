@@ -15,14 +15,26 @@ class ShipperController extends Controller
         $this->authorizePermission($request, 'shipper.page');
         $this->authorizePermission($request, 'shipper.view');
 
-        $shippers = Shipper::query()
-            ->with(['user:id,name,username,phone'])
-            ->orderByDesc('id')
-            ->get();
+        $query = Shipper::query()->with(['user:id,name,username,phone']);
 
-        return response()->json(
-            $shippers->map(fn (Shipper $shipper): array => $this->filterVisibleColumns($request, $shipper))->values()
-        );
+        if ($request->filled('q')) {
+            $search = (string) $request->get('q');
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', $search.'%')
+                  ->orWhere('username', 'like', $search.'%')
+                  ->orWhere('phone', 'like', $search.'%');
+            });
+        }
+
+        $shippers = $query->orderByDesc('id')
+            ->paginate($request->get('per_page', 20));
+
+        $data = $shippers->getCollection()->map(fn (Shipper $shipper): array => $this->filterVisibleColumns($request, $shipper))->values();
+
+        return response()->json([
+            'data' => $data,
+            'total' => $shippers->total(),
+        ]);
     }
 
     public function show(Request $request, Shipper $shipper): JsonResponse

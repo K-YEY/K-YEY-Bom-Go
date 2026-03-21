@@ -42,7 +42,9 @@ class ShipperCollection extends Model
 
     public function orders()
     {
-        return $this->hasMany(ShipperCollectionOrder::class);
+        return $this->belongsToMany(Order::class, 'shipper_collection_orders')
+            ->withPivot(['id', 'order_amount', 'shipper_fee', 'net_amount', 'added_at'])
+            ->withTimestamps();
     }
 
     public function createdBy()

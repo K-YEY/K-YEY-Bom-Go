@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Orders;
 
+use App\Exports\CollectedShippersExport;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\ShipperCollection;
@@ -14,6 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ShipperCollectionController extends Controller
 {
@@ -28,6 +30,9 @@ class ShipperCollectionController extends Controller
             'status' => ['nullable', Rule::in(['PENDING', 'COMPLETED', 'CANCELLED'])],
             'statuses' => ['nullable', 'array'],
             'statuses.*' => [Rule::in(['PENDING', 'COMPLETED', 'CANCELLED'])],
+            'approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
+            'shipper_user_id' => ['nullable', 'exists:users,id'],
+            'search' => ['nullable', 'string'],
         ]);
 
         $statuses = [];
@@ -44,9 +49,22 @@ class ShipperCollectionController extends Controller
 
         $collections = ShipperCollection::query()
             ->with(['shipper:id,name'])
+            ->withCount('orders')
             ->when(
                 $statuses !== [],
                 fn (Builder $query): Builder => $query->whereIn('status', $statuses)
+            )
+            ->when(
+                $validated['approval_status'] ?? null,
+                fn (Builder $query, string $status): Builder => $query->where('approval_status', $status)
+            )
+            ->when(
+                $validated['shipper_user_id'] ?? null,
+                fn (Builder $query, int|string $id): Builder => $query->where('shipper_user_id', $id)
+            )
+            ->when(
+                $validated['search'] ?? null,
+                fn (Builder $query, string $search): Builder => $query->whereHas('shipper', fn ($q) => $q->where('name', 'like', "%{$search}%"))
             )
             ->orderByDesc('id')
             ->get();
@@ -54,6 +72,22 @@ class ShipperCollectionController extends Controller
         return response()->json(
             $collections->map(fn (ShipperCollection $collection): array => $this->filterVisibleColumns($request, $collection))->values()
         );
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorizePermission($request, 'shipper-collection.export');
+
+        $ids = $request->input('ids');
+        if ($ids && is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        if ($ids && is_array($ids)) {
+            return Excel::download(new CollectedShippersExport(null, $ids), 'shipper_collections.xlsx');
+        }
+
+        return Excel::download(new CollectedShippersExport(), 'shipper_collections_all.xlsx');
     }
 
     public function eligibleOrders(Request $request): JsonResponse
@@ -82,12 +116,15 @@ class ShipperCollectionController extends Controller
                 'company_amount',
                 'status',
                 'shipper_user_id',
+                'client_user_id',
+                'approval_status',
                 'is_in_shipper_collection',
                 'is_shipper_collected',
                 'shipper_collected_at',
             ])
-            ->with(['shipper:id,name'])
+            ->with(['shipper:id,name', 'client:id,name'])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
+            ->where('approval_status', 'APPROVED')
             ->whereNotNull('shipper_user_id')
             ->where('is_in_shipper_collection', false)
             ->where('is_shipper_collected', false)
@@ -126,46 +163,51 @@ class ShipperCollectionController extends Controller
 
         $data = $request->validate([
             'shipper_user_id' => ['required', 'exists:users,id'],
-            'collection_date' => ['required', 'date'],
-            'total_amount' => ['required', 'numeric', 'min:0'],
-            'number_of_orders' => ['required', 'integer', 'min:0'],
-            'shipper_fees' => ['nullable', 'numeric', 'min:0'],
-            'order_ids' => ['nullable', 'array', 'min:1'],
+            // collection_date is optional, will be set to today if not provided
+            'collection_date' => ['nullable', 'date'],
+            'order_ids' => ['required', 'array', 'min:1'],
             'order_ids.*' => ['integer', 'distinct', 'exists:orders,id'],
         ]);
 
-        $this->authorizeEditableColumns($request, array_keys($data));
+        // If collection_date is not provided, set it to today
+        if (empty($data['collection_date'])) {
+            $data['collection_date'] = now()->toDateString();
+        }
 
-        $orderIds = array_values(array_unique($data['order_ids'] ?? []));
-        unset($data['order_ids']);
+        $orderIds = array_values(array_unique($data['order_ids']));
+        $orders = $this->resolveEligibleCollectionOrders($data['shipper_user_id'], $orderIds);
+
+        $totalAmount = $orders->sum('total_amount');
+        $netAmount = $orders->sum(fn (Order $o) => $this->resolveCollectionAmount($o));
 
         $creatorId = $request->user()->id;
         $canApproveOnCreate = $request->user()?->can('shipper-collection.approve') ?? false;
 
-        $data['created_by'] = $creatorId;
-        $data['approval_status'] = $canApproveOnCreate ? 'APPROVED' : 'PENDING';
-        $data['approved_by'] = $canApproveOnCreate ? $creatorId : null;
-        $data['approved_at'] = $canApproveOnCreate ? now() : null;
-        $data['rejected_by'] = null;
-        $data['rejected_at'] = null;
-        $data['approval_note'] = null;
+        $collectionData = [
+            'shipper_user_id' => $data['shipper_user_id'],
+            'collection_date' => $data['collection_date'],
+            'total_amount' => $totalAmount,
+            'number_of_orders' => $orders->count(),
+            'shipper_fees' => 0,
+            'net_amount' => max($netAmount, 0),
+            'status' => 'PENDING',
+            'approval_status' => $canApproveOnCreate ? 'APPROVED' : 'PENDING',
+            'created_by' => $creatorId,
+            'approved_by' => $canApproveOnCreate ? $creatorId : null,
+            'approved_at' => $canApproveOnCreate ? now() : null,
+        ];
 
-        $collection = DB::transaction(function () use ($data, $orderIds): ShipperCollection {
-            $collection = ShipperCollection::query()->create($data);
-
-            if ($orderIds !== []) {
-                $orders = $this->resolveEligibleCollectionOrders($data['shipper_user_id'], $orderIds);
-
-                $this->attachOrdersToCollection($collection, $orders);
-                $this->syncCollectionOrdersState($collection, $orders->pluck('id')->all());
-            }
+        $collection = DB::transaction(function () use ($collectionData, $orders): ShipperCollection {
+            $collection = ShipperCollection::query()->create($collectionData);
+            $this->attachOrdersToCollection($collection, $orders);
+            $this->syncCollectionOrdersState($collection);
 
             return $collection;
         });
 
         return response()->json([
             'message' => 'Shipper collection created successfully.',
-            'data' => $this->filterVisibleColumns($request, $collection),
+            'data' => $this->filterVisibleColumns($request, $collection->load(['shipper:id,name'])->loadCount('orders')),
         ], 201);
     }
 
@@ -174,7 +216,7 @@ class ShipperCollectionController extends Controller
         $this->authorizePermission($request, 'shipper-collection.page');
         $this->authorizePermission($request, 'shipper-collection.view');
 
-        $shipperCollection->load(['shipper:id,name', 'orders']);
+        $shipperCollection->load(['shipper:id,name', 'orders.client:id,name']);
 
         return response()->json($this->filterVisibleColumns($request, $shipperCollection));
     }
@@ -224,23 +266,50 @@ class ShipperCollectionController extends Controller
     {
         $this->authorizePermission($request, 'shipper-collection.approve');
 
-        $data = $request->validate([
-            'approval_note' => ['nullable', 'string'],
-        ]);
+        try {
+            $data = $request->validate([
+                'shipper_user_id' => ['required', 'exists:users,id'],
+                // collection_date is optional, will be set to today if not provided
+                'collection_date' => ['nullable', 'date'],
+                'order_ids' => ['required', 'array', 'min:1'],
+                'order_ids.*' => ['integer', 'distinct', 'exists:orders,id'],
+            ]);
 
-        $shipperCollection->update([
-            'approval_status' => 'APPROVED',
-            'approved_by' => $request->user()->id,
-            'approved_at' => now(),
-            'rejected_by' => null,
-            'rejected_at' => null,
-            'approval_note' => $data['approval_note'] ?? null,
-        ]);
+            // If collection_date is not provided, set it to today
+            if (empty($data['collection_date'])) {
+                $data['collection_date'] = now()->toDateString();
+            }
 
-        return response()->json([
-            'message' => 'Shipper collection approved successfully.',
-            'data' => $this->filterVisibleColumns($request, $shipperCollection->fresh()),
-        ]);
+            $orderIds = array_values(array_unique($data['order_ids']));
+            $orders = $this->resolveEligibleCollectionOrders($data['shipper_user_id'], $orderIds);
+
+            $totalAmount = $orders->sum('total_amount');
+            $netAmount = $orders->sum(fn (Order $o) => $this->resolveCollectionAmount($o));
+
+            $creatorId = $request->user()->id;
+            $canApproveOnCreate = $request->user()?->can('shipper-collection.approve') ?? false;
+
+            $collectionData = [
+                'shipper_user_id' => $data['shipper_user_id'],
+                'collection_date' => $data['collection_date'],
+                'total_amount' => $totalAmount,
+                'number_of_orders' => $orders->count(),
+                'shipper_fees' => 0,
+                'net_amount' => max($netAmount, 0),
+                'status' => 'PENDING',
+                'approval_status' => $canApproveOnCreate ? 'APPROVED' : 'PENDING',
+                'created_by' => $creatorId,
+                'approved_by' => $canApproveOnCreate ? $creatorId : null,
+                'approved_at' => $canApproveOnCreate ? now() : null,
+            ];
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        // تم حذف الكود الزائد خارج الدالة
     }
 
     public function reject(Request $request, ShipperCollection $shipperCollection): JsonResponse
@@ -367,6 +436,7 @@ class ShipperCollectionController extends Controller
             'status' => $order->status,
             'shipper_user_id' => $order->shipper_user_id,
             'shipper_name' => $order->shipper?->name,
+            'client_name' => $order->client?->name,
             'is_shipper_collected' => (bool) $order->is_shipper_collected,
             'shipper_collected_at' => $shipperCollectedAt instanceof \DateTimeInterface ? $shipperCollectedAt->format('Y-m-d') : ($shipperCollectedAt !== null ? (string) $shipperCollectedAt : null),
         ];
@@ -431,7 +501,7 @@ class ShipperCollectionController extends Controller
 
     private function syncCollectionOrdersState(ShipperCollection $collection, ?array $orderIds = null, bool $reset = false): void
     {
-        $orderIds ??= $collection->orders()->pluck('order_id')->all();
+        $orderIds ??= $collection->orders()->pluck('orders.id')->all();
 
         if ($orderIds === []) {
             return;

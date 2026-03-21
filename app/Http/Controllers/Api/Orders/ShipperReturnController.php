@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Orders;
 
+use App\Exports\ReturnedShippersExport;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\ShipperReturn;
@@ -14,6 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ShipperReturnController extends Controller
 {
@@ -56,6 +58,22 @@ class ShipperReturnController extends Controller
         );
     }
 
+    public function export(Request $request)
+    {
+        $this->authorizePermission($request, 'shipper-return.export');
+
+        $ids = $request->input('ids');
+        if ($ids && is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        if ($ids && is_array($ids)) {
+            return Excel::download(new ReturnedShippersExport(null, $ids), 'shipper_returns.xlsx');
+        }
+
+        return Excel::download(new ReturnedShippersExport(), 'shipper_returns_all.xlsx');
+    }
+
     public function eligibleOrders(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'shipper-return.page');
@@ -79,11 +97,12 @@ class ShipperReturnController extends Controller
                 'address',
                 'status',
                 'shipper_user_id',
+                'client_user_id',
                 'is_in_shipper_return',
                 'is_shipper_returned',
                 'shipper_returned_at',
             ])
-            ->with(['shipper:id,name'])
+            ->with(['shipper:id,name', 'client:id,name'])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->whereNotNull('shipper_user_id')
             ->where('is_in_shipper_return', false)
@@ -162,7 +181,7 @@ class ShipperReturnController extends Controller
         $this->authorizePermission($request, 'shipper-return.page');
         $this->authorizePermission($request, 'shipper-return.view');
 
-        $shipperReturn->load(['shipper:id,name', 'orders']);
+        $shipperReturn->load(['shipper:id,name', 'orders.client:id,name']);
 
         return response()->json($this->filterVisibleColumns($request, $shipperReturn));
     }
@@ -351,6 +370,7 @@ class ShipperReturnController extends Controller
             'status' => $order->status,
             'shipper_user_id' => $order->shipper_user_id,
             'shipper_name' => $order->shipper?->name,
+            'client_name' => $order->client?->name,
             'is_shipper_returned' => (bool) $order->is_shipper_returned,
             'shipper_returned_at' => $shipperReturnedAt instanceof \DateTimeInterface ? $shipperReturnedAt->format('Y-m-d') : ($shipperReturnedAt !== null ? (string) $shipperReturnedAt : null),
         ];
@@ -402,7 +422,7 @@ class ShipperReturnController extends Controller
 
     private function syncReturnOrdersState(ShipperReturn $return, ?array $orderIds = null, bool $reset = false): void
     {
-        $orderIds ??= $return->orders()->pluck('order_id')->all();
+        $orderIds ??= $return->orders()->pluck('orders.id')->all();
 
         if ($orderIds === []) {
             return;

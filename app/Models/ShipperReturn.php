@@ -37,7 +37,9 @@ class ShipperReturn extends Model
 
     public function orders()
     {
-        return $this->hasMany(ShipperReturnOrder::class);
+        return $this->belongsToMany(Order::class, 'shipper_return_orders')
+            ->withPivot(['id', 'added_at'])
+            ->withTimestamps();
     }
 
     public function createdBy()

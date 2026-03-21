@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Api\Orders;
 
+use App\Exports\OrdersExport;
+use App\Exports\OrdersTemplateExport;
+use App\Imports\OrdersImport;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Governorate;
@@ -17,6 +20,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class OrderController extends Controller
 {
@@ -42,6 +47,96 @@ class OrderController extends Controller
         $this->authorizePermission($request, 'order.page');
         $this->authorizePermission($request, 'order.view');
 
+        $result = $this->getOrdersWithTotals($request);
+
+        return response()->json($result);
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.create');
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls'],
+        ]);
+
+        $import = new OrdersImport($request->user()->id);
+        Excel::import($import, $request->file('file'));
+
+        $results = $import->getResults();
+
+        return response()->json([
+            'message' => 'Import completed.',
+            'success_count' => $results['success_count'],
+            'errors' => $results['errors'],
+        ]);
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new OrdersTemplateExport(), 'orders_template.xlsx');
+    }
+
+    public function init(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+
+        // Initial metadata (Small lists)
+        $metadata = [
+            'governorates' => Governorate::query()->select('id', 'name')->with('cities:id,governorate_id,name')->get(),
+            'shippers' => Shipper::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($s) {
+                return [
+                    'id' => $s->user_id, 
+                    'name' => $s->user?->name ?? 'Unknown',
+                    'commission_rate' => $s->commission_rate
+                ];
+            }),
+            'clients' => Client::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($c) {
+                return [
+                    'id' => $c->user_id, 
+                    'name' => $c->user?->name ?? 'Unknown',
+                    'plan_id' => $c->plan_id,
+                    'shipping_content_id' => $c->shipping_content_id,
+                    'shipping_fee' => $c->shipping_fee
+                ];
+            }),
+            'contents' => \App\Models\Content::query()->select('id', 'name')->get(),
+            'plans' => \App\Models\Plan::query()->with('prices')->get(),
+            'refused_reasons' => \App\Models\RefusedReason::query()->where('is_active', true)->get(),
+            'statuses' => self::STATUS_LABELS,
+        ];
+
+        // First page of orders
+        $orders = $this->getOrdersWithTotals($request);
+
+        return response()->json([
+            'metadata' => $metadata,
+            'orders' => $orders,
+        ]);
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorizePermission($request, 'order.export');
+
+        $ids = $request->input('ids');
+        if ($ids && is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        if ($ids && is_array($ids)) {
+            return Excel::download(new OrdersExport(null, null, $ids), 'orders_export.xlsx');
+        }
+
+        // Otherwise export current filtered results
+        $query = $this->applyFilters(Order::query(), $request);
+        
+        return Excel::download(new OrdersExport($query), 'orders_filtered_export.xlsx');
+    }
+
+    private function getOrdersWithTotals(Request $request): array
+    {
         $validated = $request->validate([
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
@@ -100,20 +195,37 @@ class OrderController extends Controller
         $perPage = $validated['per_page'] ?? 100;
 
         $query = Order::query()
-            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name'])
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
             ->orderByDesc('id');
 
         $this->applyOrderSearch($query, $validated);
+
+        // Calculate totals from the full filtered query BEFORE pagination
+        $summaryQuery = Order::query();
+        $this->applyOrderSearch($summaryQuery, $validated);
+        $totals = $summaryQuery->selectRaw('
+                SUM(total_amount) as total_amount,
+                SUM(shipping_fee) as shipping_fee,
+                SUM(commission_amount) as commission_amount,
+                SUM(company_amount) as company_amount,
+                SUM(cod_amount) as cod_amount
+            ')->first();
 
         $orders = $query
             ->paginate($perPage)
             ->appends($request->query())
             ->through(fn (Order $order): array => $this->filterVisibleColumns($request, $order));
 
-        return response()->json([
+        return [
             ...$orders->toArray(),
-            'totals' => $this->calculateDisplayedTotals($orders->items()),
-        ]);
+            'totals' => [
+                'total_amount' => round((float) ($totals->total_amount ?? 0), 2),
+                'shipping_fee' => round((float) ($totals->shipping_fee ?? 0), 2),
+                'commission_amount' => round((float) ($totals->commission_amount ?? 0), 2),
+                'company_amount' => round((float) ($totals->company_amount ?? 0), 2),
+                'cod_amount' => round((float) ($totals->cod_amount ?? 0), 2),
+            ],
+        ];
     }
 
     public function store(Request $request): JsonResponse
@@ -121,7 +233,7 @@ class OrderController extends Controller
         $this->authorizePermission($request, 'order.create');
 
         $data = $request->validate([
-            'code' => ['required', 'string', 'unique:orders,code'],
+            'code' => ['nullable', 'string', 'unique:orders,code'],
             'external_code' => ['nullable', 'string'],
             'receiver_name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30'],
@@ -148,7 +260,11 @@ class OrderController extends Controller
             $data['shipper_date'] = now()->toDateString();
         }
 
-        $order = Order::query()->create($data);
+        if (empty($data['code'])) {
+        $data['code'] = $this->generateOrderCode();
+    }
+
+    $order = Order::query()->create($data);
 
         return response()->json([
             'message' => 'Order created successfully.',
@@ -170,7 +286,7 @@ class OrderController extends Controller
         $perPage = $validated['per_page'] ?? 100;
 
         $orders = Order::query()
-            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name'])
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
             ->where('shipper_user_id', $request->user()?->id)
             ->whereNotIn('status', self::FINAL_STATUSES)
             ->orderByDesc('id')
@@ -201,7 +317,7 @@ class OrderController extends Controller
         }
 
         $order = Order::query()
-            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name'])
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
             ->where(function (Builder $query) use ($code, $externalCode): void {
                 if ($code !== '') {
                     $query->where('code', $code);
@@ -448,6 +564,7 @@ class OrderController extends Controller
 
         return response()->json([
             'order_id' => $order->id,
+            'code' => $order->code,
             'client_name' => $order->client?->name,
             'client_phone' => $order->client?->phone,
             'receiver_name' => $order->receiver_name,
@@ -519,37 +636,70 @@ class OrderController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'reason' => ['nullable', 'string'],
-            'refused_reason_id' => ['nullable', 'integer', 'exists:refused_reasons,id'],
+            'refused_reason_ids' => ['nullable', 'array'],
+            'refused_reason_ids.*' => ['integer', 'exists:refused_reasons,id'],
             'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'has_return' => ['nullable', 'boolean'],
         ]);
 
-        $refusedReason = $this->resolveRefusedReason($data['status'], $data['refused_reason_id'] ?? null);
-        $allowsEditAmount = $refusedReason?->is_edit_amount === true;
+        $reasonIds = $data['refused_reason_ids'] ?? [];
+        $refusedReasons = RefusedReason::query()
+            ->whereIn('id', $reasonIds)
+            ->where('status', $data['status'])
+            ->where('is_active', true)
+            ->get();
 
-        $manualPayload = [
+        $allowsEditAmount = $refusedReasons->contains('is_edit_amount', true);
+        $isClear = $refusedReasons->contains('is_clear', true);
+        $isReturn = $refusedReasons->contains('is_return', true);
+
+        // Build note
+        $noteParts = [];
+        foreach ($refusedReasons as $rr) {
+            $noteParts[] = $rr->reason;
+        }
+        if (isset($data['reason']) && trim($data['reason']) !== '') {
+            $noteParts[] = $data['reason'];
+        }
+
+        $latestNote = implode(', ', array_unique($noteParts));
+
+        $payload = [
             'status' => $data['status'],
-            'latest_status_note' => $this->resolveLatestStatusNote($data['reason'] ?? null, $refusedReason),
+            'latest_status_note' => $latestNote,
         ];
+
+        if (array_key_exists('has_return', $data)) {
+            $payload['has_return'] = $data['has_return'];
+            if ($data['has_return']) {
+                $payload['has_return_at'] = now();
+            }
+        }
 
         if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
             throw ValidationException::withMessages([
-                'total_amount' => ['total_amount can only be edited when refused reason allows amount edit.'],
+                'total_amount' => ['total_amount can only be edited when one of the selected reasons allows amount edit.'],
             ]);
         }
 
         if ($allowsEditAmount && array_key_exists('total_amount', $data)) {
-            $manualPayload['total_amount'] = $data['total_amount'];
+            $payload['total_amount'] = $data['total_amount'];
+            // Financials need to be recalculated based on new total if edited
+            $payload = $this->applyAutomaticFinancials($payload, $order);
         }
 
-        $this->authorizeEditableColumns($request, array_keys($manualPayload));
-
-        $payload = $manualPayload;
-
-        if ($refusedReason instanceof RefusedReason) {
-            $payload = $this->applyRefusedReasonPolicies($payload, $order, $refusedReason);
+        if ($isReturn) {
+            $payload = [
+                ...$payload,
+                'total_amount' => 0,
+                'shipping_fee' => 0,
+                'commission_amount' => 0,
+                'company_amount' => 0,
+                'cod_amount' => 0,
+            ];
         }
 
-        $this->authorizeNoPriceEditOnFinalStatus($order, $payload);
+        $this->authorizeEditableColumns($request, array_keys($payload));
 
         $order->update($payload);
 
@@ -568,16 +718,29 @@ class OrderController extends Controller
 
         $data = $request->validate([
             'shipper_user_id' => ['nullable', 'exists:users,id'],
+            'shipper_date' => ['nullable', 'date'],
+            'commission_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $payload = [
             'shipper_user_id' => $data['shipper_user_id'] ?? null,
         ];
 
-        $payload = $this->resolveDefaultShipper($payload, $order);
-        $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
+        if ($payload['shipper_user_id']) {
+            $payload['shipper_date'] = $data['shipper_date'] ?? now()->toDateString();
+        } else {
+            $payload['shipper_date'] = null;
+        }
 
+        // Apply automatic financials first to get base values
         $payload = $this->applyAutomaticFinancials($payload, $order);
+
+        // Overwrite commission if provided manually
+        if (array_key_exists('commission_amount', $data)) {
+            $payload['commission_amount'] = (float) $data['commission_amount'];
+            // Re-calculate company amount based on manual commission
+            $payload['company_amount'] = round($payload['shipping_fee'] - $payload['commission_amount'], 2);
+        }
 
         $order->update($payload);
 
@@ -604,6 +767,44 @@ class OrderController extends Controller
             'data' => $this->filterVisibleColumns($request, $order),
         ]);
     }
+
+    public function approve(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.approve');
+
+        $order->update([
+            'approval_status' => 'APPROVED',
+            'approved_at' => now(),
+            'approved_by' => $request->user()->id,
+        ]);
+
+        return response()->json([
+            'message' => 'Order approved successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function reject(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.reject');
+
+        $data = $request->validate([
+            'approval_note' => ['nullable', 'string'],
+        ]);
+
+        $order->update([
+            'approval_status' => 'REJECTED',
+            'rejected_at' => now(),
+            'rejected_by' => $request->user()->id,
+            'approval_note' => $data['approval_note'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => 'Order rejected successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
 
     public function changeExternalCode(Request $request, Order $order): JsonResponse
     {
@@ -806,22 +1007,27 @@ class OrderController extends Controller
 
         if ($generalSearch !== '') {
             $query->where(function (Builder $builder) use ($generalSearch): void {
-                $like = '%'.$generalSearch.'%';
+                if (is_numeric($generalSearch)) {
+                    // Optimized for numeric searches (phone, code IDs)
+                    $builder->where('code', $generalSearch)
+                        ->orWhere('phone', $generalSearch)
+                        ->orWhere('phone_2', $generalSearch);
+                } else {
+                    $like = $generalSearch . '%'; // Use prefix search where possible for better index stability
+                    $anyLike = '%' . $generalSearch . '%';
 
-                $builder
-                    ->where('code', 'like', $like)
-                    ->orWhere('external_code', 'like', $like)
-                    ->orWhere('receiver_name', 'like', $like)
-                    ->orWhere('phone', 'like', $like)
-                    ->orWhere('phone_2', 'like', $like)
-                    ->orWhere('address', 'like', $like);
+                    $builder
+                        ->where('code', 'like', $like)
+                        ->orWhere('external_code', 'like', $like)
+                        ->orWhere('receiver_name', 'like', $anyLike)
+                        ->orWhere('address', 'like', $anyLike);
+                }
             });
         }
 
         $columnSearch = is_array($validated['search'] ?? null) ? $validated['search'] : [];
 
         $collectionState = $validated['collection_state'] ?? $columnSearch['collection_state'] ?? null;
-
         if ($collectionState !== null && $collectionState !== '') {
             match ($collectionState) {
                 'not_collected' => $query
@@ -833,7 +1039,6 @@ class OrderController extends Controller
                 'collected' => $query->where('is_shipper_collected', true),
                 default => null,
             };
-
             unset($columnSearch['collection_state']);
         }
 
@@ -845,7 +1050,7 @@ class OrderController extends Controller
         if (is_array($columnSearch['statuses'] ?? null)) {
             $statuses = array_values(array_unique(array_filter([
                 ...$statuses,
-                ...$columnSearch['statuses'],
+                ...($columnSearch['statuses'] ?? []),
             ])));
         }
 
@@ -855,45 +1060,36 @@ class OrderController extends Controller
         }
 
         $directFilters = [
-            'code',
-            'external_code',
-            'receiver_name',
-            'phone',
-            'phone_2',
-            'address',
-            'status',
-            'approval_status',
-            'governorate_id',
-            'city_id',
-            'shipper_user_id',
-            'client_user_id',
-            'allow_open',
-            'is_in_shipper_collection',
-            'is_shipper_collected',
-            'is_in_client_settlement',
-            'is_client_settled',
-            'is_in_shipper_return',
-            'is_shipper_returned',
-            'is_in_client_return',
-            'is_client_returned',
+            'code', 'external_code', 'receiver_name', 'phone', 'phone_2', 
+            'address', 'status', 'approval_status', 'governorate_id', 
+            'city_id', 'shipper_user_id', 'client_user_id', 'allow_open', 
+            'has_return', 'is_in_shipper_collection', 'is_shipper_collected',
+            'is_in_client_settlement', 'is_client_settled',
+            'is_in_shipper_return', 'is_shipper_returned',
+            'is_in_client_return', 'is_client_returned',
         ];
 
         foreach ($directFilters as $filter) {
-            if (array_key_exists($filter, $validated)) {
-                $columnSearch[$filter] = $validated[$filter];
-            }
-        }
+            foreach ([$validated, $columnSearch] as $source) {
+                if (array_key_exists($filter, $source)) {
+                    $value = $source[$filter];
+                    if ($value === null || $value === '') continue;
 
-        foreach ($columnSearch as $column => $value) {
-            if ($value === null || $value === '') {
-                continue;
-            }
+                    // Robust boolean conversion
+                    if ($value === 'true' || $value === true || $value === '1' || $value === 1) $value = 1;
+                    if ($value === 'false' || $value === false || $value === '0' || $value === 0) $value = 0;
 
-            match ($column) {
-                'code', 'external_code', 'receiver_name', 'phone', 'phone_2', 'address' => $query->where($column, 'like', '%'.(string) $value.'%'),
-                'status', 'approval_status', 'governorate_id', 'city_id', 'shipper_user_id', 'client_user_id', 'allow_open', 'is_in_shipper_collection', 'is_shipper_collected', 'is_in_client_settlement', 'is_client_settled', 'is_in_shipper_return', 'is_shipper_returned', 'is_in_client_return', 'is_client_returned' => $query->where($column, $value),
-                default => null,
-            };
+                    // If it's a string search, use prefix matching for performance
+                    if (in_array($filter, ['code', 'receiver_name', 'phone'])) {
+                        if (is_string($value)) {
+                            $query->where($filter, 'like', $value . '%');
+                            continue;
+                        }
+                    }
+
+                    $query->where($filter, $value);
+                }
+            }
         }
     }
 
@@ -974,15 +1170,15 @@ class OrderController extends Controller
             ]);
         }
 
-        $shippingFee = $this->resolveShippingFee((int) $clientUserId, (int) $governorateId);
-        $commissionAmount = $this->resolveCommissionAmount($shipperUserId ? (int) $shipperUserId : null);
+        $shippingFee = $data['shipping_fee'] ?? $this->resolveShippingFee((int) $clientUserId, (int) $governorateId);
+        $commissionAmount = $data['commission_amount'] ?? $this->resolveCommissionAmount($shipperUserId ? (int) $shipperUserId : null);
         $total = round((float) $totalAmount, 2);
 
         $data['total_amount'] = $total;
-        $data['shipping_fee'] = $shippingFee;
-        $data['commission_amount'] = $commissionAmount;
-        $data['company_amount'] = round($shippingFee - $commissionAmount, 2);
-        $data['cod_amount'] = round($total - $shippingFee, 2);
+        $data['shipping_fee'] = round((float) $shippingFee, 2);
+        $data['commission_amount'] = round((float) $commissionAmount, 2);
+        $data['company_amount'] = round($data['shipping_fee'] - $data['commission_amount'], 2);
+        $data['cod_amount'] = round($total - $data['shipping_fee'], 2);
 
         return $data;
     }
@@ -1104,5 +1300,16 @@ class OrderController extends Controller
             'total_amount' => $order->total_amount,
             'cod' => $order->cod_amount,
         ];
+    }
+
+    private function generateOrderCode(): string
+    {
+        $prefix = Setting::where('key', 'order_prefix')->value('value') ?? 'ORD';
+        $digits = (int) (Setting::where('key', 'order_digits')->value('value') ?? 5);
+
+        $lastOrder = Order::orderByDesc('id')->first();
+        $nextNumber = $lastOrder ? ($lastOrder->id + 1) : 1;
+
+        return $prefix . str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
     }
 }

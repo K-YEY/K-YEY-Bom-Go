@@ -42,7 +42,9 @@ class ClientSettlement extends Model
 
     public function orders()
     {
-        return $this->hasMany(ClientSettlementOrder::class);
+        return $this->belongsToMany(Order::class, 'client_settlement_orders')
+            ->withPivot(['id', 'order_amount', 'fee', 'net_amount', 'added_at'])
+            ->withTimestamps();
     }
 
     public function createdBy()

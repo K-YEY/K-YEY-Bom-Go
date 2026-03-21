@@ -31,14 +31,26 @@ class ClientController extends Controller
         $this->authorizePermission($request, 'client.page');
         $this->authorizePermission($request, 'client.view');
 
-        $clients = Client::query()
-            ->with(['user:id,name,username,phone', 'plan', 'shippingContent'])
-            ->orderByDesc('id')
-            ->get();
+        $query = Client::query()->with(['user:id,name,username,phone', 'plan', 'shippingContent']);
 
-        return response()->json(
-            $clients->map(fn (Client $client): array => $this->filterVisibleColumns($request, $client))->values()
-        );
+        if ($request->filled('q')) {
+            $search = (string) $request->get('q');
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', $search.'%')
+                  ->orWhere('username', 'like', $search.'%')
+                  ->orWhere('phone', 'like', $search.'%');
+            });
+        }
+
+        $clients = $query->orderByDesc('id')
+            ->paginate($request->get('per_page', 20));
+
+        $data = $clients->getCollection()->map(fn (Client $client): array => $this->filterVisibleColumns($request, $client))->values();
+
+        return response()->json([
+            'data' => $data,
+            'total' => $clients->total(),
+        ]);
     }
 
     public function show(Request $request, Client $client): JsonResponse
