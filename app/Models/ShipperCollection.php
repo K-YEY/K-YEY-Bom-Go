@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserRole;
 use Illuminate\Database\Eloquent\Model;
 
 class ShipperCollection extends Model
 {
+    use ScopesByUserRole;
     protected $fillable = [
         'shipper_user_id',
         'collection_date',

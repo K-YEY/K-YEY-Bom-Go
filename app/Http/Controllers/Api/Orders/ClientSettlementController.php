@@ -46,6 +46,7 @@ class ClientSettlementController extends Controller
         }
 
         $settlements = ClientSettlement::query()
+            ->forUserRole()
             ->with(['client:id,name'])
             ->when(
                 $statuses !== [],
@@ -94,6 +95,7 @@ class ClientSettlementController extends Controller
         $perPage = (int) ($validated['per_page'] ?? 100);
 
         $orders = Order::query()
+            ->forUserRole()
             ->select([
                 'id',
                 'code',
@@ -404,6 +406,7 @@ class ClientSettlementController extends Controller
     private function resolveEligibleSettlementOrders(int $clientUserId, array $orderIds): Collection
     {
         $orders = Order::query()
+            ->forUserRole()
             ->select([
                 'id',
                 'client_user_id',

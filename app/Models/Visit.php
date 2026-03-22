@@ -4,8 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\ScopesByUserRole;
+
 class Visit extends Model
 {
+    use ScopesByUserRole;
     protected $fillable = [
         'shipper_id',
         'client_id',

@@ -4,8 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\ScopesByUserRole;
+
 class MaterialRequest extends Model
 {
+    use ScopesByUserRole;
     protected $fillable = [
         'client_id',
         'shipper_id',

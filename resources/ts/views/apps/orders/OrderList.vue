@@ -1,0 +1,985 @@
+<script setup lang="ts">
+import { useApi } from '@/composables/useApi'
+import { createUrl } from '@core/composable/createUrl'
+import AddEditOrderModal from './AddEditOrderModal.vue'
+import BulkOrderShipperModal from './BulkOrderShipperModal.vue'
+import BulkOrderStatusModal from './BulkOrderStatusModal.vue'
+import OrderShipperModal from './OrderShipperModal.vue'
+import OrderStatusModal from './OrderStatusModal.vue'
+
+// 👉 Props
+const props = defineProps<{
+  shipperId?: number | string
+  clientId?: number | string
+  status?: string
+}>()
+
+const isAddEditOrderModalVisible = ref(false)
+const isStatusModalVisible = ref(false)
+const isShipperModalVisible = ref(false)
+
+const editingOrderId = ref<number | null>(null)
+const selectedOrderForStatus = ref<any>(null)
+const selectedOrderForShipper = ref<any>(null)
+const pageMetadata = ref<any>({})
+
+// Search & Filter State
+const searchQuery = ref('')
+const searchQueryDebounced = ref('')
+const selectedStatus = ref<string | null>(props.status || null)
+const itemsPerPage = ref(50)
+const page = ref(1)
+
+// Detailed Filters
+const filters = ref({
+  code: '',
+  receiver_name: '',
+  address: '',
+  order_note: '',
+  is_shipper_collected: null as number | null,
+  is_shipper_returned: null as number | null,
+  has_return: null as number | null,
+  is_client_settled: null as number | null,
+  is_client_returned: null as number | null,
+})
+
+const booleanOptions = [
+  { title: '-', value: null },
+  { title: 'Y', value: 1 },
+  { title: 'N', value: 0 },
+]
+
+// Debounce search
+let searchTimer: ReturnType<typeof setTimeout>
+watch(searchQuery, val => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    searchQueryDebounced.value = val
+    page.value = 1
+  }, 400)
+})
+
+const openStatusModal = (order: any) => {
+  selectedOrderForStatus.value = order
+  isStatusModalVisible.value = true
+}
+
+const openShipperModal = (order: any) => {
+  selectedOrderForShipper.value = order
+  isShipperModalVisible.value = true
+}
+
+const bulkPrintLabels = () => {
+  if (!selectedOrders.value.length) return
+  const ids = selectedOrders.value.map(item => {
+    if (typeof item === 'object' && item !== null) {
+      return item.id
+    }
+    return item
+  }).join(',')
+  window.open(`/apps/orders/bulk-print?ids=${ids}`, '_blank')
+}
+
+// 👉 Headers
+const headers = [
+  { title: 'CODE', key: 'code', width: '120px' },
+  { title: 'DATE', key: 'created_at', width: '100px' },
+  { title: 'RECEIVER', key: 'receiver_name', width: '180px' },
+  { title: 'AREA', key: 'area', width: '200px' },
+  { title: 'TOTAL', key: 'total_amount', width: '80px' },
+  { title: 'SHIPPING', key: 'shipping_fee', width: '80px' },
+  { title: 'COMMISSION', key: 'commission_amount', width: '80px' },
+  { title: 'NET', key: 'company_amount', width: '80px' },
+  { title: 'COD', key: 'cod_amount', width: '80px' },
+  { title: 'STATUS', key: 'status', width: '130px' },
+  { title: 'ORDER NOTE', key: 'order_note', width: '180px' },
+  { title: 'STATUS NOTE', key: 'latest_status_note', width: '180px' },
+  { title: 'ت. كابتن', key: 'shipper_collection', sortable: false, width: '80px' },
+  { title: 'م. كابتن', key: 'shipper_return', sortable: false, width: '80px' },
+  { title: 'مرتجع', key: 'has_return', sortable: false, width: '80px' },
+  { title: 'ت. عميل', key: 'client_settlement', sortable: false, width: '80px' },
+  { title: 'م. عميل', key: 'client_return', sortable: false, width: '80px' },
+  { title: 'SHIPPER', key: 'shipper', width: '150px' },
+  { title: 'CLIENT', key: 'client', width: '150px' },
+  { title: 'ACTIONS', key: 'actions', sortable: false, width: '80px' },
+]
+
+const { can } = useAbility()
+
+const STORAGE_KEY = 'orders-visible-columns'
+
+// Define permission mapping for columns
+const columnPermissions: Record<string, string> = {
+  code: 'order.column.code.view',
+  external_code: 'order.column.external_code.view',
+  created_at: 'order.column.created_at.view',
+  receiver_name: 'order.column.receiver_name.view',
+  area: 'order.column.address.view',
+  total_amount: 'order.column.total_amount.view',
+  shipping_fee: 'order.column.shipping_fee.view',
+  commission_amount: 'order.column.commission_amount.view',
+  company_amount: 'order.column.company_amount.view',
+  cod_amount: 'order.column.cod_amount.view',
+  status: 'order.column.status.view',
+  order_note: 'order.column.order_note.view',
+  latest_status_note: 'order.column.latest_status_note.view',
+  shipper_collection: 'order.column.is_shipper_collected.view',
+  shipper_return: 'order.column.is_shipper_returned.view',
+  has_return: 'order.column.has_return.view',
+  client_settlement: 'order.column.is_client_settled.view',
+  client_return: 'order.column.is_client_returned.view',
+  shipper: 'order.column.shipper_user_id.view',
+  client: 'order.column.client_user_id.view',
+}
+
+const visibleHeaderKeys = ref(JSON.parse(localStorage.getItem(STORAGE_KEY) || JSON.stringify(headers.map(h => h.key))))
+
+const activeHeaders = computed(() => {
+  return headers.filter(h => {
+    // 1. Check user manual visibility
+    if (!visibleHeaderKeys.value.includes(h.key)) return false
+    
+    // 2. Check permission
+    const perm = columnPermissions[h.key]
+    if (perm && !can(perm as any, 'all' as any)) return false
+    
+    return true
+  })
+})
+
+const filteredHeadersForMenu = computed(() => {
+  return headers.filter(h => {
+    const perm = columnPermissions[h.key]
+    return !perm || can(perm as any, 'all' as any)
+  })
+})
+
+// 👉 Filters State (Others)
+const selectedGovernorate = ref<number | null>(null)
+const selectedShipper = ref<number | null>(props.shipperId ? Number(props.shipperId) : null)
+const selectedClient = ref<number | null>(props.clientId ? Number(props.clientId) : null)
+
+// 👉 State Refs
+const selectedOrders = ref<any[]>([])
+const isBulkStatusModalVisible = ref(false)
+const isBulkShipperModalVisible = ref(false)
+
+const governorates = ref<any[]>([])
+const shippers = ref<any[]>([])
+const clients = ref<any[]>([])
+const orders = ref<any[]>([])
+const totalOrders = ref(0)
+const isLoading = ref(false)
+
+const totals = ref({
+  total_amount: 0,
+  total_cod: 0,
+  total_shipping: 0,
+  total_commission: 0,
+  total_net: 0,
+})
+
+const searchShippers = async (val: string) => {
+  if (!val) return
+  try {
+    const { data: res } = await useApi<any>(createUrl('/shippers', { query: { q: val, per_page: 20 } })).get().json()
+    const data = (res.value?.data || res.value || [])
+    shippers.value = data.map((s: any) => ({
+      id: s.user_id,
+      name: s.user?.name || 'Unknown',
+      commission_rate: s.commission_rate
+    }))
+  } catch (e) { console.error(e) }
+}
+
+const openBulkStatusModal = () => { isBulkStatusModalVisible.value = true }
+const openBulkShipperModal = () => { isBulkShipperModalVisible.value = true }
+
+const exportOrders = () => {
+  const params = new URLSearchParams()
+  
+  if (selectedOrders.value.length > 0) {
+    const ids = selectedOrders.value.map(o => o.id || o).join(',')
+    params.append('ids', ids)
+  } else {
+    // Add current filters
+    if (searchQuery.value) params.append('q', searchQuery.value)
+    if (selectedStatus.value) params.append('status', selectedStatus.value)
+    if (selectedGovernorate.value) params.append('governorate_id', String(selectedGovernorate.value))
+    if (selectedShipper.value) params.append('shipper_user_id', String(selectedShipper.value))
+    if (selectedClient.value) params.append('client_user_id', String(selectedClient.value))
+    
+    // Detailed filters
+    Object.entries(filters.value).forEach(([key, val]) => {
+      if (val !== null && val !== '') params.append(key, String(val))
+    })
+  }
+
+  const token = useCookie('accessToken').value || ''
+  window.open(`/api/orders/export?${params.toString()}&token=${token}`, '_blank')
+}
+
+const inputRef = ref<HTMLInputElement | null>(null)
+
+const downloadTemplate = () => {
+  const token = useCookie('accessToken').value || ''
+  window.open(`/api/orders/import-template?token=${token}`, '_blank')
+}
+
+const handleImport = async (event: Event) => {
+  if (!isWithinWorkingHours('orders')) {
+    const meta = pageMetadata.value?.working_hours
+    const start = meta?.working_hours_orders_start || '08:00'
+    const end = meta?.working_hours_orders_end || '22:00'
+    alert(`لا يمكن الاستيراد الآن. مواعيد العمل الرسمية: من ${start} حتى ${end}`)
+    return
+  }
+  const target = event.target as HTMLInputElement
+  if (!target.files?.length) return
+
+  const file = target.files[0]
+  const formData = new FormData()
+  formData.append('file', file)
+
+  try {
+    const { data, error } = await useApi('/orders/import').post(formData).json()
+    if (!error.value) {
+      alert(`Import Successful! ${data.value.success_count} orders created.`)
+      if (data.value.errors?.length) {
+         console.warn('Import Errors:', data.value.errors)
+         alert('Some rows had errors. Check console for details.')
+      }
+      fetchOrders()
+    } else {
+      alert('Import failed: ' + (error.value?.message || 'Check file format'))
+    }
+  } catch (e) {
+    console.error(e)
+    alert('Network error during import')
+  }
+  // Clear input
+  target.value = ''
+}
+
+const searchClients = async (val: string) => {
+  if (!val) return
+  try {
+    const { data: res } = await useApi<any>(createUrl('/clients', { query: { q: val, per_page: 20 } })).get().json()
+    const data = (res.value?.data || res.value || [])
+    clients.value = data.map((c: any) => ({
+      id: c.user_id,
+      name: c.user?.name || 'Unknown',
+      plan_id: c.plan_id,
+      shipping_content_id: c.shipping_content_id,
+      shipping_fee: c.shipping_fee
+    }))
+  } catch (e) { console.error(e) }
+}
+
+const applyOrdersData = (oData: any) => {
+  orders.value = oData.data || []
+  totalOrders.value = oData.total || 0
+
+  const t = oData.totals
+  if (t) {
+    totals.value = {
+      total_amount: t.total_amount ?? 0,
+      total_cod: t.cod_amount ?? 0,
+      total_shipping: t.shipping_fee ?? 0,
+      total_commission: t.commission_amount ?? 0,
+      total_net: t.company_amount ?? 0,
+    }
+  }
+}
+
+const fetchOrders = async () => {
+  isLoading.value = true
+  try {
+    const { data: oData } = await useApi<any>(createUrl('/orders', {
+      query: {
+        q: searchQueryDebounced.value,
+        status: selectedStatus.value,
+        approval_status: 'APPROVED',
+        governorate_id: selectedGovernorate.value,
+        shipper_user_id: selectedShipper.value,
+        client_user_id: selectedClient.value,
+        per_page: itemsPerPage.value,
+        page: page.value,
+        // Column filters
+        code: filters.value.code,
+        receiver_name: filters.value.receiver_name,
+        address: filters.value.address,
+        order_note: filters.value.order_note,
+        is_shipper_collected: filters.value.is_shipper_collected,
+        is_shipper_returned: filters.value.is_shipper_returned,
+        has_return: filters.value.has_return,
+        is_client_settled: filters.value.is_client_settled,
+        is_client_returned: filters.value.is_client_returned,
+      },
+    })).get().json()
+
+    if (oData.value) {
+      applyOrdersData(oData.value)
+    }
+  } catch (e) { console.error('Orders fetch error:', e) }
+  isLoading.value = false
+}
+
+const initializePage = async () => {
+  isLoading.value = true
+  try {
+    const { data: res } = await useApi<any>(createUrl('/orders/init', {
+      query: {
+        q: searchQueryDebounced.value,
+        status: selectedStatus.value,
+        approval_status: 'APPROVED',
+        governorate_id: selectedGovernorate.value,
+        shipper_user_id: selectedShipper.value,
+        client_user_id: selectedClient.value,
+        per_page: itemsPerPage.value,
+        page: page.value,
+      },
+    })).get().json()
+
+    if (res.value) {
+      // Handle metadata
+      pageMetadata.value = res.value.metadata
+      const meta = res.value.metadata
+      governorates.value = meta.governorates || []
+      shippers.value = meta.shippers || []
+      clients.value = meta.clients || []
+
+      // Handle first page orders
+      applyOrdersData(res.value.orders)
+    }
+  } catch (e) {
+    console.error('Init fetch error:', e)
+    fetchOrders()
+  }
+  isLoading.value = false
+}
+
+onMounted(() => {
+  initializePage()
+})
+
+// Debounce filter and search updates
+let updateTimer: ReturnType<typeof setTimeout>
+
+// 1. Watch for Filter changes: Reset to page 1 and fetch
+watch([searchQueryDebounced, selectedStatus, selectedGovernorate, selectedShipper, selectedClient, filters], () => {
+  page.value = 1
+  clearTimeout(updateTimer)
+  updateTimer = setTimeout(() => {
+    fetchOrders()
+  }, 300)
+}, { deep: true })
+
+// 2. Watch for Pagination: Just fetch
+watch([page, itemsPerPage], () => {
+  clearTimeout(updateTimer)
+  updateTimer = setTimeout(() => {
+    fetchOrders()
+  }, 100)
+})
+
+const statusColors: any = {
+  OUT_FOR_DELIVERY: 'primary',
+  DELIVERED: 'success',
+  HOLD: 'warning',
+  UNDELIVERED: 'error',
+}
+const resolveStatusColor = (status: string) => statusColors[status] || 'secondary'
+
+const resetFilters = () => {
+  searchQuery.value = ''
+  searchQueryDebounced.value = ''
+  selectedStatus.value = null
+  selectedGovernorate.value = null
+  selectedShipper.value = null
+  selectedClient.value = null
+  filters.value = {
+    code: '',
+    receiver_name: '',
+    address: '',
+    order_note: '',
+    is_shipper_collected: null,
+    is_shipper_returned: null,
+    has_return: null,
+    is_client_settled: null,
+    is_client_returned: null,
+  }
+  page.value = 1
+}
+
+const applyTodayFilter = () => {
+  resetFilters()
+  // Filter for orders that are 'HOLD' (Pending Assignment/Work)
+  selectedStatus.value = 'HOLD'
+  page.value = 1
+}
+
+const editOrder = (id: number) => {
+  editingOrderId.value = id
+  isAddEditOrderModalVisible.value = true
+}
+
+const getStateConfig = (isDone: boolean, isWaiting: boolean, date: string | null) => {
+  if (isDone) return { color: 'success', label: date ? new Date(date).toLocaleDateString('en-GB') : '✓' }
+  if (isWaiting) return { color: 'warning', label: '✕' }
+  return { color: 'error', label: '✕' }
+}
+const printLabel = (id: number) => {
+  window.open(`/apps/orders/shipping-label/${id}`, '_blank')
+}
+
+const deleteOrder = async (id: number) => {
+  if (!confirm('Are you sure you want to delete this order?')) return
+
+  const { error } = await useApi(`/orders/${id}`).delete()
+  if (!error.value) {
+    fetchOrders()
+  }
+}
+
+// 👉 Order History Logic
+const isHistoryVisible = ref(false)
+const historyLogs = ref<any[]>([])
+const selectedOrder = ref<any>(null)
+const isFetchingHistory = ref(false)
+
+const openHistory = async (order: any) => {
+  selectedOrder.value = order
+  isHistoryVisible.value = true
+  isFetchingHistory.value = true
+  
+  const { data } = await useApi(`/orders/${order.id}/history`).get().json()
+  
+  // Handle paginated or flat data
+  historyLogs.value = data.value.data || data.value || []
+  isFetchingHistory.value = false
+}
+
+const getLogIcon = (log: any) => {
+  if (log.action === 'created') return 'tabler-circle-plus'
+  if (log.new_values?.status) return 'tabler-circle-check'
+  if (log.new_values?.is_shipper_collected) return 'tabler-cash'
+  if (log.new_values?.is_shipper_returned) return 'tabler-arrow-back-up'
+  if (log.new_values?.is_client_settled) return 'tabler-mood-dollar'
+  if (log.new_values?.is_client_returned) return 'tabler-package-export'
+  if (log.new_values?.shipper_user_id) return 'tabler-truck'
+  return 'tabler-circle-check'
+}
+
+const getLogColor = (log: any) => {
+  if (log.action === 'created') return 'success'
+  if (log.new_values?.status) return resolveStatusColor(log.new_values.status)
+  if (log.new_values?.is_shipper_collected) return 'success'
+  if (log.new_values?.is_shipper_returned) return 'warning'
+  if (log.new_values?.is_client_settled) return 'info'
+  if (log.new_values?.is_client_returned) return 'error'
+  if (log.new_values?.shipper_user_id) return 'info'
+  return 'primary'
+}
+
+const getLogActionLabel = (log: any) => {
+  if (log.action === 'created') return 'إنشاء الطلب'
+  if (log.new_values?.status) return 'تغيير الحالة'
+  if (log.new_values?.is_shipper_collected) return 'تحصيل المندوب'
+  if (log.new_values?.is_shipper_returned) return 'مرتجع المندوب'
+  if (log.new_values?.is_client_settled) return 'تسوية العميل'
+  if (log.new_values?.is_client_returned) return 'مرتجع العميل'
+  if (log.new_values?.shipper_user_id) return 'تعيين مندوب'
+  return 'تحديث بيانات'
+}
+
+const getLogMessage = (log: any) => {
+  if (log.action === 'created') return 'تم تسجيل الأوردر بنجاح'
+  if (log.new_values?.status) return `تم تغيير حالة الأوردر إلى ${log.new_values.status.replace(/_/g, ' ')}`
+  if (log.new_values?.is_shipper_collected) return 'تم تأكيد تحصيل المبلغ من المندوب'
+  if (log.new_values?.is_shipper_returned) return 'تم تنفيذ مرتجع المندوب للمخزن'
+  if (log.new_values?.is_client_settled) return 'تمت تسوية المستحقات المالية مع العميل'
+  if (log.new_values?.is_client_returned) return 'تم تسليم المرتجع للعميل رسمياً'
+  if (log.new_values?.shipper_user_id) return 'تم تعيين مندوب جديد للتوصيل'
+  if (log.message) return log.message
+  return 'تم تحديث بيانات الأوردر'
+}
+
+// Working Hours Logic
+const isWithinWorkingHours = (type: 'orders' | 'pickups' | 'material_requests') => {
+  const meta = pageMetadata.value?.working_hours
+  if (!meta) return true
+  
+  if (can('setting.bypass-working-hours' as any, 'all' as any)) return true
+
+  const start = meta[`working_hours_${type}_start`] || '08:00'
+  const end = meta[`working_hours_${type}_end`] || '22:00'
+  
+  const now = new Date()
+  const currentStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  
+  if (start < end) {
+    return currentStr >= start && currentStr <= end
+  } else {
+    return currentStr >= start || currentStr <= end
+  }
+}
+
+const handleNewOrder = () => {
+  if (!isWithinWorkingHours('orders')) {
+    const meta = pageMetadata.value?.working_hours
+    const start = meta?.working_hours_orders_start || '08:00'
+    const end = meta?.working_hours_orders_end || '22:00'
+    alert(`لا يمكن إنشاء الأوردر الآن. مواعيد العمل الرسمية: من ${start} حتى ${end}`)
+    return
+  }
+  editingOrderId.value = null
+  isAddEditOrderModalVisible.value = true
+}
+</script>
+
+<template>
+  <section>
+    <!-- 👉 Stats Cards -->
+    <VRow class="mb-2">
+      <VCol cols="6" md="2">
+        <VCard elevation="2" class="stats-card"><VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="primary" icon="tabler-package" size="38" />
+            <div><div class="text-h6 font-weight-bold">{{ totalOrders }}</div><div class="text-xs text-disabled">Orders</div></div>
+        </VCardText></VCard>
+      </VCol>
+      <VCol cols="6" md="2">
+        <VCard elevation="2" class="stats-card"><VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="info" icon="tabler-currency-dollar" size="38" />
+            <div><div class="text-h6 font-weight-bold text-truncate" style="max-width: 80px;">{{ totals.total_amount.toFixed(0) }}</div><div class="text-xs text-disabled">Amount</div></div>
+        </VCardText></VCard>
+      </VCol>
+      <VCol cols="6" md="2">
+        <VCard elevation="2" class="stats-card"><VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="success" icon="tabler-cash" size="38" />
+            <div><div class="text-h6 font-weight-bold">{{ totals.total_cod.toFixed(0) }}</div><div class="text-xs text-disabled">COD</div></div>
+        </VCardText></VCard>
+      </VCol>
+      <VCol cols="6" md="2">
+        <VCard elevation="2" class="stats-card"><VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="secondary" icon="tabler-truck-delivery" size="38" />
+            <div><div class="text-h6 font-weight-bold">{{ totals.total_shipping.toFixed(0) }}</div><div class="text-xs text-disabled">Fees</div></div>
+        </VCardText></VCard>
+      </VCol>
+      <VCol cols="6" md="2">
+        <VCard elevation="2" class="stats-card"><VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="error" icon="tabler-user-share" size="38" />
+            <div><div class="text-h6 font-weight-bold">{{ totals.total_commission.toFixed(0) }}</div><div class="text-xs text-disabled">Comm</div></div>
+        </VCardText></VCard>
+      </VCol>
+      <VCol cols="6" md="2">
+        <VCard elevation="2" class="stats-card"><VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="warning" icon="tabler-wallet" size="38" />
+            <div><div class="text-h6 font-weight-bold">{{ totals.total_net.toFixed(0) }}</div><div class="text-xs text-disabled">Net</div></div>
+        </VCardText></VCard>
+      </VCol>
+    </VRow>
+
+    <VCard elevation="2">
+      <!-- 📦 Bulk Actions Row (Header Position) -->
+      <VCardText v-show="selectedOrders.length" class="bg-light-primary py-2 border-bottom border-top rounded-0">
+        <div class="d-flex align-center gap-4 flex-wrap">
+          <div class="text-subtitle-2 text-primary font-weight-bold">
+            <VChip color="primary" size="small" class="me-2">{{ selectedOrders.length }}</VChip>
+            Elements Selected
+          </div>
+          <VDivider vertical class="mx-2" />
+          <VBtn v-if="can('order.change-shipper' as any, 'all' as any)" size="small" color="primary" variant="elevated" prepend-icon="tabler-truck" @click="openBulkShipperModal">تغيير المندوب</VBtn>
+          <VBtn v-if="can('order.view' as any, 'all' as any)" size="small" color="info" variant="elevated" prepend-icon="tabler-file-invoice" @click="bulkPrintLabels">طباعة البوالص</VBtn>
+          <VBtn v-if="can('order.export' as any, 'all' as any)" size="small" color="secondary" variant="elevated" prepend-icon="tabler-file-spreadsheet" @click="exportOrders">Export Excel</VBtn>
+          <VBtn v-if="can('order.change-status' as any, 'all' as any)" size="small" color="success" variant="elevated" prepend-icon="tabler-settings" @click="openBulkStatusModal">تغيير الحالة</VBtn>
+          <VSpacer />
+          <VBtn icon size="x-small" variant="text" color="secondary" @click="selectedOrders = []"><VIcon icon="tabler-x" /></VBtn>
+        </div>
+      </VCardText>
+
+      <VCardText class="pb-2">
+        <VRow align="center">
+          <VCol cols="12" md="3">
+            <AppTextField v-model="searchQuery" placeholder="Quick Search..." prepend-inner-icon="tabler-search" density="compact" hide-details />
+          </VCol>
+          <VCol cols="auto">
+            <VBtn variant="tonal" color="secondary" size="small" @click="resetFilters"><VIcon start icon="tabler-refresh" />Reset</VBtn>
+          </VCol>
+          <VCol cols="auto">
+            <VBtn variant="tonal" color="info" size="small" prepend-icon="tabler-calendar-event" @click="applyTodayFilter">أوردرات اليوم</VBtn>
+          </VCol>
+          <VCol cols="auto" class="ms-auto text-end d-flex gap-2">
+            <VMenu>
+              <template #activator="{ props }">
+                <VBtn color="secondary" size="small" variant="tonal" prepend-icon="tabler-file-import" v-bind="props">Import</VBtn>
+              </template>
+              <VList box-shadow="2">
+                <VListItem @click="downloadTemplate">
+                  <template #prepend><VIcon icon="tabler-download" size="20" class="me-2"/></template>
+                  <VListItemTitle>Download Template</VListItemTitle>
+                </VListItem>
+                <VListItem @click="inputRef?.click()">
+                  <template #prepend><VIcon icon="tabler-upload" size="20" class="me-2"/></template>
+                  <VListItemTitle>Upload Orders</VListItemTitle>
+                </VListItem>
+              </VList>
+            </VMenu>
+            <input ref="inputRef" type="file" class="d-none" accept=".xlsx,.csv" @change="handleImport">
+
+            <VBtn v-if="can('order.export', 'all')" color="secondary" size="small" variant="tonal" prepend-icon="tabler-file-spreadsheet" @click="exportOrders">Export All</VBtn>
+            <VBtn v-if="can('order.create', 'all')" color="primary" size="small" prepend-icon="tabler-plus" @click="handleNewOrder">New Order</VBtn>
+
+            <!-- 👉 Column Visibility Toggle -->
+            <VMenu :close-on-content-click="false">
+              <template #activator="{ props }">
+                <VBtn icon size="small" variant="tonal" color="secondary" v-bind="props" class="ms-2">
+                  <VIcon icon="tabler-layout-columns" />
+                </VBtn>
+              </template>
+              <VList class="pa-2" style="max-height: 400px; overflow-y: auto;">
+                <VListItem v-for="h in filteredHeadersForMenu" :key="h.key" density="compact">
+                  <VCheckbox v-model="visibleHeaderKeys" :value="h.key" :label="h.title" hide-details density="compact" />
+                </VListItem>
+              </VList>
+            </VMenu>
+          </VCol>
+        </VRow>
+      </VCardText>
+
+      <VDivider />
+
+      <VDataTableServer
+        v-model:model-value="selectedOrders"
+        v-model:items-per-page="itemsPerPage"
+        v-model:page="page"
+        :loading="isLoading"
+        :items="orders"
+        :items-length="totalOrders"
+        :headers="activeHeaders"
+        item-value="id"
+        return-object
+        show-select
+        class="text-no-wrap filter-table"
+        :items-per-page-options="[25, 50, 100]"
+        loading-text="تحميل البيانات..."
+      >
+        <!-- 👉 Header Filter Slots -->
+        <template #header.code="{ column }">
+          <div class="header-filter">
+            <span class="header-title">{{ column.title }}</span>
+            <VTextField v-model="filters.code" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+          </div>
+        </template>
+        <template #header.receiver_name="{ column }">
+          <div class="header-filter">
+            <span class="header-title">{{ column.title }}</span>
+            <VTextField v-model="filters.receiver_name" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+          </div>
+        </template>
+        <template #header.area="{ column }">
+          <div class="header-filter">
+            <span class="header-title">{{ column.title }}</span>
+            <VTextField v-model="filters.address" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+          </div>
+        </template>
+        <template #header.order_note="{ column }">
+          <div class="header-filter">
+            <span class="header-title">{{ column.title }}</span>
+            <VTextField v-model="filters.order_note" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+          </div>
+        </template>
+
+        <!-- Small Boolean Header Filters -->
+        <template #header.shipper_collection="{ column }">
+          <div class="header-filter"><span class="header-title">تحصيل</span>
+            <VSelect v-model="filters.is_shipper_collected" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+          </div>
+        </template>
+        <template #header.shipper_return="{ column }">
+          <div class="header-filter"><span class="header-title">مرتجع</span>
+            <VSelect v-model="filters.is_shipper_returned" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+          </div>
+        </template>
+        <template #header.has_return="{ column }">
+          <div class="header-filter"><span class="header-title">فيه م</span>
+            <VSelect v-model="filters.has_return" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+          </div>
+        </template>
+        <template #header.client_settlement="{ column }">
+          <div class="header-filter"><span class="header-title">تسوية</span>
+            <VSelect v-model="filters.is_client_settled" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+          </div>
+        </template>
+        <template #header.client_return="{ column }">
+          <div class="header-filter"><span class="header-title">م. عميل</span>
+            <VSelect v-model="filters.is_client_returned" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+          </div>
+        </template>
+
+        <template #header.shipper_user_id="{ column }">
+          <div class="header-filter"><span class="header-title">{{ column.title }}</span>
+            <VAutocomplete v-model="selectedShipper" :items="shippers" item-title="name" item-value="id" clearable density="compact" hide-details variant="plain" class="filter-select" placeholder="Search..." @update:search="searchShippers" />
+          </div>
+        </template>
+        <template #header.client_user_id="{ column }">
+          <div class="header-filter"><span class="header-title">{{ column.title }}</span>
+            <VAutocomplete v-model="selectedClient" :items="clients" item-title="name" item-value="id" clearable density="compact" hide-details variant="plain" class="filter-select" placeholder="Search..." @update:search="searchClients" />
+          </div>
+        </template>
+
+        <!-- Remaining Headers Standard -->
+        <template v-for="h in ['created_at', 'total_amount', 'shipping_fee', 'commission_amount', 'company_amount', 'cod_amount', 'status', 'latest_status_note', 'actions']" #[`header.${h}`]="{ column }">
+          <div class="header-filter justify-center"><span class="header-title">{{ column.title }}</span></div>
+        </template>
+
+        <!-- 👉 Item Slots -->
+        <template #item.code="{ item }: { item: any }">
+          <div class="d-flex flex-column text-xs">
+            <span class="text-primary font-weight-bold">#{{ item.code }}</span>
+            <span v-if="item.external_code" class="text-disabled text-truncate" style="max-width: 80px;">{{ item.external_code }}</span>
+          </div>
+        </template>
+        <template #item.receiver_name="{ item }: { item: any }">
+          <div class="d-flex flex-column text-xs">
+            <span class="font-weight-medium text-wrap" style="max-width:140px">{{ item.receiver_name }}</span>
+            <span class="text-disabled">{{ item.phone }} / {{ item.phone_2 }}</span>
+          </div>
+        </template>
+        <template #item.area="{ item }: { item: any }">
+          <div class="d-flex flex-column text-xs" style="min-width:130px">
+            <span class="font-weight-medium">{{ item.governorate?.name }} / {{ item.city?.name }}</span>
+            <span class="text-disabled text-wrap" style="max-width: 150px;">{{ item.address }}</span>
+          </div>
+        </template>
+        <template #item.total_amount="{ item }: { item: any }"><span class="font-weight-bold text-xs">{{ Number(item.total_amount).toFixed(0) }}</span></template>
+        <template #item.shipping_fee="{ item }: { item: any }"><span class="text-xs">{{ Number(item.shipping_fee).toFixed(0) }}</span></template>
+        <template #item.commission_amount="{ item }: { item: any }"><span class="text-xs">{{ Number(item.commission_amount || 0).toFixed(0) }}</span></template>
+        <template #item.company_amount="{ item }: { item: any }"><span class="text-info font-weight-bold text-xs">{{ Number(item.company_amount || 0).toFixed(0) }}</span></template>
+        <template #item.cod_amount="{ item }: { item: any }"><span class="text-success font-weight-bold text-xs">{{ Number(item.cod_amount).toFixed(0) }}</span></template>
+
+        <template #item.status="{ item }: { item: any }">
+          <VChip 
+            size="x-small" 
+            :color="resolveStatusColor(item.status)" 
+            variant="tonal" 
+            :class="(item.is_shipper_collected || !can('order.change-status' as any, 'all' as any)) ? 'cursor-not-allowed' : 'cursor-pointer'" 
+            @click="(!item.is_shipper_collected && can('order.change-status' as any, 'all' as any)) && openStatusModal(item)"
+          >
+            {{ item.status.replace(/_/g, ' ') }}
+          </VChip>
+        </template>
+        <template #item.order_note="{ item }: { item: any }"><span class="text-xs text-wrap" style="max-width: 150px; display: block;">{{ item.order_note || '—' }}</span></template>
+        <template #item.latest_status_note="{ item }: { item: any }">
+          <VChip v-if="item.latest_status_note" size="x-small" color="secondary" variant="tonal" class="text-xs" style="height: auto; min-height: 20px;">
+            <span class="text-truncate" style="max-width: 130px;">{{ item.latest_status_note }}</span>
+          </VChip>
+          <span v-else class="text-disabled">—</span>
+        </template>
+
+        <template #item.shipper_collection="{ item }: { item: any }">
+          <VChip size="x-small" :color="getStateConfig(item.is_shipper_collected, false, item.shipper_collected_at).color" variant="elevated">{{ getStateConfig(item.is_shipper_collected, false, item.shipper_collected_at).label }}</VChip>
+        </template>
+        <template #item.shipper_return="{ item }: { item: any }">
+          <VChip size="x-small" :color="getStateConfig(item.is_shipper_returned, item.is_in_shipper_return, item.shipper_returned_at).color" variant="elevated">{{ getStateConfig(item.is_shipper_returned, item.is_in_shipper_return, item.shipper_returned_at).label }}</VChip>
+        </template>
+        <template #item.has_return="{ item }: { item: any }">
+          <VChip v-if="item.has_return" size="x-small" color="success" variant="elevated">{{ item.has_return_at ? new Date(item.has_return_at).toLocaleDateString('en-GB') : '✓' }}</VChip>
+          <VChip v-else size="x-small" color="error" variant="elevated">✕</VChip>
+        </template>
+        <template #item.client_settlement="{ item }: { item: any }">
+          <VChip size="x-small" :color="getStateConfig(item.is_client_settled, item.is_in_client_settlement, item.client_settled_at).color" variant="elevated">{{ getStateConfig(item.is_client_settled, item.is_in_client_settlement, item.client_settled_at).label }}</VChip>
+        </template>
+        <template #item.client_return="{ item }: { item: any }">
+          <VChip size="x-small" :color="getStateConfig(item.is_client_returned, item.is_in_client_return, item.client_returned_at).color" variant="elevated">{{ getStateConfig(item.is_client_returned, item.is_in_client_return, item.client_returned_at).label }}</VChip>
+        </template>
+
+        <template #item.shipper="{ item }: { item: any }">
+          <span v-if="!['DELIVERED', 'UNDELIVERED'].includes(item.status) && can('order.change-shipper' as any, 'all' as any)" class="text-xs text-primary cursor-pointer font-weight-medium" @click="openShipperModal(item)">{{ item.shipper?.name || 'Assign' }}</span>
+          <span v-else class="text-xs text-disabled font-weight-medium">{{ item.shipper?.name || '—' }}</span>
+        </template>
+        <template #item.client="{ item }: { item: any }"><span class="text-xs font-weight-medium">{{ item.client?.name || '—' }}</span></template>
+        <template #item.created_at="{ item }: { item: any }"><span class="text-xs text-disabled">{{ new Date(item.created_at).toLocaleDateString('en-GB') }}</span></template>
+
+        <template #item.actions="{ item }: { item: any }">
+          <div class="d-flex align-center">
+            <VBtn
+              icon
+              size="x-small"
+              color="default"
+              variant="text"
+            >
+              <VIcon icon="tabler-dots-vertical" />
+              <VMenu activator="parent">
+                <VList density="compact">
+                  <VListItem
+                    v-if="!item.is_shipper_collected && can('order.update' as any, 'all' as any)"
+                    prepend-icon="tabler-edit"
+                    title="Edit"
+                    @click="editOrder(item.id)"
+                  />
+                  <VListItem
+                    v-if="can('order.view' as any, 'all' as any)"
+                    prepend-icon="tabler-file-invoice"
+                    title="Shipping Label"
+                    @click="printLabel(item.id)"
+                  />
+                  <VListItem
+                    v-if="!item.is_shipper_collected && can('order.delete' as any, 'all' as any)"
+                    prepend-icon="tabler-trash"
+                    title="Delete"
+                    color="error"
+                    @click="deleteOrder(item.id)"
+                  />
+                  <VDivider />
+                  <VListItem
+                    v-if="can('order.view' as any, 'all' as any)"
+                    prepend-icon="tabler-history"
+                    title="History"
+                    @click="openHistory(item)"
+                  />
+                </VList>
+              </VMenu>
+            </VBtn>
+            <VIcon
+              v-if="item.is_shipper_collected"
+              icon="tabler-lock"
+              size="14"
+              color="secondary"
+              class="ms-1"
+            />
+          </div>
+        </template>
+        <template #bottom>
+          <TablePagination v-model:page="page" :items-per-page="itemsPerPage" :total-items="totalOrders" />
+        </template>
+      </VDataTableServer>
+    </VCard>
+
+    <AddEditOrderModal
+      v-model:is-dialog-visible="isAddEditOrderModalVisible"
+      :order-id="editingOrderId"
+      :metadata="pageMetadata"
+      @order-saved="fetchOrders"
+    />
+    <OrderStatusModal v-model:is-dialog-visible="isStatusModalVisible" :order="selectedOrderForStatus" :metadata="pageMetadata" @status-updated="fetchOrders" />
+    <OrderShipperModal v-model:is-dialog-visible="isShipperModalVisible" :order="selectedOrderForShipper" :shippers="shippers" @shipper-updated="fetchOrders" />
+
+    <BulkOrderStatusModal
+      v-model:is-dialog-visible="isBulkStatusModalVisible"
+      :selected-orders="selectedOrders"
+      :metadata="pageMetadata"
+      @status-updated="() => { fetchOrders(); selectedOrders = [] }"
+    />
+    <BulkOrderShipperModal
+      v-model:is-dialog-visible="isBulkShipperModalVisible"
+      :selected-orders="selectedOrders"
+      :shippers="shippers"
+      @shipper-updated="() => { fetchOrders(); selectedOrders = [] }"
+    />
+
+    <!-- 👉 History Modal -->
+    <VDialog
+      v-model="isHistoryVisible"
+      width="600"
+    >
+      <VCard title="سجل تحركات الأوردر (Timeline)">
+        <VCardText style="max-height: 500px; overflow-y: auto;">
+          <div v-if="isFetchingHistory" class="text-center py-10">
+            <VProgressCircular indeterminate color="primary" />
+          </div>
+          <div v-else-if="historyLogs.length === 0" class="text-center py-10 text-disabled">
+            لا توجد تحركات مسجلة لهذا الأوردر
+          </div>
+          <VTimeline
+            v-else
+            align="start"
+            truncate-line="both"
+            side="end"
+            density="compact"
+            line-thickness="1"
+            line-inset="6"
+            class="ps-2 v-timeline--variant-outlined fleet-timeline mt-4"
+          >
+            <VTimelineItem
+              v-for="log in historyLogs"
+              :key="log.id"
+              :icon="getLogIcon(log)"
+              dot-color="rgb(var(--v-theme-surface))"
+              :icon-color="getLogColor(log)"
+              fill-dot
+              size="20"
+              :elevation="0"
+            >
+              <div class="ps-1">
+                <div class="text-caption text-uppercase" :class="`text-${getLogColor(log)}`">
+                  {{ getLogActionLabel(log) }}
+                </div>
+                <div class="app-timeline-title font-weight-bold text-sm">
+                  {{ getLogMessage(log) }}
+                </div>
+                <div class="text-body-2 mt-1">
+                  {{ new Date(log.created_at).toLocaleString('ar-EG') }}
+                </div>
+                <div v-if="log.user" class="text-xs text-disabled mt-1 d-flex align-center gap-1">
+                  <VIcon icon="tabler-user-check" size="12" />
+                  <span>بواسطة: {{ log.user.name }}</span>
+                </div>
+                <div v-if="log.new_values?.latest_status_note" class="text-xs mt-1 text-info italic">
+                  ملاحظة: {{ log.new_values.latest_status_note }}
+                </div>
+              </div>
+            </VTimelineItem>
+          </VTimeline>
+        </VCardText>
+        <VCardText class="d-flex justify-end pr-6 pb-6">
+          <VBtn color="secondary" @click="isHistoryVisible = false">إغلاق</VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+  </section>
+</template>
+
+<style lang="scss" scoped>
+.stats-card { transition: transform 0.2s; }
+.stats-card:hover { transform: translateY(-2px); }
+
+/* Fleet Style Timeline Exact Copy */
+.fleet-timeline {
+  :deep(.v-timeline-divider__dot) {
+    background: rgb(var(--v-theme-surface)) !important;
+    .v-timeline-divider__inner-dot {
+      box-shadow: none !important;
+    }
+  }
+
+  &.v-timeline .v-timeline-item:not(:last-child) {
+    :deep(.v-timeline-item__body) {
+      margin-block-end: 0.25rem;
+    }
+  }
+}
+
+.filter-table :deep(th) {
+  padding-top: 8px !important;
+  padding-bottom: 20px !important;
+  vertical-align: top !important;
+  background-color: var(--v-surface-variant) !important;
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.1) !important;
+  white-space: nowrap;
+}
+.header-filter { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+.header-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  display: block;
+  margin-bottom: 2px;
+}
+.filter-input :deep(.v-field__input) { padding: 2px 0 !important; font-size: 0.7rem !important; min-height: 18px !important; color: var(--v-theme-primary); }
+.filter-select :deep(.v-field__input) { padding: 0 !important; font-size: 0.65rem !important; min-height: 18px !important; color: var(--v-theme-primary); }
+.filter-table :deep(td) { font-size: 0.72rem !important; padding: 8px !important; }
+.text-xs { font-size: 0.7rem !important; line-height: 1.2; }
+</style>

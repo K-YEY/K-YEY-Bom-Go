@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use App\Traits\ScopesByUserRole;
+
 class Expense extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, ScopesByUserRole;
 
     protected $fillable = [
         'code',

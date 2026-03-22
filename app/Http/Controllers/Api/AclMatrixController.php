@@ -66,6 +66,8 @@ class AclMatrixController extends Controller
                 ...$this->permissionState($user, array_column(ActivityLogPermissionMap::ACTION_PERMISSIONS, 'name')),
                 ...$this->permissionState($user, array_column(DashboardPermissionMap::PAGE_PERMISSIONS, 'name')),
                 ...$this->permissionState($user, array_values(DashboardPermissionMap::CARD_VIEW_PERMISSIONS)),
+                ...$this->permissionState($user, array_values(DashboardPermissionMap::CHART_VIEW_PERMISSIONS)),
+                ...$this->permissionState($user, array_column(SettingPermissionMap::ACTION_PERMISSIONS, 'name')),
             ],
             'setting_pages' => $this->permissionState($user, array_column(SettingPermissionMap::PAGE_PERMISSIONS, 'name')),
             'expense_columns' => [
@@ -155,9 +157,15 @@ class AclMatrixController extends Controller
                 'edit' => $this->permissionState($user, array_values(CollectionsReturnsSettlementsPermissionMap::CLIENT_RETURN_EDIT_COLUMNS)),
             ],
             'activity_log_columns' => [
-                'view' => $this->permissionState($user, array_values(array_filter(ActivityLogPermissionMap::VIEW_COLUMNS))),
+                'view' => $this->permissionState($user, array_filter(ActivityLogPermissionMap::VIEW_COLUMNS)),
             ],
+            'ability_rules' => $this->getFlatPermissionList($user),
         ]);
+    }
+
+    private function getFlatPermissionList(\App\Models\User $user): array
+    {
+        return $user->getAllPermissions()->pluck('name')->toArray();
     }
 
     /**

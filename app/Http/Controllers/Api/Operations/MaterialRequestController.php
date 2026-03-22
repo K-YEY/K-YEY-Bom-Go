@@ -11,14 +11,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
+use App\Traits\ChecksWorkingHours;
+
 class MaterialRequestController extends Controller
 {
+    use ChecksWorkingHours;
     public function index(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'material-request.page');
         $this->authorizePermission($request, 'material-request.view');
 
         $rows = MaterialRequest::query()
+            ->forUserRole()
             ->with(['items.material:id,name,code', 'client:id,name', 'shipper:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,material_request_id'])
             ->orderByDesc('id')
             ->get();
@@ -28,9 +32,21 @@ class MaterialRequestController extends Controller
         );
     }
 
+    public function init(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'material-request.page');
+
+        return response()->json([
+            'metadata' => [
+                'working_hours' => \App\Models\Setting::query()->where('group', 'working_hours')->pluck('value', 'key')->all(),
+            ],
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'material-request.create');
+        $this->checkWorkingHours('material_requests');
 
         $data = $request->validate([
             'client_id' => ['required', 'integer', 'exists:users,id'],

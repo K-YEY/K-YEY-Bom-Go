@@ -21,8 +21,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
-/public
-/resources
+/public/build
+/public/storage
 # Logs
 logs
 *.log

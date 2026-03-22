@@ -23,8 +23,11 @@ use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
+use App\Traits\ChecksWorkingHours;
+
 class OrderController extends Controller
 {
+    use ChecksWorkingHours;
     private const FINAL_STATUSES = ['DELIVERED', 'UNDELIVERED'];
 
     private const STATUS_LABELS = [
@@ -55,6 +58,7 @@ class OrderController extends Controller
     public function import(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'order.create');
+        $this->checkWorkingHours('orders');
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,csv,xls'],
@@ -105,6 +109,7 @@ class OrderController extends Controller
             'plans' => \App\Models\Plan::query()->with('prices')->get(),
             'refused_reasons' => \App\Models\RefusedReason::query()->where('is_active', true)->get(),
             'statuses' => self::STATUS_LABELS,
+            'working_hours' => \App\Models\Setting::query()->where('group', 'working_hours')->pluck('value', 'key')->all(),
         ];
 
         // First page of orders
@@ -195,13 +200,14 @@ class OrderController extends Controller
         $perPage = $validated['per_page'] ?? 100;
 
         $query = Order::query()
+            ->forUserRole()
             ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
             ->orderByDesc('id');
 
         $this->applyOrderSearch($query, $validated);
 
         // Calculate totals from the full filtered query BEFORE pagination
-        $summaryQuery = Order::query();
+        $summaryQuery = Order::query()->forUserRole();
         $this->applyOrderSearch($summaryQuery, $validated);
         $totals = $summaryQuery->selectRaw('
                 SUM(total_amount) as total_amount,
@@ -231,6 +237,7 @@ class OrderController extends Controller
     public function store(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'order.create');
+        $this->checkWorkingHours('orders');
 
         $data = $request->validate([
             'code' => ['nullable', 'string', 'unique:orders,code'],

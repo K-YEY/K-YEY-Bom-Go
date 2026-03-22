@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserRole;
 use Illuminate\Database\Eloquent\Model;
 
 class ClientReturn extends Model
 {
+    use ScopesByUserRole;
     protected $fillable = [
         'client_user_id',
         'return_date',

@@ -19,6 +19,7 @@ class VisitController extends Controller
         $this->authorizePermission($request, 'visit.view');
 
         $rows = Visit::query()
+            ->forUserRole()
             ->with(['shipper:id,name', 'client:id,name', 'pickupRequest:id,status', 'materialRequest:id,status'])
             ->orderByDesc('id')
             ->get();

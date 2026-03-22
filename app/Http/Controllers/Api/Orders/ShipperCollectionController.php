@@ -17,8 +17,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
+use App\Traits\ChecksWorkingHours;
+
 class ShipperCollectionController extends Controller
 {
+    use ChecksWorkingHours;
     private const ELIGIBLE_ORDER_STATUSES = ['DELIVERED', 'UNDELIVERED'];
 
     public function index(Request $request): JsonResponse
@@ -48,6 +51,7 @@ class ShipperCollectionController extends Controller
         }
 
         $collections = ShipperCollection::query()
+            ->forUserRole()
             ->with(['shipper:id,name'])
             ->withCount('orders')
             ->when(
@@ -103,6 +107,7 @@ class ShipperCollectionController extends Controller
         $perPage = (int) ($validated['per_page'] ?? 100);
 
         $orders = Order::query()
+            ->forUserRole()
             ->select([
                 'id',
                 'code',
@@ -160,6 +165,7 @@ class ShipperCollectionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'shipper-collection.create');
+        $this->checkWorkingHours('orders');
 
         $data = $request->validate([
             'shipper_user_id' => ['required', 'exists:users,id'],
@@ -445,6 +451,7 @@ class ShipperCollectionController extends Controller
     private function resolveEligibleCollectionOrders(int $shipperUserId, array $orderIds): Collection
     {
         $orders = Order::query()
+            ->forUserRole()
             ->select([
                 'id',
                 'shipper_user_id',

@@ -45,6 +45,7 @@ class ClientReturnController extends Controller
         }
 
         $returns = ClientReturn::query()
+            ->forUserRole()
             ->with(['client:id,name'])
             ->when(
                 $statuses !== [],
@@ -87,6 +88,7 @@ class ClientReturnController extends Controller
         $perPage = (int) ($validated['per_page'] ?? 100);
 
         $orders = Order::query()
+            ->forUserRole()
             ->select([
                 'id',
                 'code',
@@ -386,6 +388,7 @@ class ClientReturnController extends Controller
     private function resolveEligibleReturnOrders(int $clientUserId, array $orderIds): Collection
     {
         $orders = Order::query()
+            ->forUserRole()
             ->select([
                 'id',
                 'client_user_id',

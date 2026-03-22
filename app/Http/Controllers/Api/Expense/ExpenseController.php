@@ -17,6 +17,7 @@ class ExpenseController extends Controller
         $this->authorizePermission($request, 'expense.view');
 
         $expenses = Expense::query()
+            ->forUserRole()
             ->with(['category', 'createdBy:id,name', 'approvedBy:id,name'])
             ->orderByDesc('id')
             ->get();

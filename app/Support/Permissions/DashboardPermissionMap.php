@@ -5,8 +5,8 @@ namespace App\Support\Permissions;
 class DashboardPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'order.dashboard.page', 'group' => 'orders', 'label' => 'Access order dashboard page', 'type' => 'page'],
-        ['name' => 'order.dashboard.view', 'group' => 'orders', 'label' => 'View order dashboard API', 'type' => 'action'],
+        ['name' => 'order.dashboard.page', 'group' => 'dashboard', 'label' => 'Access order dashboard page', 'type' => 'page'],
+        ['name' => 'order.dashboard.view', 'group' => 'dashboard', 'label' => 'View order dashboard API', 'type' => 'action'],
     ];
 
     public const CARD_VIEW_PERMISSIONS = [
@@ -44,6 +44,14 @@ class DashboardPermissionMap
         'total_revenue' => 'order.dashboard.card.total_revenue.view',
     ];
 
+    public const CHART_VIEW_PERMISSIONS = [
+        'financial' => 'order.dashboard.chart.financial.view',
+        'status_donut' => 'order.dashboard.chart.status_donut.view',
+        'count_breakdown' => 'order.dashboard.chart.count_breakdown.view',
+        'collection_rates' => 'order.dashboard.chart.collection_rates.view',
+        'top_governorates' => 'order.dashboard.chart.top_governorates.view',
+    ];
+
     public static function allPermissionDefinitions(): array
     {
         $permissions = [
@@ -53,9 +61,18 @@ class DashboardPermissionMap
         foreach (self::CARD_VIEW_PERMISSIONS as $cardKey => $permission) {
             $permissions[] = [
                 'name' => $permission,
-                'group' => 'orders',
+                'group' => 'dashboard',
                 'label' => "View dashboard card {$cardKey}",
                 'type' => 'card',
+            ];
+        }
+
+        foreach (self::CHART_VIEW_PERMISSIONS as $chartKey => $permission) {
+            $permissions[] = [
+                'name' => $permission,
+                'group' => 'dashboard',
+                'label' => "View dashboard chart {$chartKey}",
+                'type' => 'chart',
             ];
         }
 

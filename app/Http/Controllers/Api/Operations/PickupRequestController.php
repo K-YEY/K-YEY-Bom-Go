@@ -11,14 +11,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
+use App\Traits\ChecksWorkingHours;
+
 class PickupRequestController extends Controller
 {
+    use ChecksWorkingHours;
     public function index(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'pickup-request.page');
         $this->authorizePermission($request, 'pickup-request.view');
 
         $rows = PickupRequest::query()
+            ->forUserRole()
             ->with(['client:id,name', 'shipper:id,name', 'createdBy:id,name', 'approvedBy:id,name', 'rejectedBy:id,name', 'visit:id,pickup_request_id'])
             ->orderByDesc('id')
             ->get();
@@ -28,9 +32,21 @@ class PickupRequestController extends Controller
         );
     }
 
+    public function init(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'pickup-request.page');
+
+        return response()->json([
+            'metadata' => [
+                'working_hours' => \App\Models\Setting::query()->where('group', 'working_hours')->pluck('value', 'key')->all(),
+            ],
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'pickup-request.create');
+        $this->checkWorkingHours('pickups');
 
         $data = $request->validate([
             'client_id' => ['required', 'integer', 'exists:users,id'],

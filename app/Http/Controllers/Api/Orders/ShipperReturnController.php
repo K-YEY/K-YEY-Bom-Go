@@ -45,6 +45,7 @@ class ShipperReturnController extends Controller
         }
 
         $returns = ShipperReturn::query()
+            ->forUserRole()
             ->with(['shipper:id,name'])
             ->when(
                 $statuses !== [],
@@ -87,6 +88,7 @@ class ShipperReturnController extends Controller
         $perPage = (int) ($validated['per_page'] ?? 100);
 
         $orders = Order::query()
+            ->forUserRole()
             ->select([
                 'id',
                 'code',
@@ -379,6 +381,7 @@ class ShipperReturnController extends Controller
     private function resolveEligibleReturnOrders(int $shipperUserId, array $orderIds): Collection
     {
         $orders = Order::query()
+            ->forUserRole()
             ->select([
                 'id',
                 'shipper_user_id',

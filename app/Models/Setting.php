@@ -100,4 +100,21 @@ class Setting extends Model
 
         return null;
     }
+
+    public static function getValue(string $key, $default = null): mixed
+    {
+        $setting = self::query()->where('key', $key)->first();
+
+        if ($setting) {
+            return $setting->value;
+        }
+
+        if ($default !== null) {
+            return $default;
+        }
+
+        $allDefaults = self::getDefaults();
+
+        return $allDefaults[$key] ?? null;
+    }
 }

@@ -6,6 +6,8 @@ class OrdersPermissionMap
 {
     public const PAGE_PERMISSIONS = [
         ['name' => 'order.page', 'group' => 'orders', 'label' => 'Access Order page', 'type' => 'page'],
+        ['name' => 'order.scan.page', 'group' => 'orders', 'label' => 'Access Order Scan (Barcode) page', 'type' => 'page'],
+        ['name' => 'order.approval.page', 'group' => 'orders', 'label' => 'Access Order Approval requests page', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [

@@ -28,13 +28,17 @@ use App\Http\Controllers\Api\Users\ClientController;
 use App\Http\Controllers\Api\Users\ProfileController;
 use App\Http\Controllers\Api\Users\ShipperController;
 use App\Http\Controllers\Api\Users\UserController;
+use App\Http\Controllers\Api\Public\LandingPageController;
 use App\Http\Middleware\UpdateLoginSessionLastSeen;
 use Illuminate\Support\Facades\Route;
 
+// Public routes
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::get('/landing-page', [LandingPageController::class, 'index']);
 
-Route::middleware(['auth:sanctum', UpdateLoginSessionLastSeen::class])->group(function (): void {
+// Protected routes (require auth:sanctum)
+Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class]], function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('acl', [AclMatrixController::class, 'matrix']);
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
     Route::apiResource('expenses', ExpenseController::class);
@@ -58,8 +62,10 @@ Route::middleware(['auth:sanctum', UpdateLoginSessionLastSeen::class])->group(fu
     Route::apiResource('governorates', GovernorateController::class);
     Route::apiResource('plans', PlanController::class);
     Route::apiResource('materials', MaterialController::class);
+    Route::get('material-requests/init', [MaterialRequestController::class, 'init']);
     Route::apiResource('material-requests', MaterialRequestController::class);
     Route::apiResource('material-request-items', MaterialRequestItemController::class);
+    Route::get('pickup-requests/init', [PickupRequestController::class, 'init']);
     Route::apiResource('pickup-requests', PickupRequestController::class);
     Route::apiResource('visits', VisitController::class);
     Route::get('orders/export', [OrderController::class, 'export']);
