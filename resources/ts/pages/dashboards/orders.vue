@@ -55,9 +55,9 @@ const cardMeta: Record<string, CardMeta & { permission?: string }> = {
   delivered_total: { title: 'Delivered Amount', icon: 'tabler-cash-banknote', color: 'success', isMoney: true, permission: 'order.dashboard.card.delivered_total.view' },
   cash_ready: { title: 'Collected COD', icon: 'tabler-coins', color: 'info', isMoney: true, permission: 'order.dashboard.card.cash_ready.view' },
   net: { title: 'Settled COD', icon: 'tabler-scale', color: 'primary', isMoney: true, permission: 'order.dashboard.card.net.view' },
-  total_fees: { title: 'Total Shipping Fees', icon: 'tabler-receipt-2', color: 'secondary', isMoney: true, permission: 'order.dashboard.card.total_fees.view' },
+  total_fees: { title: 'Total Fees', icon: 'tabler-receipt-2', color: 'secondary', isMoney: true, permission: 'order.dashboard.card.total_fees.view' },
   total_shipper_fees: { title: 'Total Shipper Fees', icon: 'tabler-user-dollar', color: 'secondary', isMoney: true, permission: 'order.dashboard.card.total_shipper_fees.view' },
-  total_cop: { title: 'Total Company Amount', icon: 'tabler-building-bank', color: 'primary', isMoney: true, permission: 'order.dashboard.card.total_cop.view' },
+  total_cop: { title: 'Total COP', icon: 'tabler-building-bank', color: 'primary', isMoney: true, permission: 'order.dashboard.card.total_cop.view' },
   total_cod: { title: 'Total COD Amount', icon: 'tabler-cash', color: 'info', isMoney: true },
   total_expenses: { title: 'Total Expenses', icon: 'tabler-credit-card', color: 'error', isMoney: true, permission: 'order.dashboard.card.total_expenses.view' },
   total_revenue: { title: 'Total Revenue', icon: 'tabler-chart-line', color: 'success', isMoney: true, permission: 'order.dashboard.card.total_revenue.view' },
@@ -297,14 +297,16 @@ const radialSeries = computed(() => {
   return [
     pct(toNumber(payload.value.collected_shipper), toNumber(payload.value.uncollected_shipper)),
     pct(toNumber(payload.value.collected_client), toNumber(payload.value.uncollected_client)),
-    pct(toNumber(payload.value.return_shipper), toNumber(payload.value.unreturn_shipper)),
+    pct(toNumber(payload.value.uncollected_client), toNumber(payload.value.collected_client)),
+    pct(toNumber(payload.value.uncollected_shipper), toNumber(payload.value.collected_shipper)),
+    
   ]
 })
 
 const radialConfig = computed(() => ({
   stroke: { lineCap: 'round' },
-  labels: ['Shipper Collected', 'Client Settled', 'Shipper Returned'],
-  colors: ['#72e128', '#26c6f9', '#ffab00'],
+  labels: ['Collected Shipper', 'Collected Client', 'UnCollected Shipper', 'UnCollected Client'],
+  colors: ['#72e128', '#26c6f9', '#e52b50','#e32636'],
   legend: {
     show: true,
     fontSize: '13px',
@@ -340,47 +342,8 @@ const radialConfig = computed(() => ({
   chart: { toolbar: { show: false } },
 }))
 
-// ─── 3. Horizontal Bar – Order Count Breakdown ──────────────────────────────
-const countBarSeries = computed(() => [{
-  name: 'Orders',
-  data: [
-    toNumber(payload.value.out_for_delivery),
-    toNumber(payload.value.hold),
-    toNumber(payload.value.delivered),
-    toNumber(payload.value.undelivered),
-    toNumber(payload.value.return_client),
-    toNumber(payload.value.return_shipper),
-  ],
-}])
 
-const countBarConfig = computed(() => ({
-  chart: { toolbar: { show: false }, parentHeightOffset: 0 },
-  colors: ['#26c6f9', '#ffab00', '#72e128', '#ff4c51', '#7367f0', '#ff9f43'],
-  plotOptions: {
-    bar: {
-      borderRadius: 6,
-      barHeight: '55%',
-      horizontal: true,
-      distributed: true,
-    },
-  },
-  dataLabels: { enabled: false },
-  legend: { show: false },
-  grid: {
-    borderColor: borderColor.value,
-    padding: { top: -10 },
-    xaxis: { lines: { show: false } },
-  },
-  xaxis: {
-    axisBorder: { show: false },
-    axisTicks: { color: borderColor.value },
-    categories: ['Out for Delivery', 'On Hold', 'Delivered', 'Undelivered', 'Returned (Client)', 'Returned (Shipper)'],
-    labels: { style: { colors: disabledText.value, fontSize: '0.8125rem' } },
-  },
-  yaxis: {
-    labels: { style: { colors: disabledText.value, fontSize: '0.75rem' } },
-  },
-}))
+
 
 // ─── 4. Column Chart – Financial Summary ────────────────────────────────────
 const financialSeries = computed(() => [{
@@ -415,7 +378,7 @@ const financialConfig = computed(() => ({
   xaxis: {
     axisBorder: { show: false },
     axisTicks: { color: borderColor.value },
-    categories: ['Delivered\nAmount', 'Shipping\nFees', 'Shipper\nFees', 'Company\nAmt', 'Expenses', 'Revenue'],
+    categories: ['Delivered\nAmount', 'Fees', 'Shipper\nFees', 'COP', 'Expenses', 'Revenue'],
     labels: { style: { colors: disabledText.value, fontSize: '0.75rem' } },
   },
   yaxis: {
@@ -666,27 +629,7 @@ const refreshDashboard = () => execute()
       </VCol>
 
       <!-- ─── Charts Row 2 ─────────────────────────────────── -->
-      <!-- Count Breakdown Horizontal Bar -->
-      <VCol
-        v-if="can('order.dashboard.chart.count_breakdown.view' as any, 'all' as any)"
-        cols="12"
-        md="6"
-      >
-        <VCard height="100%">
-          <VCardItem>
-            <VCardTitle>Order Count Breakdown</VCardTitle>
-            <VCardSubtitle>Orders per status category</VCardSubtitle>
-          </VCardItem>
-          <VCardText>
-            <VueApexCharts
-              type="bar"
-              height="280"
-              :options="countBarConfig"
-              :series="countBarSeries"
-            />
-          </VCardText>
-        </VCard>
-      </VCol>
+  
 
       <!-- Collection & Settlement Radial -->
       <VCol
