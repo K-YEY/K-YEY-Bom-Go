@@ -129,7 +129,10 @@ const updateStatus = async (id: number, status: string) => {
 // 👉 Clients for filter
 const { data: clientsData } = await useApi<any>('/clients').get().json()
 const clients = computed(() => {
-  const data = Array.isArray(clientsData.value) ? clientsData.value : []
+  let raw = clientsData.value
+  const data = Array.isArray(raw)
+    ? raw
+    : (raw && Array.isArray(raw.data) ? raw.data : [])
   return data.map((c: any) => ({
     ...c,
     name: c.user?.name || 'Unknown'

@@ -83,7 +83,8 @@ const bulkPrintLabels = () => {
 // 👉 Headers
 const headers = [
   { title: 'CODE', key: 'code', width: '120px' },
-  { title: 'DATE', key: 'created_at', width: '100px' },
+  { title: 'DATE ENTRY', key: 'created_at', width: '100px' },
+  { title: 'SHIPPER DATE', key: 'shipper_date', width: '100px' },
   { title: 'RECEIVER', key: 'receiver_name', width: '180px' },
   { title: 'AREA', key: 'area', width: '200px' },
   { title: 'TOTAL', key: 'total_amount', width: '80px' },
@@ -91,14 +92,14 @@ const headers = [
   { title: 'COMMISSION', key: 'commission_amount', width: '80px' },
   { title: 'NET', key: 'company_amount', width: '80px' },
   { title: 'COD', key: 'cod_amount', width: '80px' },
-  { title: 'STATUS', key: 'status', width: '130px' },
+  { title: 'STATUS', key: 'status', width: '110px' },
   { title: 'STATUS NOTE', key: 'latest_status_note', width: '180px' },
   { title: 'ORDER NOTE', key: 'order_note', width: '180px' },
-  { title: 'ت. كابتن', key: 'shipper_collection', sortable: false, width: '80px' },
-  { title: 'م. كابتن', key: 'shipper_return', sortable: false, width: '80px' },
-  { title: 'مرتجع', key: 'has_return', sortable: false, width: '80px' },
-  { title: 'ت. عميل', key: 'client_settlement', sortable: false, width: '80px' },
-  { title: 'م. عميل', key: 'client_return', sortable: false, width: '80px' },
+  { title: 'ت. كابتن', key: 'shipper_collection', sortable: false, width: '60px' },
+  { title: 'م. كابتن', key: 'shipper_return', sortable: false, width: '60px' },
+  { title: 'مرتجع', key: 'has_return', sortable: false, width: '60px' },
+  { title: 'ت. عميل', key: 'client_settlement', sortable: false, width: '60px' },
+  { title: 'م. عميل', key: 'client_return', sortable: false, width: '60px' },
   { title: 'SHIPPER', key: 'shipper', width: '150px' },
   { title: 'CLIENT', key: 'client', width: '150px' },
   { title: 'ACTIONS', key: 'actions', sortable: false, width: '80px' },
@@ -111,6 +112,7 @@ const STORAGE_KEY = 'orders-visible-columns'
 // Define permission mapping for columns
 const columnPermissions: Record<string, string> = {
   code: 'order.column.code.view',
+  shipper_date: 'order.column.shipper_date.view',
   external_code: 'order.column.external_code.view',
   created_at: 'order.column.created_at.view',
   receiver_name: 'order.column.receiver_name.view',
@@ -671,6 +673,12 @@ const handleNewOrder = () => {
             <VTextField v-model="filters.code" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
           </div>
         </template>
+        <template #header.shipper_date="{ column }">
+          <div class="header-filter">
+            <span class="header-title">{{ column.title }}</span>
+            <VTextField v-model="filters.shipper_date" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+          </div>
+        </template>
         <template #header.receiver_name="{ column }">
           <div class="header-filter">
             <span class="header-title">{{ column.title }}</span>
@@ -738,6 +746,11 @@ const handleNewOrder = () => {
           <div class="d-flex flex-column text-xs">
             <span class="text-primary font-weight-bold">#{{ item.code }}</span>
             <span v-if="item.external_code" class="text-disabled text-truncate" style="max-inline-size: 80px;">{{ item.external_code }}</span>
+          </div>
+        </template>
+        <template #item.shipper_date="{ item }: { item: any }">
+          <div class="d-flex flex-column text-xs">
+            <span class="text-primary font-weight-bold">{{ new Date(item.shipper_date).toLocaleDateString('en-GB') }}</span>
           </div>
         </template>
         <template #item.receiver_name="{ item }: { item: any }">
@@ -961,6 +974,14 @@ const handleNewOrder = () => {
   }
 }
 
+.filter-table :deep(th),
+.filter-table :deep(td) {
+  border-inline-end: 1.5px solid  rgba(var(--v-border-color), 0.1) !important;
+  border-inline-start: 1.5px solid  rgba(var(--v-border-color), 0.1) !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
 .filter-table :deep(th) {
   background-color: var(--v-surface-variant) !important;
   border-block-end: 1px solid rgba(var(--v-border-color), 0.1) !important;
@@ -983,4 +1004,24 @@ const handleNewOrder = () => {
 .filter-select :deep(.v-field__input) { padding: 0 !important; color: var(--v-theme-primary); font-size: 0.65rem !important; min-block-size: 18px !important; }
 .filter-table :deep(td) { padding: 8px !important; font-size: 0.72rem !important; }
 .text-xs { font-size: 0.7rem !important; line-height: 1.2; }
+
+.custom-table-center-border th,
+.custom-table-center-border td {
+  box-sizing: border-box;
+  border: 1.5px solid #bdbdbd !important;
+  block-size: 100%;
+  min-block-size: 48px;
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.custom-table-center-border thead th {
+  background: #f8fafc;
+  font-weight: bold;
+}
+
+.custom-table-center-border tr {
+  block-size: 100%;
+  min-block-size: 48px;
+}
 </style>

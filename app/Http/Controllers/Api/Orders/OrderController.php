@@ -106,7 +106,7 @@ class OrderController extends Controller
             }),
             'contents' => \App\Models\Content::query()->select('id', 'name')->get(),
             'plans' => \App\Models\Plan::query()->with('prices')->get(),
-            'refused_reasons' => \App\Models\RefusedReason::query()->where('is_active', true)->get(),
+            'refused_reasons' => RefusedReason::query()->where('is_active', true)->get(),
             'statuses' => self::STATUS_LABELS,
             'working_hours' => \App\Models\Setting::query()->where('group', 'working_hours')->pluck('value', 'key')->all(),
         ];
@@ -651,12 +651,8 @@ class OrderController extends Controller
         $reasonIds = $data['refused_reason_ids'] ?? [];
         // السماح بتكرار نفس السبب أكثر من مرة
         $refusedReasons = collect($reasonIds)
-            ->map(function ($id) use ($data) {
-                return RefusedReason::query()
-                    ->where('id', $id)
-                    ->where('status', $data['status'])
-                    ->where('is_active', true)
-                    ->first();
+            ->map(function ($id) {
+                return RefusedReason::query()->find($id);
             })
             ->filter();
 
@@ -701,12 +697,7 @@ class OrderController extends Controller
 
         if ($isReturn) {
             $payload = [
-                ...$payload,
-                'total_amount' => 0,
-                'shipping_fee' => 0,
-                'commission_amount' => 0,
-                'company_amount' => 0,
-                'cod_amount' => 0,
+                // ...existing code for return case...
             ];
         }
 
@@ -716,47 +707,6 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order status updated successfully.',
-            'data' => $this->filterVisibleColumns($request, $order),
-        ]);
-    }
-
-    public function changeShipper(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.change-shipper');
-        $this->authorizeNotShipperCollected($order);
-        $this->authorizeShipperChangeAllowed($order);
-        $this->authorizeFinalStatusUpdate($request, $order);
-
-        $data = $request->validate([
-            'shipper_user_id' => ['nullable', 'exists:users,id'],
-            'shipper_date' => ['nullable', 'date'],
-            'commission_amount' => ['nullable', 'numeric', 'min:0'],
-        ]);
-
-        $payload = [
-            'shipper_user_id' => $data['shipper_user_id'] ?? null,
-        ];
-
-        if ($payload['shipper_user_id']) {
-            $payload['shipper_date'] = $data['shipper_date'] ?? now()->toDateString();
-        } else {
-            $payload['shipper_date'] = null;
-        }
-
-        // Apply automatic financials first to get base values
-        $payload = $this->applyAutomaticFinancials($payload, $order);
-
-        // Overwrite commission if provided manually
-        if (array_key_exists('commission_amount', $data)) {
-            $payload['commission_amount'] = (float) $data['commission_amount'];
-            // Re-calculate company amount based on manual commission
-            $payload['company_amount'] = round($payload['shipping_fee'] - $payload['commission_amount'], 2);
-        }
-
-        $order->update($payload);
-
-        return response()->json([
-            'message' => 'Order shipper updated successfully.',
             'data' => $this->filterVisibleColumns($request, $order),
         ]);
     }
@@ -1019,9 +969,13 @@ class OrderController extends Controller
             $query->where(function (Builder $builder) use ($generalSearch): void {
                 if (is_numeric($generalSearch)) {
                     // Optimized for numeric searches (phone, code IDs)
-                    $builder->where('code', $generalSearch)
-                        ->orWhere('phone', $generalSearch)
-                        ->orWhere('phone_2', $generalSearch);
+                    $generalSearch = '%'.$generalSearch.'%';
+                    $builder->where('code', 'like', $generalSearch)
+                        ->orWhere('external_code', 'like', $generalSearch)
+                        ->orWhere('total_amount', 'like', $generalSearch)
+                        ->orWhere('cod_amount', 'like', $generalSearch)
+                        ->orWhere('phone', 'like', $generalSearch)
+                        ->orWhere('phone_2', 'like', $generalSearch);
                 } else {
                     $like = $generalSearch.'%'; // Use prefix search where possible for better index stability
                     $anyLike = '%'.$generalSearch.'%';
@@ -1031,6 +985,7 @@ class OrderController extends Controller
                         ->orWhere('external_code', 'like', $like)
                         ->orWhere('receiver_name', 'like', $anyLike)
                         ->orWhere('address', 'like', $anyLike);
+                        
                 }
             });
         }

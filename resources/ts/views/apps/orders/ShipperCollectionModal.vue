@@ -49,7 +49,10 @@ const selectedOrders = ref<any[]>([])
 // 👉 Shippers
 const { data: shippersData } = await useApi<any>('/shippers').get().json()
 const shippers = computed(() => {
-  const data = Array.isArray(shippersData.value) ? shippersData.value : []
+  let raw = shippersData.value
+  const data = Array.isArray(raw)
+    ? raw
+    : (raw && Array.isArray(raw.data) ? raw.data : [])
   return data.map((s: any) => ({
     ...s,
     name: s.user?.name || 'Unknown',

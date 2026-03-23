@@ -12,7 +12,8 @@ const emit = defineEmits(['update:isDialogVisible', 'statusUpdated'])
 
 const statusData = ref({
   status: '',
-  selectedReasonIds: [] as number[],
+  refused_reason_ids: [] as number[], // يسمح بالتكرار
+  refused_reason_id_to_add: null as number | null,
   customReason: '',
   total_amount: 0,
   has_return: false,
@@ -41,19 +42,19 @@ const filteredReasons = computed(() => {
   return allReasons.value.filter((r: any) => r.is_active && r.status === statusData.value.status)
 })
 
-const selectedReasons = computed(() => {
-  return allReasons.value.filter((r: any) => statusData.value.selectedReasonIds.includes(r.id))
-})
 
 const showEditAmount = computed(() => {
-  return selectedReasons.value.some((r: any) => r.is_edit_amount)
+  return statusData.value.refused_reason_ids
+    .map(id => allReasons.value.find((r: any) => r.id === id))
+    .some((r: any) => r && r.is_edit_amount)
 })
 
 watch(() => props.order, (newVal) => {
   if (newVal) {
     statusData.value = {
       status: newVal.status,
-      selectedReasonIds: [], 
+      refused_reason_ids: [],
+      refused_reason_id_to_add: null,
       customReason: '',
       total_amount: newVal.total_amount,
       has_return: newVal.has_return || false,
@@ -61,22 +62,10 @@ watch(() => props.order, (newVal) => {
   }
 }, { immediate: true })
 
-const toggleReason = (reason: any) => {
-  const index = statusData.value.selectedReasonIds.indexOf(reason.id)
-  
-  if (index > -1) {
-    statusData.value.selectedReasonIds.splice(index, 1)
-  } else {
-    if (reason.is_clear) {
-      statusData.value.selectedReasonIds = [reason.id]
-    } else {
-      // Remove any is_clear reasons
-      statusData.value.selectedReasonIds = statusData.value.selectedReasonIds.filter(id => {
-        const r = allReasons.value.find((ar: any) => ar.id === id)
-        return !r?.is_clear
-      })
-      statusData.value.selectedReasonIds.push(reason.id)
-    }
+const addRefusedReason = () => {
+  if (statusData.value.refused_reason_id_to_add) {
+    statusData.value.refused_reason_ids.push(statusData.value.refused_reason_id_to_add)
+    statusData.value.refused_reason_id_to_add = null
   }
 }
 
@@ -85,7 +74,7 @@ const onSubmit = async () => {
 
   const payload: any = {
     status: statusData.value.status,
-    refused_reason_ids: statusData.value.selectedReasonIds,
+    refused_reason_ids: statusData.value.refused_reason_ids,
     reason: statusData.value.customReason,
   }
 
@@ -129,22 +118,40 @@ const onSubmit = async () => {
             />
           </VCol>
 
-          <!-- Reasons Tags -->
+          <!-- Reasons Tags (تكرار مسموح + حذف أي سبب) -->
           <VCol cols="12" v-if="filteredReasons.length">
-            <p class="text-sm mb-2">Select Reasons:</p>
-            <div class="d-flex flex-wrap gap-2">
-              <VChip
-                v-for="reason in filteredReasons"
-                :key="reason.id"
-                :color="statusData.selectedReasonIds.includes(reason.id) ? 'primary' : 'secondary'"
-                :variant="statusData.selectedReasonIds.includes(reason.id) ? 'elevated' : 'tonal'"
-                class="cursor-pointer"
-                @click="toggleReason(reason)"
+            <div class="d-flex align-center gap-2">
+              <AppSelect
+                v-model="statusData.refused_reason_id_to_add"
+                label="اختر سبب (يمكن التكرار)"
+                :items="filteredReasons"
+                item-title="reason"
+                item-value="id"
+                clearable
+                style="flex: 1;"
+              />
+              <VBtn
+                color="primary"
+                variant="tonal"
+                size="small"
+                :disabled="!statusData.refused_reason_id_to_add"
+                @click="addRefusedReason"
               >
-                {{ reason.reason }}
-                <VIcon v-if="reason.is_return" end icon="tabler-rotate" size="14" class="ms-1" />
-                <VIcon v-if="reason.is_clear" end icon="tabler-trash" size="14" class="ms-1" />
-                <VIcon v-if="reason.is_edit_amount" end icon="tabler-pencil" size="14" class="ms-1" />
+                إضافة
+              </VBtn>
+            </div>
+            <div v-if="statusData.refused_reason_ids.length" class="mt-2">
+              <span class="text-caption">الأسباب المختارة (يمكن التكرار):</span>
+              <VChip
+                v-for="(rid, idx) in statusData.refused_reason_ids"
+                :key="idx + '-' + rid"
+                class="ma-1"
+                color="info"
+                size="x-small"
+                closable
+                @click:close="statusData.refused_reason_ids.splice(idx, 1)"
+              >
+                {{ filteredReasons.find((r: any) => r.id === rid)?.reason || rid }}
               </VChip>
             </div>
           </VCol>
