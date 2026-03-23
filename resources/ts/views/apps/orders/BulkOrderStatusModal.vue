@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useApi } from '@/composables/useApi';
 
+
 interface Props {
   isDialogVisible: boolean
   selectedOrders: any[]
@@ -13,7 +14,8 @@ const emit = defineEmits(['update:isDialogVisible', 'statusUpdated'])
 const statusData = ref({
   status: 'DELIVERED',
   reason: '',
-  refused_reason_id: null as number | null,
+  refused_reason_ids: [] as number[], // يسمح بالتكرار
+  refused_reason_id_to_add: null as number | null,
   total_amount: null as number | null,
 })
 
@@ -54,7 +56,7 @@ const onSubmit = async () => {
     order_ids: validOrders.map(o => o.id),
     status: statusData.value.status,
     reason: statusData.value.reason,
-    refused_reason_id: statusData.value.refused_reason_id,
+    refused_reason_ids: statusData.value.refused_reason_ids,
     total_amount: statusData.value.total_amount,
   }
 
@@ -88,19 +90,49 @@ const onSubmit = async () => {
                 { title: 'On hold', value: 'HOLD' },
                 { title: 'Undelivered', value: 'UNDELIVERED' },
               ]"
-              @update:model-value="statusData.refused_reason_id = null"
             />
           </VCol>
 
           <VCol cols="12" v-if="filteredReasons.length">
-            <AppSelect
-              v-model="statusData.refused_reason_id"
-              label="Reason (Tag)"
-              :items="filteredReasons"
-              item-title="reason"
-              item-value="id"
-              clearable
-            />
+            <div class="d-flex align-center gap-2">
+              <AppSelect
+                v-model="statusData.refused_reason_id_to_add"
+                label="اختر سبب (يمكن التكرار)"
+                :items="filteredReasons"
+                item-title="reason"
+                item-value="id"
+                clearable
+                style="flex: 1;"
+              />
+              <VBtn
+                color="primary"
+                variant="tonal"
+                size="small"
+                :disabled="!statusData.refused_reason_id_to_add"
+                @click="() => {
+                  if (statusData.refused_reason_id_to_add) {
+                    statusData.refused_reason_ids.push(statusData.refused_reason_id_to_add)
+                    statusData.refused_reason_id_to_add = null
+                  }
+                }"
+              >
+                إضافة
+              </VBtn>
+            </div>
+            <div v-if="statusData.refused_reason_ids.length" class="mt-2">
+              <span class="text-caption">الأسباب المختارة (يمكن التكرار):</span>
+              <VChip
+                v-for="(rid, idx) in statusData.refused_reason_ids"
+                :key="idx + '-' + rid"
+                class="ma-1"
+                color="info"
+                size="x-small"
+                closable
+                @click:close="statusData.refused_reason_ids.splice(idx, 1)"
+              >
+                {{ filteredReasons.find((r: any) => r.id === rid)?.reason || rid }}
+              </VChip>
+            </div>
           </VCol>
 
           <VCol cols="12">
@@ -111,7 +143,7 @@ const onSubmit = async () => {
             />
           </VCol>
           
-          <VCol cols="12" v-if="statusData.refused_reason_id && filteredReasons.find((r: any) => r.id === statusData.refused_reason_id)?.is_edit_amount">
+          <VCol cols="12" v-if="statusData.refused_reason_id_to_add && filteredReasons.find((r: any) => r.id === statusData.refused_reason_id_to_add)?.is_edit_amount">
             <AppTextField
               v-model="statusData.total_amount"
               label="Force Total Amount (Optional)"

@@ -92,8 +92,8 @@ const headers = [
   { title: 'NET', key: 'company_amount', width: '80px' },
   { title: 'COD', key: 'cod_amount', width: '80px' },
   { title: 'STATUS', key: 'status', width: '130px' },
-  { title: 'ORDER NOTE', key: 'order_note', width: '180px' },
   { title: 'STATUS NOTE', key: 'latest_status_note', width: '180px' },
+  { title: 'ORDER NOTE', key: 'order_note', width: '180px' },
   { title: 'ت. كابتن', key: 'shipper_collection', sortable: false, width: '80px' },
   { title: 'م. كابتن', key: 'shipper_return', sortable: false, width: '80px' },
   { title: 'مرتجع', key: 'has_return', sortable: false, width: '80px' },
@@ -551,7 +551,7 @@ const handleNewOrder = () => {
       <VCol cols="6" md="2">
         <VCard elevation="2" class="stats-card"><VCardText class="d-flex align-center gap-3 pa-3">
             <VAvatar variant="tonal" color="info" icon="tabler-currency-dollar" size="38" />
-            <div><div class="text-h6 font-weight-bold text-truncate" style="max-width: 80px;">{{ totals.total_amount.toFixed(0) }}</div><div class="text-xs text-disabled">Amount</div></div>
+            <div><div class="text-h6 font-weight-bold text-truncate" style="max-inline-size: 80px;">{{ totals.total_amount.toFixed(0) }}</div><div class="text-xs text-disabled">Amount</div></div>
         </VCardText></VCard>
       </VCol>
       <VCol cols="6" md="2">
@@ -637,7 +637,7 @@ const handleNewOrder = () => {
                   <VIcon icon="tabler-layout-columns" />
                 </VBtn>
               </template>
-              <VList class="pa-2" style="max-height: 400px; overflow-y: auto;">
+              <VList class="pa-2" style="max-block-size: 400px; overflow-y: auto;">
                 <VListItem v-for="h in filteredHeadersForMenu" :key="h.key" density="compact">
                   <VCheckbox v-model="visibleHeaderKeys" :value="h.key" :label="h.title" hide-details density="compact" />
                 </VListItem>
@@ -737,19 +737,19 @@ const handleNewOrder = () => {
         <template #item.code="{ item }: { item: any }">
           <div class="d-flex flex-column text-xs">
             <span class="text-primary font-weight-bold">#{{ item.code }}</span>
-            <span v-if="item.external_code" class="text-disabled text-truncate" style="max-width: 80px;">{{ item.external_code }}</span>
+            <span v-if="item.external_code" class="text-disabled text-truncate" style="max-inline-size: 80px;">{{ item.external_code }}</span>
           </div>
         </template>
         <template #item.receiver_name="{ item }: { item: any }">
           <div class="d-flex flex-column text-xs">
-            <span class="font-weight-medium text-wrap" style="max-width:140px">{{ item.receiver_name }}</span>
+            <span class="font-weight-medium text-wrap" style="max-inline-size: 140px;">{{ item.receiver_name }}</span>
             <span class="text-disabled">{{ item.phone }} / {{ item.phone_2 }}</span>
           </div>
         </template>
         <template #item.area="{ item }: { item: any }">
-          <div class="d-flex flex-column text-xs" style="min-width:130px">
+          <div class="d-flex flex-column text-xs" style="min-inline-size: 130px;">
             <span class="font-weight-medium">{{ item.governorate?.name }} / {{ item.city?.name }}</span>
-            <span class="text-disabled text-wrap" style="max-width: 150px;">{{ item.address }}</span>
+            <span class="text-disabled text-wrap" style="max-inline-size: 150px;">{{ item.address }}</span>
           </div>
         </template>
         <template #item.total_amount="{ item }: { item: any }"><span class="font-weight-bold text-xs">{{ Number(item.total_amount).toFixed(0) }}</span></template>
@@ -769,10 +769,10 @@ const handleNewOrder = () => {
             {{ item.status.replace(/_/g, ' ') }}
           </VChip>
         </template>
-        <template #item.order_note="{ item }: { item: any }"><span class="text-xs text-wrap" style="max-width: 150px; display: block;">{{ item.order_note || '—' }}</span></template>
+        <template #item.order_note="{ item }: { item: any }"><span class="text-xs text-wrap" style=" display: block;max-inline-size: 150px;">{{ item.order_note || '—' }}</span></template>
         <template #item.latest_status_note="{ item }: { item: any }">
-          <VChip v-if="item.latest_status_note" size="x-small" color="secondary" variant="tonal" class="text-xs" style="height: auto; min-height: 20px;">
-            <span class="text-truncate" style="max-width: 130px;">{{ item.latest_status_note }}</span>
+          <VChip v-if="item.latest_status_note" size="x-small" color="secondary" variant="tonal" class="text-xs" style="block-size: auto; min-block-size: 20px;">
+            <span class="text-truncate" style="max-inline-size: 130px;">{{ item.latest_status_note }}</span>
           </VChip>
           <span v-else class="text-disabled">—</span>
         </template>
@@ -884,7 +884,7 @@ const handleNewOrder = () => {
       width="600"
     >
       <VCard title="سجل تحركات الأوردر (Timeline)">
-        <VCardText style="max-height: 500px; overflow-y: auto;">
+        <VCardText style="max-block-size: 500px; overflow-y: auto;">
           <div v-if="isFetchingHistory" class="text-center py-10">
             <VProgressCircular indeterminate color="primary" />
           </div>
@@ -948,6 +948,7 @@ const handleNewOrder = () => {
 .fleet-timeline {
   :deep(.v-timeline-divider__dot) {
     background: rgb(var(--v-theme-surface)) !important;
+
     .v-timeline-divider__inner-dot {
       box-shadow: none !important;
     }
@@ -961,25 +962,25 @@ const handleNewOrder = () => {
 }
 
 .filter-table :deep(th) {
-  padding-top: 8px !important;
-  padding-bottom: 20px !important;
-  vertical-align: top !important;
   background-color: var(--v-surface-variant) !important;
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.1) !important;
+  border-block-end: 1px solid rgba(var(--v-border-color), 0.1) !important;
+  padding-block: 8px 20px !important;
+  vertical-align: top !important;
   white-space: nowrap;
 }
-.header-filter { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+.header-filter { display: flex; flex-direction: column; gap: 2px; margin-block-start: 2px; }
+
 .header-title {
+  display: block;
+  color: rgba(var(--v-theme-on-surface), 0.7);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.5px;
+  margin-block-end: 2px;
   text-transform: uppercase;
-  color: rgba(var(--v-theme-on-surface), 0.7);
-  display: block;
-  margin-bottom: 2px;
 }
-.filter-input :deep(.v-field__input) { padding: 2px 0 !important; font-size: 0.7rem !important; min-height: 18px !important; color: var(--v-theme-primary); }
-.filter-select :deep(.v-field__input) { padding: 0 !important; font-size: 0.65rem !important; min-height: 18px !important; color: var(--v-theme-primary); }
-.filter-table :deep(td) { font-size: 0.72rem !important; padding: 8px !important; }
+.filter-input :deep(.v-field__input) { color: var(--v-theme-primary); font-size: 0.7rem !important; min-block-size: 18px !important; padding-block: 2px !important; padding-inline: 0 !important; }
+.filter-select :deep(.v-field__input) { padding: 0 !important; color: var(--v-theme-primary); font-size: 0.65rem !important; min-block-size: 18px !important; }
+.filter-table :deep(td) { padding: 8px !important; font-size: 0.72rem !important; }
 .text-xs { font-size: 0.7rem !important; line-height: 1.2; }
 </style>

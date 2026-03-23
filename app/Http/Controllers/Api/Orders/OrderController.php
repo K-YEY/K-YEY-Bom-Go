@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\Orders;
 
 use App\Exports\OrdersExport;
 use App\Exports\OrdersTemplateExport;
-use App\Imports\OrdersImport;
 use App\Http\Controllers\Controller;
+use App\Imports\OrdersImport;
 use App\Models\Client;
 use App\Models\Governorate;
 use App\Models\Order;
@@ -13,6 +13,7 @@ use App\Models\PlanPrice;
 use App\Models\RefusedReason;
 use App\Models\Shipper;
 use App\Support\Permissions\OrdersPermissionMap;
+use App\Traits\ChecksWorkingHours;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
@@ -21,13 +22,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
-
-use App\Traits\ChecksWorkingHours;
 
 class OrderController extends Controller
 {
     use ChecksWorkingHours;
+
     private const FINAL_STATUSES = ['DELIVERED', 'UNDELIVERED'];
 
     private const STATUS_LABELS = [
@@ -78,7 +77,7 @@ class OrderController extends Controller
 
     public function downloadTemplate()
     {
-        return Excel::download(new OrdersTemplateExport(), 'orders_template.xlsx');
+        return Excel::download(new OrdersTemplateExport, 'orders_template.xlsx');
     }
 
     public function init(Request $request): JsonResponse
@@ -91,18 +90,18 @@ class OrderController extends Controller
             'governorates' => Governorate::query()->select('id', 'name')->with('cities:id,governorate_id,name')->get(),
             'shippers' => Shipper::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($s) {
                 return [
-                    'id' => $s->user_id, 
+                    'id' => $s->user_id,
                     'name' => $s->user?->name ?? 'Unknown',
-                    'commission_rate' => $s->commission_rate
+                    'commission_rate' => $s->commission_rate,
                 ];
             }),
             'clients' => Client::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($c) {
                 return [
-                    'id' => $c->user_id, 
+                    'id' => $c->user_id,
                     'name' => $c->user?->name ?? 'Unknown',
                     'plan_id' => $c->plan_id,
                     'shipping_content_id' => $c->shipping_content_id,
-                    'shipping_fee' => $c->shipping_fee
+                    'shipping_fee' => $c->shipping_fee,
                 ];
             }),
             'contents' => \App\Models\Content::query()->select('id', 'name')->get(),
@@ -136,7 +135,7 @@ class OrderController extends Controller
 
         // Otherwise export current filtered results
         $query = $this->applyFilters(Order::query(), $request);
-        
+
         return Excel::download(new OrdersExport($query), 'orders_filtered_export.xlsx');
     }
 
@@ -268,10 +267,10 @@ class OrderController extends Controller
         }
 
         if (empty($data['code'])) {
-        $data['code'] = $this->generateOrderCode();
-    }
+            $data['code'] = $this->generateOrderCode();
+        }
 
-    $order = Order::query()->create($data);
+        $order = Order::query()->create($data);
 
         return response()->json([
             'message' => 'Order created successfully.',
@@ -650,17 +649,22 @@ class OrderController extends Controller
         ]);
 
         $reasonIds = $data['refused_reason_ids'] ?? [];
-        $refusedReasons = RefusedReason::query()
-            ->whereIn('id', $reasonIds)
-            ->where('status', $data['status'])
-            ->where('is_active', true)
-            ->get();
+        // السماح بتكرار نفس السبب أكثر من مرة
+        $refusedReasons = collect($reasonIds)
+            ->map(function ($id) use ($data) {
+                return RefusedReason::query()
+                    ->where('id', $id)
+                    ->where('status', $data['status'])
+                    ->where('is_active', true)
+                    ->first();
+            })
+            ->filter();
 
         $allowsEditAmount = $refusedReasons->contains('is_edit_amount', true);
         $isClear = $refusedReasons->contains('is_clear', true);
         $isReturn = $refusedReasons->contains('is_return', true);
 
-        // Build note
+        // Build note (يسمح بالتكرار)
         $noteParts = [];
         foreach ($refusedReasons as $rr) {
             $noteParts[] = $rr->reason;
@@ -669,7 +673,7 @@ class OrderController extends Controller
             $noteParts[] = $data['reason'];
         }
 
-        $latestNote = implode(', ', array_unique($noteParts));
+        $latestNote = implode(', ', $noteParts);
 
         $payload = [
             'status' => $data['status'],
@@ -811,7 +815,6 @@ class OrderController extends Controller
             'data' => $this->filterVisibleColumns($request, $order),
         ]);
     }
-
 
     public function changeExternalCode(Request $request, Order $order): JsonResponse
     {
@@ -1020,8 +1023,8 @@ class OrderController extends Controller
                         ->orWhere('phone', $generalSearch)
                         ->orWhere('phone_2', $generalSearch);
                 } else {
-                    $like = $generalSearch . '%'; // Use prefix search where possible for better index stability
-                    $anyLike = '%' . $generalSearch . '%';
+                    $like = $generalSearch.'%'; // Use prefix search where possible for better index stability
+                    $anyLike = '%'.$generalSearch.'%';
 
                     $builder
                         ->where('code', 'like', $like)
@@ -1067,9 +1070,9 @@ class OrderController extends Controller
         }
 
         $directFilters = [
-            'code', 'external_code', 'receiver_name', 'phone', 'phone_2', 
-            'address', 'status', 'approval_status', 'governorate_id', 
-            'city_id', 'shipper_user_id', 'client_user_id', 'allow_open', 
+            'code', 'external_code', 'receiver_name', 'phone', 'phone_2',
+            'address', 'status', 'approval_status', 'governorate_id',
+            'city_id', 'shipper_user_id', 'client_user_id', 'allow_open',
             'has_return', 'is_in_shipper_collection', 'is_shipper_collected',
             'is_in_client_settlement', 'is_client_settled',
             'is_in_shipper_return', 'is_shipper_returned',
@@ -1080,16 +1083,23 @@ class OrderController extends Controller
             foreach ([$validated, $columnSearch] as $source) {
                 if (array_key_exists($filter, $source)) {
                     $value = $source[$filter];
-                    if ($value === null || $value === '') continue;
+                    if ($value === null || $value === '') {
+                        continue;
+                    }
 
                     // Robust boolean conversion
-                    if ($value === 'true' || $value === true || $value === '1' || $value === 1) $value = 1;
-                    if ($value === 'false' || $value === false || $value === '0' || $value === 0) $value = 0;
+                    if ($value === 'true' || $value === true || $value === '1' || $value === 1) {
+                        $value = 1;
+                    }
+                    if ($value === 'false' || $value === false || $value === '0' || $value === 0) {
+                        $value = 0;
+                    }
 
                     // If it's a string search, use prefix matching for performance
                     if (in_array($filter, ['code', 'receiver_name', 'phone'])) {
                         if (is_string($value)) {
-                            $query->where($filter, 'like', $value . '%');
+                            $query->where($filter, 'like', $value.'%');
+
                             continue;
                         }
                     }
@@ -1317,6 +1327,6 @@ class OrderController extends Controller
         $lastOrder = Order::orderByDesc('id')->first();
         $nextNumber = $lastOrder ? ($lastOrder->id + 1) : 1;
 
-        return $prefix . str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
     }
 }
