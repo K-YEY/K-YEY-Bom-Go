@@ -377,3 +377,9 @@ const handleGlobalClick = () => {
   text-align: center;
 }
 </style>
+
+<route lang="yaml">
+meta:
+  action: manage
+  subject: order.scan.page
+</route>

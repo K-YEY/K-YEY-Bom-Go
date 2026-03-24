@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import ApprovalRequestList from '@/views/apps/orders/ApprovalRequestList.vue';
+import OrdersUnreturnShipper from '@/views/apps/orders/OrdersUnreturnShipper.vue';
 </script>
 
 <template>
   <div>
     <VRow>
       <VCol cols="12">
-        <ApprovalRequestList />
+        <OrdersUnreturnShipper />
       </VCol>
     </VRow>
   </div>
@@ -15,5 +15,5 @@ import ApprovalRequestList from '@/views/apps/orders/ApprovalRequestList.vue';
 <route lang="yaml">
 meta:
   action: manage
-  subject: order.approval.page
+  subject: order.unreturnshipper.page
 </route>

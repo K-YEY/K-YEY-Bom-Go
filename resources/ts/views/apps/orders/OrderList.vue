@@ -12,6 +12,9 @@ const props = defineProps<{
   shipperId?: number | string
   clientId?: number | string
   status?: string
+  statusFilter?: string[]
+  fixedFilters?: Record<string, any>
+  title?: string
 }>()
 
 const isAddEditOrderModalVisible = ref(false)
@@ -300,8 +303,8 @@ const fetchOrders = async () => {
     const { data: oData } = await useApi<any>(createUrl('/orders', {
       query: {
         q: searchQueryDebounced.value,
-        status: selectedStatus.value,
-        approval_status: 'APPROVED',
+        status: selectedStatus.value || props.statusFilter,
+        approval_status: props.fixedFilters && 'approval_status' in props.fixedFilters ? props.fixedFilters.approval_status : 'APPROVED',
         governorate_id: selectedGovernorate.value,
         shipper_user_id: selectedShipper.value,
         client_user_id: selectedClient.value,
@@ -317,6 +320,7 @@ const fetchOrders = async () => {
         has_return: filters.value.has_return,
         is_client_settled: filters.value.is_client_settled,
         is_client_returned: filters.value.is_client_returned,
+        ...(props.fixedFilters || {}),
       },
     })).get().json()
 
@@ -329,21 +333,28 @@ const fetchOrders = async () => {
 
 const initializePage = async () => {
   isLoading.value = true
+  alert('API Initializing orders...')
   try {
-    const { data: res } = await useApi<any>(createUrl('/orders/init', {
+    const { data: res, error } = await useApi<any>(createUrl('/orders/init', {
       query: {
         q: searchQueryDebounced.value,
-        status: selectedStatus.value,
-        approval_status: 'APPROVED',
+        status: selectedStatus.value || props.statusFilter,
+        approval_status: props.fixedFilters && 'approval_status' in props.fixedFilters ? props.fixedFilters.approval_status : 'APPROVED',
         governorate_id: selectedGovernorate.value,
         shipper_user_id: selectedShipper.value,
         client_user_id: selectedClient.value,
         per_page: itemsPerPage.value,
         page: page.value,
+        ...(props.fixedFilters || {}),
       },
     })).get().json()
 
+    if (error.value) {
+      alert('API ERROR: ' + JSON.stringify(error.value))
+    }
+
     if (res.value) {
+      alert('API SUCCESS: found ' + (res.value.orders?.total || 0) + ' orders.')
       // Handle metadata
       pageMetadata.value = res.value.metadata
       const meta = res.value.metadata
@@ -583,6 +594,10 @@ const handleNewOrder = () => {
     </VRow>
 
     <VCard elevation="2">
+      <VCardTitle v-if="props.title" class="pt-4 px-6 pb-0">
+        <h5 class="text-h5">{{ props.title }}</h5>
+      </VCardTitle>
+
       <!-- 📦 Bulk Actions Row (Header Position) -->
       <VCardText v-show="selectedOrders.length" class="bg-light-primary py-2 border-bottom border-top rounded-0">
         <div class="d-flex align-center gap-4 flex-wrap">
@@ -602,8 +617,18 @@ const handleNewOrder = () => {
 
       <VCardText class="pb-2">
         <VRow align="center">
-          <VCol cols="12" md="3">
+          <VCol cols="12" md="2">
             <AppTextField v-model="searchQuery" placeholder="Quick Search..." prepend-inner-icon="tabler-search" density="compact" hide-details />
+          </VCol>
+          <VCol cols="12" md="2">
+            <AppSelect
+              v-model="selectedStatus"
+              placeholder="Status"
+              :items="['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED']"
+              clearable
+              density="compact"
+              hide-details
+            />
           </VCol>
           <VCol cols="auto">
             <VBtn variant="tonal" color="secondary" size="small" @click="resetFilters"><VIcon start icon="tabler-refresh" />Reset</VBtn>

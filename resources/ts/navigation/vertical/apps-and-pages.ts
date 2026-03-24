@@ -1,12 +1,4 @@
 export default [
-  { heading: 'Dashboard' },
-  {
-    title: 'Dashboard',
-    icon: { icon: 'tabler-layout-dashboard' },
-    to: 'apps-logistics-dashboard',
-    action: 'manage',
-    subject: 'order.dashboard.page',
-  },
 
   { heading: 'Core Operations' },
   {
@@ -40,7 +32,6 @@ export default [
       { title: 'Pickups', to: 'apps-operations-pickups', action: 'manage', subject: 'pickup-request.page' },
       { title: 'Visits', to: 'apps-operations-visits', action: 'manage', subject: 'visit.page' },
       { title: 'Materials', to: 'apps-operations-materials', action: 'manage', subject: 'material.page' },
-      { title: 'Fleet', to: 'apps-logistics-fleet' },
     ],
   },
 
@@ -61,6 +52,7 @@ export default [
     children: [
       { title: 'Clients', to: 'apps-user-clients', action: 'manage', subject: 'client.page' },
       { title: 'Shippers', to: 'apps-user-shippers', action: 'manage', subject: 'shipper.page' },
+      { title: 'User List', to: 'apps-user-userlist', action: 'manage', subject: 'userlist.page' },
     ],
   },
 

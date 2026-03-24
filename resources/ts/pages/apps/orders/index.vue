@@ -10,3 +10,9 @@ import OrderList from '@/views/apps/orders/OrderList.vue';
     </VCol>
   </VRow>
 </template>
+
+<route lang="yaml">
+meta:
+  action: manage
+  subject: order.page
+</route>

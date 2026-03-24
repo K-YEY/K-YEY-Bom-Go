@@ -176,10 +176,9 @@ class OrderController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'phone_2' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:1000'],
-            'status' => ['nullable', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
-            'statuses' => ['nullable', 'array'],
-            'statuses.*' => [Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
-            'approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
+            'status' => ['nullable'],
+            'statuses' => ['nullable'],
+            'approval_status' => ['nullable'],
             'governorate_id' => ['nullable', 'integer', 'exists:governorates,id'],
             'city_id' => ['nullable', 'integer', 'exists:cities,id'],
             'shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
@@ -1008,8 +1007,14 @@ class OrderController extends Controller
         }
 
         $statuses = [];
-        if (is_array($validated['statuses'] ?? null)) {
-            $statuses = array_values(array_unique(array_filter($validated['statuses'])));
+        if (isset($validated['statuses'])) {
+            $s = $validated['statuses'];
+            if (is_string($s)) {
+                $s = explode(',', $s);
+            }
+            if (is_array($s)) {
+                $statuses = array_values(array_unique(array_filter($s)));
+            }
         }
 
         if (is_array($columnSearch['statuses'] ?? null)) {
@@ -1057,6 +1062,12 @@ class OrderController extends Controller
 
                             continue;
                         }
+                    }
+
+                    if (is_array($value)) {
+                        $query->whereIn($filter, $value);
+
+                        continue;
                     }
 
                     $query->where($filter, $value);

@@ -15,7 +15,7 @@ export const redirects: RouteRecordRaw[] = [
   },
 ]
 
-// 👉 Custom Routes
 export const routes: RouteRecordRaw[] = []
+
 
 

@@ -8,13 +8,7 @@ export default [
         to: 'dashboards-orders',
         icon: { icon: 'tabler-package' },
       },
-      {
-        title: 'Expenses',
-        to: 'expenses',
-        icon: { icon: 'tabler-receipt' },
-        action: 'manage',
-        subject: 'expense.page',
-      },
+  
     ],
   },
 

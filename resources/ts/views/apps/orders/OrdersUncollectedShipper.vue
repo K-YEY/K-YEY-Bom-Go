@@ -1,5 +1,5 @@
 <template>
-  <OrderList :status-filter="['UNCOLLECTED_SHIPPER']" title="أوردرات Uncollected Shipper" />
+  <OrderList status="DELIVERED" :fixed-filters="{ is_shipper_collected: 0 }" title="أوردرات Uncollected Shipper" />
 </template>
 
 <script setup lang="ts">
