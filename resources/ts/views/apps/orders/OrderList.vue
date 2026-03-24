@@ -773,7 +773,7 @@ const handleNewOrder = () => {
 
         <template #item.status="{ item }: { item: any }">
           <VChip 
-            size="x-small" 
+            size="14" 
             :color="resolveStatusColor(item.status)" 
             variant="tonal" 
             :class="(item.is_shipper_collected || !can('order.change-status' as any, 'all' as any)) ? 'cursor-not-allowed' : 'cursor-pointer'" 

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ClientSettlement extends Model
 {
     use ScopesByUserRole;
+
     protected $fillable = [
         'client_user_id',
         'settlement_date',
@@ -29,11 +30,11 @@ class ClientSettlement extends Model
     {
         return [
             'settlement_date' => 'date',
-            'total_amount'    => 'decimal:2',
-            'fees'            => 'decimal:2',
-            'net_amount'      => 'decimal:2',
-            'approved_at'     => 'datetime',
-            'rejected_at'     => 'datetime',
+            'total_amount' => 'decimal:2',
+            'fees' => 'decimal:2',
+            'net_amount' => 'decimal:2',
+            'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
         ];
     }
 

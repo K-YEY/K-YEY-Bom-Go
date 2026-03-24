@@ -8,6 +8,11 @@ class OrdersPermissionMap
         ['name' => 'order.page', 'group' => 'orders', 'label' => 'Access Order page', 'type' => 'page'],
         ['name' => 'order.scan.page', 'group' => 'orders', 'label' => 'Access Order Scan (Barcode) page', 'type' => 'page'],
         ['name' => 'order.approval.page', 'group' => 'orders', 'label' => 'Access Order Approval requests page', 'type' => 'page'],
+        ['name' => 'order.hold-outfordelivery.page', 'group' => 'orders', 'label' => 'Access HOLD & Out For Delivery page', 'type' => 'page'],
+        ['name' => 'order.uncollectedclient.page', 'group' => 'orders', 'label' => 'Access Uncollected Client page', 'type' => 'page'],
+        ['name' => 'order.uncollectedshipper.page', 'group' => 'orders', 'label' => 'Access Uncollected Shipper page', 'type' => 'page'],
+        ['name' => 'order.unreturnshipper.page', 'group' => 'orders', 'label' => 'Access Unreturn Shipper page', 'type' => 'page'],
+        ['name' => 'order.unreturnclient.page', 'group' => 'orders', 'label' => 'Access Unreturn Client page', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
