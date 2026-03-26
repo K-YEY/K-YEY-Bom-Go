@@ -50,6 +50,8 @@ class ShipperCollectionController extends Controller
             ]));
         }
 
+        $precomputedPermissions = $this->precomputeVisibleColumns($request);
+
         $collections = ShipperCollection::query()
             ->forUserRole()
             ->with(['shipper:id,name'])
@@ -74,7 +76,7 @@ class ShipperCollectionController extends Controller
             ->appends($request->query());
 
         return response()->json([
-            'data' => collect($collections->items())->map(fn (ShipperCollection $collection): array => $this->filterVisibleColumns($request, $collection))->values(),
+            'data' => collect($collections->items())->map(fn (ShipperCollection $collection): array => $this->filterVisibleColumns($request, $collection, $precomputedPermissions))->values(),
             'meta' => [
                 'current_page' => $collections->currentPage(),
                 'per_page' => $collections->perPage(),
@@ -441,7 +443,22 @@ class ShipperCollectionController extends Controller
         return $collection->status === 'COMPLETED' && $nextStatus !== 'COMPLETED';
     }
 
-    private function filterVisibleColumns(Request $request, ShipperCollection $collection): array
+    private function precomputeVisibleColumns(Request $request): array
+    {
+        $user = $request->user();
+        if (! $user) {
+            return [];
+        }
+
+        $result = [];
+        foreach (CollectionsReturnsSettlementsPermissionMap::SHIPPER_COLLECTION_VIEW_COLUMNS as $column => $permission) {
+            $result[$column] = ($permission === null || $user->can($permission));
+        }
+
+        return $result;
+    }
+
+    private function filterVisibleColumns(Request $request, ShipperCollection $collection, ?array $precomputedPermissions = null): array
     {
         $payload = $collection->toArray();
         $result = [];
@@ -451,7 +468,11 @@ class ShipperCollectionController extends Controller
                 continue;
             }
 
-            if ($permission === null || $request->user()?->can($permission)) {
+            $hasAccess = $precomputedPermissions
+                ? ($precomputedPermissions[$column] ?? false)
+                : ($permission === null || $request->user()?->can($permission));
+
+            if ($hasAccess) {
                 $result[$column] = $payload[$column];
             }
         }

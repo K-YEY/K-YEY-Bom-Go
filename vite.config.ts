@@ -1,8 +1,8 @@
-import { fileURLToPath } from 'node:url'
-import laravel from 'laravel-vite-plugin'
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
+import laravel from 'laravel-vite-plugin'
+import { fileURLToPath } from 'node:url'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { VueRouterAutoImports, getPascalCaseRouteName } from 'unplugin-vue-router'
@@ -53,7 +53,7 @@ export default defineConfig({
       defaultLayout: 'default',
     }), // Docs: https://github.com/antfu/unplugin-vue-components#unplugin-vue-components
     Components({
-      dirs: ['resources/ts/@core/components', 'resources/ts/views/demos', 'resources/ts/components'],
+      dirs: ['resources/ts/@core/components', 'resources/ts/components'],
       dts: true,
       resolvers: [
         componentName => {
