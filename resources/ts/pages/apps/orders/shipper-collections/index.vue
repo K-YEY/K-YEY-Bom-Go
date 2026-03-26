@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ShipperCollectionList from '@/views/apps/orders/ShipperCollectionList.vue';
+import ShipperCollectionList from '@/views/apps/orders/settlements/ShipperCollectionList.vue';
 </script>
 
 <template>
@@ -10,3 +10,4 @@ import ShipperCollectionList from '@/views/apps/orders/ShipperCollectionList.vue
     </VCol>
   </VRow>
 </template>
+

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ShipperReturnList from '@/views/apps/orders/ShipperReturnList.vue';
+import ShipperReturnList from '@/views/apps/orders/returns/ShipperReturnList.vue';
 </script>
 
 <template>
@@ -10,3 +10,4 @@ import ShipperReturnList from '@/views/apps/orders/ShipperReturnList.vue';
     </VCol>
   </VRow>
 </template>
+

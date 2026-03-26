@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ApprovalRequestList from '@/views/apps/orders/ApprovalRequestList.vue';
+import ApprovalRequestList from '@/views/apps/orders/approvals/ApprovalRequestList.vue';
 </script>
 
 <template>
@@ -17,3 +17,4 @@ meta:
   action: manage
   subject: order.approval.page
 </route>
+

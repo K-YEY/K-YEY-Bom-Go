@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import OrdersUncollectedClient from '@/views/apps/orders/OrdersUncollectedClient.vue';
+import OrdersUncollectedClient from '@/views/apps/orders/special-views/OrdersUncollectedClient.vue';
 </script>
 
 <template>
@@ -17,3 +17,4 @@ meta:
   action: manage
   subject: order.uncollectedclient.page
 </route>
+

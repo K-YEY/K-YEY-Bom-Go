@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ClientSettlementList from '@/views/apps/orders/ClientSettlementList.vue';
+import ClientSettlementList from '@/views/apps/orders/settlements/ClientSettlementList.vue';
 </script>
 
 <template>
@@ -10,3 +10,4 @@ import ClientSettlementList from '@/views/apps/orders/ClientSettlementList.vue';
     </VCol>
   </VRow>
 </template>
+

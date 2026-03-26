@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import OrdersUnreturnClient from '@/views/apps/orders/OrdersUnreturnClient.vue';
+import OrdersUnreturnClient from '@/views/apps/orders/special-views/OrdersUnreturnClient.vue';
 </script>
 
 <template>
@@ -17,3 +17,4 @@ meta:
   action: manage
   subject: order.unreturnclient.page
 </route>
+

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import OrdersHoldOutfordelivery from '@/views/apps/orders/OrdersHoldOutfordelivery.vue';
+import OrdersHoldOutfordelivery from '@/views/apps/orders/special-views/OrdersHoldOutfordelivery.vue';
 </script>
 
 <template>
@@ -17,3 +17,4 @@ meta:
   action: manage
   subject: order.hold-outfordelivery.page
 </route>
+

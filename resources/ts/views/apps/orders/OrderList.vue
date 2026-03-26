@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@core/composable/createUrl'
-import AddEditOrderModal from './AddEditOrderModal.vue'
-import BulkOrderShipperModal from './BulkOrderShipperModal.vue'
-import BulkOrderStatusModal from './BulkOrderStatusModal.vue'
-import OrderShipperModal from './OrderShipperModal.vue'
-import OrderStatusModal from './OrderStatusModal.vue'
+import AddEditOrderModal from './components/AddEditOrderModal.vue'
+import BulkOrderShipperModal from './components/BulkOrderShipperModal.vue'
+import BulkOrderStatusModal from './components/BulkOrderStatusModal.vue'
+import OrderShipperModal from './components/OrderShipperModal.vue'
+import OrderStatusModal from './components/OrderStatusModal.vue'
 
 // 👉 Props
 const props = defineProps<{
@@ -333,7 +333,7 @@ const fetchOrders = async () => {
 
 const initializePage = async () => {
   isLoading.value = true
-  alert('API Initializing orders...')
+
   try {
     const { data: res, error } = await useApi<any>(createUrl('/orders/init', {
       query: {
@@ -349,12 +349,10 @@ const initializePage = async () => {
       },
     })).get().json()
 
-    if (error.value) {
-      alert('API ERROR: ' + JSON.stringify(error.value))
-    }
+
 
     if (res.value) {
-      alert('API SUCCESS: found ' + (res.value.orders?.total || 0) + ' orders.')
+
       // Handle metadata
       pageMetadata.value = res.value.metadata
       const meta = res.value.metadata

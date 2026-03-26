@@ -3,5 +3,6 @@
 </template>
 
 <script setup lang="ts">
-import OrderList from './OrderList.vue';
+import OrderList from '../OrderList.vue';
 </script>
+

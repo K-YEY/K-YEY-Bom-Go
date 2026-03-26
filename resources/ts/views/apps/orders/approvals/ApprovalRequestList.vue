@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@core/composable/createUrl'
-import AddEditOrderModal from './AddEditOrderModal.vue'
-import OrderStatusModal from './OrderStatusModal.vue'
+import AddEditOrderModal from '../components/AddEditOrderModal.vue'
+import OrderStatusModal from '../components/OrderStatusModal.vue'
 
 const isAddEditOrderModalVisible = ref(false)
 const isStatusModalVisible = ref(false)

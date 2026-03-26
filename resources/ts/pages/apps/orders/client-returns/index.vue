@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ClientReturnList from '@/views/apps/orders/ClientReturnList.vue';
+import ClientReturnList from '@/views/apps/orders/returns/ClientReturnList.vue';
 </script>
 
 <template>
@@ -10,3 +10,4 @@ import ClientReturnList from '@/views/apps/orders/ClientReturnList.vue';
     </VCol>
   </VRow>
 </template>
+
