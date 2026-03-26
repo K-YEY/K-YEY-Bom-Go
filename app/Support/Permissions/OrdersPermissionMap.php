@@ -28,6 +28,8 @@ class OrdersPermissionMap
         ['name' => 'order.my-orders', 'group' => 'orders', 'label' => 'View my orders', 'type' => 'button'],
         ['name' => 'order.approve', 'group' => 'orders', 'label' => 'Approve order', 'type' => 'button'],
         ['name' => 'order.reject', 'group' => 'orders', 'label' => 'Reject order', 'type' => 'button'],
+        ['name' => 'order.export', 'group' => 'orders', 'label' => 'Export orders', 'type' => 'button'],
+        ['name' => 'order.import', 'group' => 'orders', 'label' => 'Import orders', 'type' => 'button'],
     ];
 
     public const VIEW_COLUMNS = [

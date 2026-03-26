@@ -68,11 +68,41 @@ class ClientReturnController extends Controller
             $ids = explode(',', $ids);
         }
 
+        $query = ClientReturn::query();
         if ($ids && is_array($ids)) {
-            return Excel::download(new ReturnedClientsExport(null, $ids), 'client_returns.xlsx');
+            $query->whereIn('id', $ids);
         }
 
-        return Excel::download(new ReturnedClientsExport(), 'client_returns_all.xlsx');
+        $totalOrders = $query->sum('number_of_orders');
+
+        $clients = $query->with('client')->get()->pluck('client.name')->unique();
+        $namePart = ($clients->count() === 1) ? " - " . $clients->first() : "";
+
+        $date = now()->format('d-m-y');
+        $filename = "مرتجع عميل{$namePart} - {$totalOrders} - {$date}.xlsx";
+
+        return Excel::download(new ReturnedClientsExport($ids ? null : $query, $ids ? $ids : null), $filename);
+    }
+
+    public function bulkStatus(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'client-return.update');
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['exists:client_returns,id'],
+            'status' => ['required', Rule::in(['PENDING', 'COMPLETED', 'CANCELLED'])],
+        ]);
+
+        DB::transaction(function () use ($data) {
+            $returns = ClientReturn::whereIn('id', $data['ids'])->get();
+            foreach ($returns as $return) {
+                $return->update(['status' => $data['status']]);
+                $this->syncReturnOrdersState($return);
+            }
+        });
+
+        return response()->json(['message' => 'Status updated for selected returns.']);
     }
 
     public function eligibleOrders(Request $request): JsonResponse
@@ -459,5 +489,49 @@ class ClientReturnController extends Controller
                 'is_client_returned' => $return->status === 'COMPLETED',
                 'client_returned_at' => $return->status === 'COMPLETED' ? $return->return_date : null,
             ]);
+    }
+
+    public function removeOrder(Request $request, ClientReturn $clientReturn, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'client-return.update');
+
+        DB::transaction(function () use ($clientReturn, $order) {
+            $pivot = ClientReturnOrder::where('client_return_id', $clientReturn->id)
+                ->where('order_id', $order->id)
+                ->first();
+
+            if ($pivot) {
+                // Update return totals
+                $clientReturn->number_of_orders = max(0, $clientReturn->number_of_orders - 1);
+                
+                if ($clientReturn->number_of_orders <= 0) {
+                    $clientReturn->delete();
+                } else {
+                    $clientReturn->save();
+                }
+
+                // Delete pivot record
+                $pivot->delete();
+
+                // Reset order state
+                $order->update([
+                    'is_in_client_return' => false,
+                    'is_client_returned' => false,
+                    'client_returned_at' => null,
+                ]);
+            }
+        });
+
+        if (!ClientReturn::where('id', $clientReturn->id)->exists()) {
+            return response()->json([
+                'message' => 'Return deleted because it had no more orders.',
+                'deleted' => true
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Order removed from return.',
+            'data' => $this->filterVisibleColumns($request, $clientReturn->fresh(['client:id,name', 'orders.client:id,name']))
+        ]);
     }
 }

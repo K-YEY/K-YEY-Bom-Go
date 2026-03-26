@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { requiredValidator } from '@/@core/utils/validators'
 import { useApi } from '@/composables/useApi'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import type { VForm } from 'vuetify/components/VForm'
-import { requiredValidator } from '@/@core/utils/validators'
 
 interface Emit {
   (e: 'update:isDrawerOpen', value: boolean): void
@@ -32,6 +32,7 @@ const commissionRate = ref<number>()
 const address = ref('')
 const planId = ref<number>()
 const shippingContentId = ref<number>()
+const canSettleBeforeShipperCollected = ref(false)
 
 // 👉 Fetching lists
 const { data: rolesData } = await useApi<any>('/roles')
@@ -62,6 +63,7 @@ watch(() => props.isDrawerOpen, (isOpen) => {
       address.value = props.user.client.address || ''
       planId.value = props.user.client.plan_id
       shippingContentId.value = props.user.client.shipping_content_id
+      canSettleBeforeShipperCollected.value = !!props.user.client.can_settle_before_shipper_collected
     } else {
       accountType.value = '0'
     }
@@ -87,6 +89,7 @@ const onSubmit = () => {
         address: address.value,
         plan_id: planId.value,
         shipping_content_id: shippingContentId.value,
+        can_settle_before_shipper_collected: canSettleBeforeShipperCollected.value,
       })
       emit('update:isDrawerOpen', false)
     }
@@ -173,6 +176,9 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
                 </VCol>
                 <VCol cols="12">
                   <AppSelect v-model="shippingContentId" label="Shipping Content" :items="contents" />
+                </VCol>
+                <VCol cols="12">
+                  <VSwitch v-model="canSettleBeforeShipperCollected" label="Can Settle Before Shipper Collected" color="success" />
                 </VCol>
               </template>
 

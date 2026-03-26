@@ -37,6 +37,13 @@ class ShipperCollection extends Model
         ];
     }
 
+    protected $appends = ['fees'];
+
+    public function getFeesAttribute()
+    {
+        return round(($this->total_amount ?? 0) - ($this->net_amount ?? 0), 2);
+    }
+
     public function shipper()
     {
         return $this->belongsTo(User::class, 'shipper_user_id');

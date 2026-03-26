@@ -4,6 +4,8 @@ import { createUrl } from "@core/composable/createUrl";
 import { avatarText } from "@core/utils/formatters";
 
 const searchQuery = ref("");
+const selectedIds = ref<number[]>([]);
+const processingAction = ref(false);
 const selectedStatus = ref<string | null>(null);
 const selectedApprovalStatus = ref<string | null>(null);
 const selectedClient = ref<number | null>(null);
@@ -120,7 +122,6 @@ const isCreateDialogVisible = ref(false);
 const isApprovalDialogVisible = ref(false);
 const approvalAction = ref<"approve" | "reject">("approve");
 const approvalNote = ref("");
-const processingAction = ref(false);
 
 const viewDetails = async (id: number) => {
   const { data } = await useApi<any>(`/client-settlements/${id}`).get().json();
@@ -181,17 +182,54 @@ const clients = computed(() => {
 });
 
 import ClientSettlementModal from "./ClientSettlementModal.vue";
+const removeOrderFromSettlement = async (orderId: number) => {
+  if (!selectedSettlement.value) return;
+  
+  processingAction.value = true;
+  const { data, error } = await useApi(`/client-settlements/${selectedSettlement.value.id}/orders/${orderId}`)
+    .delete()
+    .json();
+
+  if (!error.value) {
+    if (data.value?.deleted) {
+      isDetailsDialogVisible.value = false;
+      selectedSettlement.value = null;
+    } else {
+      selectedSettlement.value = data.value?.data || data.value;
+    }
+    fetchSettlements();
+  }
+  processingAction.value = false;
+};
+
+const bulkUpdateStatus = async (status: string) => {
+  if (selectedIds.value.length === 0) return;
+
+  processingAction.value = true;
+  const { error } = await useApi("/client-settlements/bulk-status")
+    .patch({
+      ids: selectedIds.value.map((i: any) => i.id || i),
+      status: status,
+    })
+    .json();
+
+  if (!error.value) {
+    selectedIds.value = [];
+    fetchSettlements();
+  }
+  processingAction.value = false;
+};
+
 const printInvoice = (id: number) => {
   window.open(`/apps/orders/print/${id}?type=settlement`, "_blank");
 };
 // 👉 Export
-const selectedIds = ref<number[]>([]);
 
 const exportSettlements = async () => {
   const params: any = {};
 
   if (selectedIds.value.length > 0) {
-    params.ids = selectedIds.value.join(",");
+    params.ids = selectedIds.value.map((i: any) => i.id || i).join(",");
   } else {
     if (searchQuery.value) params.search = searchQuery.value;
     if (selectedStatus.value) params.status = selectedStatus.value;
@@ -212,78 +250,50 @@ const exportSettlements = async () => {
 <template>
   <section>
     <!-- Totals Cards -->
-    <VRow class="mb-2">
+    <VRow class="mb-4">
       <VCol cols="6" md="3">
-        <VCard elevation="2" class="stats-card"
-          ><VCardText class="d-flex align-center gap-3 pa-3">
-            <VAvatar
-              variant="tonal"
-              color="info"
-              icon="tabler-currency-dollar"
-              size="38"
-            />
+        <VCard elevation="2" class="stats-card">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="primary" icon="tabler-currency-dollar" size="38" />
             <div>
-              <div class="text-h6 font-weight-bold">
-                {{ visibleTotals.total_amount.toFixed(0) }}
-              </div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.total_amount.toLocaleString() }}</div>
               <div class="text-xs text-disabled">Total Amount</div>
             </div>
-          </VCardText></VCard
-        >
+          </VCardText>
+        </VCard>
       </VCol>
       <VCol cols="6" md="3">
-        <VCard elevation="2" class="stats-card"
-          ><VCardText class="d-flex align-center gap-3 pa-3">
-            <VAvatar
-              variant="tonal"
-              color="error"
-              icon="tabler-receipt-tax"
-              size="38"
-            />
+        <VCard elevation="2" class="stats-card">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="error" icon="tabler-receipt-tax" size="38" />
             <div>
-              <div class="text-h6 font-weight-bold">
-                {{ visibleTotals.fees.toFixed(0) }}
-              </div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.fees.toLocaleString() }}</div>
               <div class="text-xs text-disabled">Total Fees</div>
             </div>
-          </VCardText></VCard
-        >
+          </VCardText>
+        </VCard>
       </VCol>
       <VCol cols="6" md="3">
-        <VCard elevation="2" class="stats-card"
-          ><VCardText class="d-flex align-center gap-3 pa-3">
-            <VAvatar
-              variant="tonal"
-              color="success"
-              icon="tabler-cash"
-              size="38"
-            />
+        <VCard elevation="2" class="stats-card">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="success" icon="tabler-cash" size="38" />
             <div>
-              <div class="text-h6 font-weight-bold">
-                {{ visibleTotals.cod.toFixed(0) }}
-              </div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.cod.toLocaleString() }}</div>
               <div class="text-xs text-disabled">Total COD</div>
             </div>
-          </VCardText></VCard
-        >
+          </VCardText>
+        </VCard>
       </VCol>
       <VCol cols="6" md="3">
-        <VCard elevation="2" class="stats-card"
-          ><VCardText class="d-flex align-center gap-3 pa-3">
-            <VAvatar
-              variant="tonal"
-              color="primary"
-              icon="tabler-list-numbers"
-              size="38"
-            />
+        <VCard elevation="2" class="stats-card">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="info" icon="tabler-list-numbers" size="38" />
             <div>
-              <div class="text-h6 font-weight-bold">
-                {{ visibleTotals.number_of_orders }}
-              </div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.number_of_orders }}</div>
               <div class="text-xs text-disabled">Total Orders</div>
             </div>
-          </VCardText></VCard
-        >
+          </VCardText>
+        </VCard>
       </VCol>
     </VRow>
     <ClientSettlementModal
@@ -326,14 +336,49 @@ const exportSettlements = async () => {
           />
         </div>
         <div class="d-flex gap-2">
+          <!-- Bulk Status Update -->
+          <VBtn
+            v-if="
+              selectedIds.length > 0 &&
+              can('client-settlement.update' as any, 'all' as any)
+            "
+            color="secondary"
+            variant="tonal"
+            prepend-icon="tabler-settings"
+          >
+            Bulk Status
+            <VMenu activator="parent">
+              <VList>
+                <VListItem @click="bulkUpdateStatus('PENDING')">
+                  <VListItemTitle>Mark as Pending</VListItemTitle>
+                </VListItem>
+                <VListItem @click="bulkUpdateStatus('COMPLETED')">
+                  <VListItemTitle>Mark as Completed</VListItemTitle>
+                </VListItem>
+                <VListItem @click="bulkUpdateStatus('CANCELLED')">
+                  <VListItemTitle>Mark as Cancelled</VListItemTitle>
+                </VListItem>
+              </VList>
+            </VMenu>
+          </VBtn>
+
           <VBtn
             v-if="can('client-settlement.export' as any, 'all' as any)"
-            color="success"
             variant="tonal"
-            prepend-icon="tabler-file-spreadsheet"
+            color="primary"
+            :prepend-icon="
+              selectedIds.length > 0
+                ? 'tabler-file-spreadsheet'
+                : 'tabler-file-download'
+            "
+            :loading="processingAction"
             @click="exportSettlements"
           >
-            Export Excel
+            {{
+              selectedIds.length > 0
+                ? `Export Selected (${selectedIds.length})`
+                : "Export All"
+            }}
           </VBtn>
           <VBtn
             v-if="can('client-settlement.create' as any, 'all' as any)"
@@ -373,7 +418,9 @@ const exportSettlements = async () => {
       <VDivider />
 
       <VDataTable
-        v-model:selected="selectedIds"
+        v-model="selectedIds"
+        item-value="id"
+        return-object
         show-select
         :items="settlements"
         :headers="activeHeaders"
@@ -427,10 +474,11 @@ const exportSettlements = async () => {
         <!-- Status -->
         <template #item.status="{ item }: { item: any }">
           <VChip
-            size="small"
+            size="x-small"
             :color="statusColors[item.status]"
             variant="tonal"
             class="text-capitalize"
+            style="font-size: 11px !important;"
           >
             {{ item.status }}
           </VChip>
@@ -439,10 +487,11 @@ const exportSettlements = async () => {
         <!-- Approval -->
         <template #item.approval_status="{ item }: { item: any }">
           <VChip
-            size="small"
+            size="x-small"
             :color="approvalColors[item.approval_status]"
             variant="tonal"
             class="text-capitalize"
+            style="font-size: 11px !important;"
           >
             {{ item.approval_status }}
           </VChip>
@@ -495,37 +544,29 @@ const exportSettlements = async () => {
               </IconBtn>
             </template>
 
-            <template
-              v-if="
-                item.status === 'PENDING' && item.approval_status === 'APPROVED'
-              "
+            <!-- Settlement Status Change -->
+            <VBtn
+              v-if="can('client-settlement.update' as any, 'all' as any)"
+              size="x-small"
+              color="secondary"
+              variant="tonal"
+              :loading="processingAction"
             >
-              <VDivider
-                v-if="can('client-settlement.update' as any, 'all' as any)"
-                vertical
-                class="mx-1"
-              />
-              <VBtn
-                v-if="can('client-settlement.update' as any, 'all' as any)"
-                size="x-small"
-                color="success"
-                variant="elevated"
-                :loading="processingAction"
-                @click="updateStatus(item.id, 'COMPLETED')"
-              >
-                Complete
-              </VBtn>
-              <VBtn
-                v-if="can('client-settlement.update' as any, 'all' as any)"
-                size="x-small"
-                color="error"
-                variant="outlined"
-                :loading="processingAction"
-                @click="updateStatus(item.id, 'CANCELLED')"
-              >
-                Cancel
-              </VBtn>
-            </template>
+              Status
+              <VMenu activator="parent">
+                <VList density="compact">
+                  <VListItem @click="updateStatus(item.id, 'PENDING')">
+                    <VListItemTitle>Pending</VListItemTitle>
+                  </VListItem>
+                  <VListItem @click="updateStatus(item.id, 'COMPLETED')">
+                    <VListItemTitle>Complete</VListItemTitle>
+                  </VListItem>
+                  <VListItem @click="updateStatus(item.id, 'CANCELLED')">
+                    <VListItemTitle>Cancel</VListItemTitle>
+                  </VListItem>
+                </VList>
+              </VMenu>
+            </VBtn>
           </div>
         </template>
       </VDataTable>
@@ -568,6 +609,7 @@ const exportSettlements = async () => {
                 <th>Amount</th>
                 <th>Fee</th>
                 <th>COD</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -589,6 +631,19 @@ const exportSettlements = async () => {
                 <td class="text-error">{{ order.pivot?.fee }} EGP</td>
                 <td class="text-success font-weight-bold">
                   {{ order.pivot?.net_amount }} EGP
+                </td>
+                <td>
+                    <IconBtn 
+                      v-if="can('client-settlement.update' as any, 'all' as any)"
+                      size="small" 
+                      color="error"
+                      variant="tonal"
+                      :disabled="processingAction"
+                      @click="removeOrderFromSettlement(order.id)"
+                    >
+                      <VIcon icon="tabler-trash" />
+                      <VTooltip activator="parent">Remove from settlement</VTooltip>
+                    </IconBtn>
                 </td>
               </tr>
             </tbody>

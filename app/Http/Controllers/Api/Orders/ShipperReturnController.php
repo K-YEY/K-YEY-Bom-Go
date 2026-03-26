@@ -68,11 +68,41 @@ class ShipperReturnController extends Controller
             $ids = explode(',', $ids);
         }
 
+        $query = ShipperReturn::query();
         if ($ids && is_array($ids)) {
-            return Excel::download(new ReturnedShippersExport(null, $ids), 'shipper_returns.xlsx');
+            $query->whereIn('id', $ids);
         }
 
-        return Excel::download(new ReturnedShippersExport(), 'shipper_returns_all.xlsx');
+        $totalOrders = $query->sum('number_of_orders');
+
+        $shippers = $query->with('shipper')->get()->pluck('shipper.name')->unique();
+        $namePart = ($shippers->count() === 1) ? " - " . $shippers->first() : "";
+
+        $date = now()->format('d-m-y');
+        $filename = "مرتجع شيبر{$namePart} - {$totalOrders} - {$date}.xlsx";
+
+        return Excel::download(new ReturnedShippersExport($ids ? null : $query, $ids ? $ids : null), $filename);
+    }
+
+    public function bulkStatus(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'shipper-return.update');
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['exists:shipper_returns,id'],
+            'status' => ['required', Rule::in(['PENDING', 'COMPLETED', 'CANCELLED'])],
+        ]);
+
+        DB::transaction(function () use ($data) {
+            $returns = ShipperReturn::whereIn('id', $data['ids'])->get();
+            foreach ($returns as $return) {
+                $return->update(['status' => $data['status']]);
+                $this->syncReturnOrdersState($return);
+            }
+        });
+
+        return response()->json(['message' => 'Status updated for selected returns.']);
     }
 
     public function eligibleOrders(Request $request): JsonResponse
@@ -450,5 +480,49 @@ class ShipperReturnController extends Controller
                 'is_shipper_returned' => $return->status === 'COMPLETED',
                 'shipper_returned_at' => $return->status === 'COMPLETED' ? $return->return_date : null,
             ]);
+    }
+
+    public function removeOrder(Request $request, ShipperReturn $shipperReturn, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'shipper-return.update');
+
+        DB::transaction(function () use ($shipperReturn, $order) {
+            $pivot = ShipperReturnOrder::where('shipper_return_id', $shipperReturn->id)
+                ->where('order_id', $order->id)
+                ->first();
+
+            if ($pivot) {
+                // Update return totals
+                $shipperReturn->number_of_orders = max(0, $shipperReturn->number_of_orders - 1);
+                
+                if ($shipperReturn->number_of_orders <= 0) {
+                    $shipperReturn->delete();
+                } else {
+                    $shipperReturn->save();
+                }
+
+                // Delete pivot record
+                $pivot->delete();
+
+                // Reset order state
+                $order->update([
+                    'is_in_shipper_return' => false,
+                    'is_shipper_returned' => false,
+                    'shipper_returned_at' => null,
+                ]);
+            }
+        });
+
+        if (!ShipperReturn::where('id', $shipperReturn->id)->exists()) {
+            return response()->json([
+                'message' => 'Return deleted because it had no more orders.',
+                'deleted' => true
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Order removed from return.',
+            'data' => $this->filterVisibleColumns($request, $shipperReturn->fresh(['shipper:id,name', 'orders.client:id,name']))
+        ]);
     }
 }

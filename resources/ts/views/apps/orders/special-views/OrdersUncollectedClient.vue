@@ -1,5 +1,5 @@
 <template>
-  <OrderList status="DELIVERED" :fixed-filters="{ is_client_settled: 0 }" title="أوردرات Uncollected Client" />
+  <OrderList :fixed-filters="{ status: ['DELIVERED', 'UNDELIVERED'], is_client_settled: 0 }" title="أوردرات Uncollected Client" />
 </template>
 
 <script setup lang="ts">

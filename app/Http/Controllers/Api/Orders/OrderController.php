@@ -193,6 +193,7 @@ class OrderController extends Controller
             'is_shipper_returned' => ['nullable', 'boolean'],
             'is_in_client_return' => ['nullable', 'boolean'],
             'is_client_returned' => ['nullable', 'boolean'],
+            'trashed' => ['nullable', 'string', Rule::in(['with', 'only'])],
         ]);
 
         $perPage = $validated['per_page'] ?? 100;
@@ -202,10 +203,27 @@ class OrderController extends Controller
             ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
             ->orderByDesc('id');
 
+        if (isset($validated['trashed'])) {
+            if ($validated['trashed'] === 'only') {
+                $query->onlyTrashed();
+            } elseif ($validated['trashed'] === 'with') {
+                $query->withTrashed();
+            }
+        }
+
         $this->applyOrderSearch($query, $validated);
 
         // Calculate totals from the full filtered query BEFORE pagination
         $summaryQuery = Order::query()->forUserRole();
+
+        if (isset($validated['trashed'])) {
+            if ($validated['trashed'] === 'only') {
+                $summaryQuery->onlyTrashed();
+            } elseif ($validated['trashed'] === 'with') {
+                $summaryQuery->withTrashed();
+            }
+        }
+
         $this->applyOrderSearch($summaryQuery, $validated);
         $totals = $summaryQuery->selectRaw('
                 SUM(total_amount) as total_amount,
@@ -1007,31 +1025,59 @@ class OrderController extends Controller
         }
 
         $statuses = [];
-        if (isset($validated['statuses'])) {
-            $s = $validated['statuses'];
-            if (is_string($s)) {
+        $statusSources = [
+            $validated['statuses'] ?? null,
+            $validated['status'] ?? null,
+            $columnSearch['statuses'] ?? null,
+            $columnSearch['status'] ?? null,
+        ];
+
+        foreach ($statusSources as $s) {
+            if ($s === null || $s === '') continue;
+            if (is_string($s) && str_contains($s, ',')) {
                 $s = explode(',', $s);
             }
             if (is_array($s)) {
-                $statuses = array_values(array_unique(array_filter($s)));
+                $statuses = array_merge($statuses, array_filter($s));
+            } else {
+                $statuses[] = $s;
             }
         }
 
-        if (is_array($columnSearch['statuses'] ?? null)) {
-            $statuses = array_values(array_unique(array_filter([
-                ...$statuses,
-                ...($columnSearch['statuses'] ?? []),
-            ])));
+        if (! empty($statuses)) {
+            $query->whereIn('status', array_unique($statuses));
+            unset($columnSearch['status'], $columnSearch['statuses']);
         }
 
-        if (! empty($statuses)) {
-            $query->whereIn('status', $statuses);
-            unset($columnSearch['statuses']);
+        // 2. Approval Statuses
+        $approvalStatuses = [];
+        $approvalSources = [
+            $validated['approval_statuses'] ?? null,
+            $validated['approval_status'] ?? null,
+            $columnSearch['approval_statuses'] ?? null,
+            $columnSearch['approval_status'] ?? null,
+        ];
+
+        foreach ($approvalSources as $s) {
+            if ($s === null || $s === '') continue;
+            if (is_string($s) && str_contains($s, ',')) {
+                $s = explode(',', $s);
+            }
+            if (is_array($s)) {
+                $approvalStatuses = array_merge($approvalStatuses, array_filter($s));
+            } else {
+                $approvalStatuses[] = $s;
+            }
+        }
+
+        if (! empty($approvalStatuses)) {
+            $query->whereIn('approval_status', array_unique($approvalStatuses));
+            unset($columnSearch['approval_status'], $columnSearch['approval_statuses']);
         }
 
         $directFilters = [
             'code', 'external_code', 'receiver_name', 'phone', 'phone_2',
-            'address', 'status', 'approval_status', 'governorate_id',
+            'address', 'governorate_id',
             'city_id', 'shipper_user_id', 'client_user_id', 'allow_open',
             'has_return', 'is_in_shipper_collection', 'is_shipper_collected',
             'is_in_client_settlement', 'is_client_settled',
@@ -1050,9 +1096,13 @@ class OrderController extends Controller
                     // Robust boolean conversion
                     if ($value === 'true' || $value === true || $value === '1' || $value === 1) {
                         $value = 1;
-                    }
-                    if ($value === 'false' || $value === false || $value === '0' || $value === 0) {
+                    } elseif ($value === 'false' || $value === false || $value === '0' || $value === 0) {
                         $value = 0;
+                    }
+
+                    // Handle comma-separated strings as arrays for multiple values
+                    if (is_string($value) && str_contains($value, ',')) {
+                        $value = explode(',', $value);
                     }
 
                     // If it's a string search, use prefix matching for performance
@@ -1294,5 +1344,27 @@ class OrderController extends Controller
         $nextNumber = $lastOrder ? ($lastOrder->id + 1) : 1;
 
         return $prefix.str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
+    }
+
+    public function restore(Request $request, $id): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.delete');
+        $order = Order::onlyTrashed()->findOrFail($id);
+        $order->restore();
+
+        return response()->json([
+            'message' => 'Order restored successfully.',
+        ]);
+    }
+
+    public function forceDelete(Request $request, $id): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.delete');
+        $order = Order::onlyTrashed()->findOrFail($id);
+        $order->forceDelete();
+
+        return response()->json([
+            'message' => 'Order permanently deleted.',
+        ]);
     }
 }

@@ -76,6 +76,7 @@ class AccountPermissionMap
         'address' => 'user.column.address.edit',
         'plan_id' => 'user.column.plan_id.edit',
         'shipping_content_id' => 'user.column.shipping_content_id.edit',
+        'can_settle_before_shipper_collected' => 'user.column.can_settle_before_shipper_collected.edit',
     ];
 
     public const CLIENT_VIEW_COLUMNS = [
@@ -84,6 +85,7 @@ class AccountPermissionMap
         'address' => 'client.column.address.view',
         'plan_id' => 'client.column.plan_id.view',
         'shipping_content_id' => 'client.column.shipping_content_id.view',
+        'can_settle_before_shipper_collected' => 'client.column.can_settle_before_shipper_collected.view',
         'user' => 'client.column.user.view',
         'plan' => 'client.column.plan.view',
         'shippingContent' => 'client.column.shipping_content.view',

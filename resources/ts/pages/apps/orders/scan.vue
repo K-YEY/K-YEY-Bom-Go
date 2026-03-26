@@ -25,8 +25,10 @@ const onScan = async () => {
 
   // Prevent duplicate in current session table
   if (scannedOrders.value.some(o => o.code === code || o.id.toString() === code || o.external_code === code)) {
-    barcodeInput.value = ''
     playErrorSound()
+    nextTick(() => {
+      inputRef.value?.select()
+    })
     return
   }
 
@@ -39,25 +41,44 @@ const onScan = async () => {
 
     if (error.value) {
       playErrorSound()
+      nextTick(() => {
+        inputRef.value?.select()
+      })
     } else if (data.value?.data) {
       const order = data.value.data
       
       // Check if order is already collected by shipper
       if (order.is_shipper_collected) {
-        barcodeInput.value = ''
         playErrorSound()
         alert(`Order #${order.id} is already collected by shipper and cannot be edited.`)
+        nextTick(() => {
+          inputRef.value?.select()
+        })
+        return
+      }
+
+      // Block finished orders for Change Shipper action
+      const finalStatuses = ['DELIVERED', 'UNDELIVERED', 'RETURNED', 'CANCELLED', 'COLLECTED']
+      if (actionType.value === 'shipper' && finalStatuses.includes(order.status)) {
+        playErrorSound()
+        alert(`Cannot change shipper for order #${order.id} because status is ${order.status}.`)
+        nextTick(() => {
+          inputRef.value?.select()
+        })
         return
       }
 
       // Add to TOP of table
       scannedOrders.value.unshift(order)
       playSuccessSound()
+      barcodeInput.value = ''
     }
   } catch (e) {
     playErrorSound()
+    nextTick(() => {
+      inputRef.value?.select()
+    })
   } finally {
-    barcodeInput.value = ''
     isLoading.value = false
     nextTick(() => {
       inputRef.value?.focus()

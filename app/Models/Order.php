@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Traits\ScopesByUserRole;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 class Order extends Model
 {
-    use ScopesByUserRole;
+    use ScopesByUserRole, SoftDeletes;
     protected $fillable = [
         'code',
         'external_code',

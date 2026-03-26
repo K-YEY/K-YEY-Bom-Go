@@ -85,26 +85,39 @@ Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class
     Route::get('orders/{order}/history', [OrderController::class, 'history']);
     Route::get('orders/{order}/shipping-label', [OrderController::class, 'shippingLabel']);
     Route::get('dashboard/orders', [DashboardOrderController::class, 'summary']);
+    Route::patch('orders/{order}/restore', [OrderController::class, 'restore']);
+    Route::delete('orders/{order}/force-delete', [OrderController::class, 'forceDelete']);
     Route::apiResource('orders', OrderController::class);
     Route::get('shipper-collections/export', [ShipperCollectionController::class, 'export']);
     Route::get('shipper-collections/eligible-orders', [ShipperCollectionController::class, 'eligibleOrders']);
     Route::patch('shipper-collections/{shipperCollection}/approve', [ShipperCollectionController::class, 'approve']);
     Route::patch('shipper-collections/{shipperCollection}/reject', [ShipperCollectionController::class, 'reject']);
+    Route::delete('shipper-collections/{shipperCollection}/orders/{order}', [ShipperCollectionController::class, 'removeOrder']);
+    Route::patch('shipper-collections/bulk-status', [ShipperCollectionController::class, 'bulkStatus']);
     Route::apiResource('shipper-collections', ShipperCollectionController::class);
+
     Route::get('shipper-returns/export', [ShipperReturnController::class, 'export']);
     Route::get('shipper-returns/eligible-orders', [ShipperReturnController::class, 'eligibleOrders']);
     Route::patch('shipper-returns/{shipperReturn}/approve', [ShipperReturnController::class, 'approve']);
     Route::patch('shipper-returns/{shipperReturn}/reject', [ShipperReturnController::class, 'reject']);
+    Route::delete('shipper-returns/{shipperReturn}/orders/{order}', [ShipperReturnController::class, 'removeOrder']);
+    Route::patch('shipper-returns/bulk-status', [ShipperReturnController::class, 'bulkStatus']);
     Route::apiResource('shipper-returns', ShipperReturnController::class);
+
     Route::get('client-settlements/export', [ClientSettlementController::class, 'export']);
     Route::get('client-settlements/eligible-orders', [ClientSettlementController::class, 'eligibleOrders']);
     Route::patch('client-settlements/{clientSettlement}/approve', [ClientSettlementController::class, 'approve']);
     Route::patch('client-settlements/{clientSettlement}/reject', [ClientSettlementController::class, 'reject']);
+    Route::delete('client-settlements/{clientSettlement}/orders/{order}', [ClientSettlementController::class, 'removeOrder']);
+    Route::patch('client-settlements/bulk-status', [ClientSettlementController::class, 'bulkStatus']);
     Route::apiResource('client-settlements', ClientSettlementController::class);
+
     Route::get('client-returns/export', [ClientReturnController::class, 'export']);
     Route::get('client-returns/eligible-orders', [ClientReturnController::class, 'eligibleOrders']);
     Route::patch('client-returns/{clientReturn}/approve', [ClientReturnController::class, 'approve']);
     Route::patch('client-returns/{clientReturn}/reject', [ClientReturnController::class, 'reject']);
+    Route::delete('client-returns/{clientReturn}/orders/{order}', [ClientReturnController::class, 'removeOrder']);
+    Route::patch('client-returns/bulk-status', [ClientReturnController::class, 'bulkStatus']);
     Route::apiResource('client-returns', ClientReturnController::class);
     Route::apiResource('activity-logs', ActivityLogController::class)->only(['index', 'show']);
 });

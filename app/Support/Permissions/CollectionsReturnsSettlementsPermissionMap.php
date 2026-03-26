@@ -17,6 +17,7 @@ class CollectionsReturnsSettlementsPermissionMap
         ['name' => 'shipper-collection.unlock', 'group' => 'shipper-collections', 'label' => 'Unlock shipper collection', 'type' => 'button'],
         ['name' => 'shipper-collection.approve', 'group' => 'shipper-collections', 'label' => 'Approve shipper collection', 'type' => 'button'],
         ['name' => 'shipper-collection.reject', 'group' => 'shipper-collections', 'label' => 'Reject shipper collection', 'type' => 'button'],
+        ['name' => 'shipper-collection.export', 'group' => 'shipper-collections', 'label' => 'Export shipper collection', 'type' => 'button'],
     ];
 
     public const SHIPPER_COLLECTION_VIEW_COLUMNS = [
@@ -25,6 +26,7 @@ class CollectionsReturnsSettlementsPermissionMap
         'collection_date' => 'shipper-collection.column.collection_date.view',
         'total_amount' => 'shipper-collection.column.total_amount.view',
         'number_of_orders' => 'shipper-collection.column.number_of_orders.view',
+        'fees' => null,
         'shipper_fees' => 'shipper-collection.column.shipper_fees.view',
         'net_amount' => 'shipper-collection.column.net_amount.view',
         'status' => 'shipper-collection.column.status.view',
@@ -55,6 +57,7 @@ class CollectionsReturnsSettlementsPermissionMap
         ['name' => 'shipper-return.unlock', 'group' => 'shipper-returns', 'label' => 'Unlock shipper return', 'type' => 'button'],
         ['name' => 'shipper-return.approve', 'group' => 'shipper-returns', 'label' => 'Approve shipper return', 'type' => 'button'],
         ['name' => 'shipper-return.reject', 'group' => 'shipper-returns', 'label' => 'Reject shipper return', 'type' => 'button'],
+        ['name' => 'shipper-return.export', 'group' => 'shipper-returns', 'label' => 'Export shipper return', 'type' => 'button'],
     ];
 
     public const SHIPPER_RETURN_VIEW_COLUMNS = [
@@ -91,6 +94,7 @@ class CollectionsReturnsSettlementsPermissionMap
         ['name' => 'client-settlement.unlock', 'group' => 'client-settlements', 'label' => 'Unlock client settlement', 'type' => 'button'],
         ['name' => 'client-settlement.approve', 'group' => 'client-settlements', 'label' => 'Approve client settlement', 'type' => 'button'],
         ['name' => 'client-settlement.reject', 'group' => 'client-settlements', 'label' => 'Reject client settlement', 'type' => 'button'],
+        ['name' => 'client-settlement.export', 'group' => 'client-settlements', 'label' => 'Export client settlement', 'type' => 'button'],
     ];
 
     public const CLIENT_SETTLEMENT_VIEW_COLUMNS = [
@@ -129,6 +133,7 @@ class CollectionsReturnsSettlementsPermissionMap
         ['name' => 'client-return.unlock', 'group' => 'client-returns', 'label' => 'Unlock client return', 'type' => 'button'],
         ['name' => 'client-return.approve', 'group' => 'client-returns', 'label' => 'Approve client return', 'type' => 'button'],
         ['name' => 'client-return.reject', 'group' => 'client-returns', 'label' => 'Reject client return', 'type' => 'button'],
+        ['name' => 'client-return.export', 'group' => 'client-returns', 'label' => 'Export client return', 'type' => 'button'],
     ];
 
     public const CLIENT_RETURN_VIEW_COLUMNS = [

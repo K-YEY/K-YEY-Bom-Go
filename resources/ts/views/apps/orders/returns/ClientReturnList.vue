@@ -4,6 +4,8 @@ import { createUrl } from '@core/composable/createUrl'
 import { avatarText } from '@core/utils/formatters'
 
 const searchQuery = ref('')
+const selectedIds = ref<number[]>([])
+const processingAction = ref(false)
 const selectedStatus = ref<string | null>(null)
 const selectedApprovalStatus = ref<string | null>(null)
 const selectedClient = ref<number | null>(null)
@@ -69,6 +71,19 @@ const { data: returnsData, execute: fetchReturns, isFetching } = await useApi<an
 
 const returns = computed(() => returnsData.value || [])
 
+// Totals for visible returns
+const visibleTotals = computed(() => {
+  const list = returns.value;
+  let total_returns = list.length;
+  let total_orders = 0;
+  let pending_approval = 0;
+  for (const r of list) {
+    total_orders += Number(r.number_of_orders) || 0;
+    if (r.approval_status === 'PENDING') pending_approval++;
+  }
+  return { total_returns, total_orders, pending_approval };
+});
+
 const statusColors: any = { PENDING: 'warning', COMPLETED: 'success', CANCELLED: 'error' }
 const approvalColors: any = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'error' }
 
@@ -79,7 +94,6 @@ const isCreateDialogVisible = ref(false)
 const isApprovalDialogVisible = ref(false)
 const approvalAction = ref<'approve' | 'reject'>('approve')
 const approvalNote = ref('')
-const processingAction = ref(false)
 
 const viewDetails = async (id: number) => {
   const { data } = await useApi<any>(`/client-returns/${id}`).get().json()
@@ -131,17 +145,54 @@ const clients = computed(() => {
 })
 
 import ClientReturnModal from './ClientReturnModal.vue'
+const removeOrderFromReturn = async (orderId: number) => {
+  if (!selectedReturn.value) return;
+  
+  processingAction.value = true;
+  const { data, error } = await useApi(`/client-returns/${selectedReturn.value.id}/orders/${orderId}`)
+    .delete()
+    .json();
+
+  if (!error.value) {
+    if (data.value?.deleted) {
+      isDetailsDialogVisible.value = false;
+      selectedReturn.value = null;
+    } else {
+      selectedReturn.value = data.value?.data || data.value;
+    }
+    fetchReturns();
+  }
+  processingAction.value = false;
+};
+
+const bulkUpdateStatus = async (status: string) => {
+  if (selectedIds.value.length === 0) return
+
+  processingAction.value = true
+  const { error } = await useApi("/client-returns/bulk-status")
+    .patch({
+      ids: selectedIds.value.map((i: any) => i.id || i),
+      status: status,
+    })
+    .json()
+
+  if (!error.value) {
+    selectedIds.value = []
+    fetchReturns()
+  }
+  processingAction.value = false
+}
+
 const printInvoice = (id: number) => {
   window.open(`/apps/orders/print/${id}?type=client-return`, '_blank')
 }
 // 👉 Export
-const selectedIds = ref<number[]>([])
 
 const exportReturns = async () => {
   const params: any = {}
   
   if (selectedIds.value.length > 0) {
-    params.ids = selectedIds.value.join(',')
+    params.ids = selectedIds.value.map((i: any) => i.id || i).join(',')
   } else {
     if (searchQuery.value) params.search = searchQuery.value
     if (selectedStatus.value) params.status = selectedStatus.value
@@ -157,6 +208,43 @@ const exportReturns = async () => {
 
 <template>
   <section>
+    <!-- Totals Cards -->
+    <VRow class="mb-4">
+      <VCol cols="12" md="4">
+        <VCard elevation="2" class="stats-card">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="primary" icon="tabler-truck-return" size="38" />
+            <div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.total_returns }}</div>
+              <div class="text-xs text-disabled">Total Returns</div>
+            </div>
+          </VCardText>
+        </VCard>
+      </VCol>
+      <VCol cols="6" md="4">
+        <VCard elevation="2" class="stats-card">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="info" icon="tabler-list-numbers" size="38" />
+            <div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.total_orders }}</div>
+              <div class="text-xs text-disabled">Total Orders</div>
+            </div>
+          </VCardText>
+        </VCard>
+      </VCol>
+      <VCol cols="6" md="4">
+        <VCard elevation="2" class="stats-card">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="warning" icon="tabler-clock-pause" size="38" />
+            <div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.pending_approval }}</div>
+              <div class="text-xs text-disabled">Pending Approval</div>
+            </div>
+          </VCardText>
+        </VCard>
+      </VCol>
+    </VRow>
+
     <ClientReturnModal 
       v-model:is-dialog-visible="isCreateDialogVisible"
       @return-created="fetchReturns"
@@ -197,14 +285,50 @@ const exportReturns = async () => {
           />
         </div>
         <div class="d-flex gap-2">
+          <!-- Bulk Status Update -->
+          <VBtn
+            v-if="
+              selectedIds.length > 0 &&
+              can('client-return.update' as any, 'all' as any)
+            "
+            color="secondary"
+            variant="tonal"
+            prepend-icon="tabler-settings"
+            :loading="processingAction"
+          >
+            Bulk Status
+            <VMenu activator="parent">
+              <VList>
+                <VListItem @click="bulkUpdateStatus('PENDING')">
+                  <VListItemTitle>Mark as Pending</VListItemTitle>
+                </VListItem>
+                <VListItem @click="bulkUpdateStatus('COMPLETED')">
+                  <VListItemTitle>Mark as Completed</VListItemTitle>
+                </VListItem>
+                <VListItem @click="bulkUpdateStatus('CANCELLED')">
+                  <VListItemTitle>Mark as Cancelled</VListItemTitle>
+                </VListItem>
+              </VList>
+            </VMenu>
+          </VBtn>
+
           <VBtn
             v-if="can('client-return.export' as any, 'all' as any)"
-            color="success"
             variant="tonal"
-            prepend-icon="tabler-file-spreadsheet"
+            color="primary"
+            :prepend-icon="
+              selectedIds.length > 0
+                ? 'tabler-file-spreadsheet'
+                : 'tabler-file-download'
+            "
+            :loading="processingAction"
             @click="exportReturns"
           >
-            Export Excel
+            {{
+              selectedIds.length > 0
+                ? `Export Selected (${selectedIds.length})`
+                : "Export All"
+            }}
           </VBtn>
           <VBtn
             v-if="can('client-return.create' as any, 'all' as any)"
@@ -234,7 +358,9 @@ const exportReturns = async () => {
       <VDivider />
 
       <VDataTable
-        v-model:selected="selectedIds"
+        v-model="selectedIds"
+        item-value="id"
+        return-object
         show-select
         :items="returns"
         :headers="activeHeaders"
@@ -264,14 +390,14 @@ const exportReturns = async () => {
 
         <!-- Status -->
         <template #item.status="{ item }: { item: any }">
-          <VChip size="small" :color="statusColors[item.status]" variant="tonal" class="text-capitalize">
+          <VChip size="x-small" :color="statusColors[item.status]" variant="tonal" class="text-capitalize" style="font-size: 11px !important;">
             {{ item.status }}
           </VChip>
         </template>
-
+        
         <!-- Approval -->
         <template #item.approval_status="{ item }: { item: any }">
-          <VChip size="small" :color="approvalColors[item.approval_status]" variant="tonal" class="text-capitalize">
+          <VChip size="x-small" :color="approvalColors[item.approval_status]" variant="tonal" class="text-capitalize" style="font-size: 11px !important;">
             {{ item.approval_status }}
           </VChip>
         </template>
@@ -301,15 +427,29 @@ const exportReturns = async () => {
               </IconBtn>
             </template>
       
-            <template v-if="item.status === 'PENDING' && item.approval_status === 'APPROVED'">
-              <VDivider v-if="can('client-return.update' as any, 'all' as any)" vertical class="mx-1" />
-              <VBtn v-if="can('client-return.update' as any, 'all' as any)" size="x-small" color="success" variant="elevated" :loading="processingAction" @click="updateStatus(item.id, 'COMPLETED')">
-                Complete
-              </VBtn>
-              <VBtn v-if="can('client-return.update' as any, 'all' as any)" size="x-small" color="error" variant="outlined" :loading="processingAction" @click="updateStatus(item.id, 'CANCELLED')">
-                Cancel
-              </VBtn>
-            </template>
+            <!-- Return Status Change -->
+            <VBtn
+              v-if="can('client-return.update' as any, 'all' as any)"
+              size="x-small"
+              color="secondary"
+              variant="tonal"
+              :loading="processingAction"
+            >
+              Status
+              <VMenu activator="parent">
+                <VList density="compact">
+                  <VListItem @click="updateStatus(item.id, 'PENDING')">
+                    <VListItemTitle>Pending</VListItemTitle>
+                  </VListItem>
+                  <VListItem @click="updateStatus(item.id, 'COMPLETED')">
+                    <VListItemTitle>Complete</VListItemTitle>
+                  </VListItem>
+                  <VListItem @click="updateStatus(item.id, 'CANCELLED')">
+                    <VListItemTitle>Cancel</VListItemTitle>
+                  </VListItem>
+                </VList>
+              </VMenu>
+            </VBtn>
           </div>
         </template>
       </VDataTable>
@@ -340,6 +480,7 @@ const exportReturns = async () => {
                 <th>Code</th>
                 <th>Receiver</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -354,6 +495,19 @@ const exportReturns = async () => {
                   <VChip size="small" :color="statusColors[order.status]" variant="tonal">
                     {{ order.status }}
                   </VChip>
+                </td>
+                <td>
+                    <IconBtn 
+                      v-if="can('client-return.update' as any, 'all' as any)"
+                      size="small" 
+                      color="error"
+                      variant="tonal"
+                      :disabled="processingAction"
+                      @click="removeOrderFromReturn(order.id)"
+                    >
+                      <VIcon icon="tabler-trash" />
+                      <VTooltip activator="parent">Remove from return</VTooltip>
+                    </IconBtn>
                 </td>
               </tr>
             </tbody>

@@ -69,11 +69,41 @@ class ClientSettlementController extends Controller
             $ids = explode(',', $ids);
         }
 
+        $query = ClientSettlement::query();
         if ($ids && is_array($ids)) {
-            return Excel::download(new CollectedClientsExport(null, $ids), 'client_settlements.xlsx');
+            $query->whereIn('id', $ids);
         }
 
-        return Excel::download(new CollectedClientsExport(), 'client_settlements_all.xlsx');
+        $totalAmount = round($query->sum('net_amount'), 2);
+
+        $clients = $query->with('client')->get()->pluck('client.name')->unique();
+        $namePart = ($clients->count() === 1) ? " - " . $clients->first() : "";
+
+        $date = now()->format('d-m-y');
+        $filename = "تحصيل عميل{$namePart} - {$totalAmount} - {$date}.xlsx";
+
+        return Excel::download(new CollectedClientsExport($ids ? null : $query, $ids ? $ids : null), $filename);
+    }
+
+    public function bulkStatus(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'client-settlement.update');
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['exists:client_settlements,id'],
+            'status' => ['required', Rule::in(['PENDING', 'COMPLETED', 'CANCELLED'])],
+        ]);
+
+        DB::transaction(function () use ($data) {
+            $settlements = ClientSettlement::whereIn('id', $data['ids'])->get();
+            foreach ($settlements as $settlement) {
+                $settlement->update(['status' => $data['status']]);
+                $this->syncSettlementOrdersState($settlement);
+            }
+        });
+
+        return response()->json(['message' => 'Status updated for selected settlements.']);
     }
 
     public function eligibleOrders(Request $request): JsonResponse
@@ -87,7 +117,8 @@ class ClientSettlementController extends Controller
             'respect_shipper_collection_requirement' => ['nullable', 'boolean'],
         ]);
 
-        $settingsRequireShipperCollectionFirst = $this->requiresShipperCollectionFirst();
+        $clientUserId = $validated['client_user_id'] ?? null;
+        $settingsRequireShipperCollectionFirst = $this->requiresShipperCollectionFirst($clientUserId);
         $requireShipperCollectionFirst = array_key_exists('respect_shipper_collection_requirement', $validated)
             ? (bool) $validated['respect_shipper_collection_requirement']
             : $settingsRequireShipperCollectionFirst;
@@ -424,7 +455,7 @@ class ClientSettlementController extends Controller
             ->where('is_in_client_settlement', false)
             ->where('is_client_settled', false)
             ->when(
-                $this->requiresShipperCollectionFirst(),
+                $this->requiresShipperCollectionFirst($clientUserId),
                 fn (Builder $query): Builder => $query->where('is_shipper_collected', true)
             )
             ->get();
@@ -487,8 +518,17 @@ class ClientSettlementController extends Controller
             ]);
     }
 
-    private function requiresShipperCollectionFirst(): bool
+    private function requiresShipperCollectionFirst(?int $clientUserId = null): bool
     {
+        // 1. Check if client has a specific permission/override to settle before shipper collection
+        if ($clientUserId !== null) {
+            $client = Client::query()->where('user_id', $clientUserId)->first();
+            if ($client && $client->can_settle_before_shipper_collected) {
+                return false; // Explicitly allowed to settle before collection
+            }
+        }
+
+        // 2. Fallback to global setting
         $value = Setting::query()
             ->where('key', 'require_shipper_collection_first')
             ->value('value');
@@ -509,5 +549,50 @@ class ClientSettlementController extends Controller
         $normalized = strtolower(trim((string) $value));
 
         return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    public function removeOrder(Request $request, ClientSettlement $clientSettlement, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'client-settlement.update');
+
+        DB::transaction(function () use ($clientSettlement, $order) {
+            $pivot = ClientSettlementOrder::where('client_settlement_id', $clientSettlement->id)
+                ->where('order_id', $order->id)
+                ->first();
+
+            if ($pivot) {
+                // Update settlement totals
+                $clientSettlement->total_amount = max(0, $clientSettlement->total_amount - $pivot->order_amount);
+                $clientSettlement->number_of_orders = max(0, $clientSettlement->number_of_orders - 1);
+                
+                if ($clientSettlement->number_of_orders <= 0) {
+                    $clientSettlement->delete();
+                } else {
+                    $clientSettlement->save();
+                }
+
+                // Delete pivot record
+                $pivot->delete();
+
+                // Reset order state
+                $order->update([
+                    'is_in_client_settlement' => false,
+                    'is_client_settled' => false,
+                    'client_settled_at' => null,
+                ]);
+            }
+        });
+
+        if (!ClientSettlement::where('id', $clientSettlement->id)->exists()) {
+            return response()->json([
+                'message' => 'Settlement deleted because it had no more orders.',
+                'deleted' => true
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Order removed from settlement.',
+            'data' => $this->filterVisibleColumns($request, $clientSettlement->fresh(['client:id,name', 'orders.client:id,name']))
+        ]);
     }
 }

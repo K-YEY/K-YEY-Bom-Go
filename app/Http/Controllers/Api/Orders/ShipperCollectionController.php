@@ -87,11 +87,42 @@ class ShipperCollectionController extends Controller
             $ids = explode(',', $ids);
         }
 
+        $query = ShipperCollection::query();
         if ($ids && is_array($ids)) {
-            return Excel::download(new CollectedShippersExport(null, $ids), 'shipper_collections.xlsx');
+            $query->whereIn('id', $ids);
         }
 
-        return Excel::download(new CollectedShippersExport(), 'shipper_collections_all.xlsx');
+        $totalAmount = round($query->sum('net_amount'), 2);
+        
+        $shippers = $query->with('shipper')->get()->pluck('shipper.name')->unique();
+        $namePart = ($shippers->count() === 1) ? " - " . $shippers->first() : "";
+
+        $date = now()->format('d-m-y');
+        $filename = "تحصيل شيبر{$namePart} - {$totalAmount} - {$date}.xlsx";
+
+        return Excel::download(new CollectedShippersExport($ids ? null : $query, $ids ? $ids : null), $filename);
+    }
+
+    public function bulkStatus(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'shipper-collection.update');
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['exists:shipper_collections,id'],
+            'status' => ['required', Rule::in(['PENDING', 'COMPLETED', 'CANCELLED'])],
+        ]);
+
+        DB::transaction(function () use ($data) {
+            $collections = ShipperCollection::whereIn('id', $data['ids'])->get();
+            foreach ($collections as $collection) {
+                // We use the model instance to trigger any events/checks
+                $collection->update(['status' => $data['status']]);
+                $this->syncCollectionOrdersState($collection);
+            }
+        });
+
+        return response()->json(['message' => 'Status updated for selected collections.']);
     }
 
     public function eligibleOrders(Request $request): JsonResponse
@@ -538,5 +569,51 @@ class ShipperCollectionController extends Controller
     private function resolveCollectionAmount(Order $order): float
     {
         return round(max(((float) $order->total_amount) - ((float) $order->commission_amount), 0), 2);
+    }
+
+    public function removeOrder(Request $request, ShipperCollection $shipperCollection, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'shipper-collection.update');
+
+        DB::transaction(function () use ($shipperCollection, $order) {
+            $pivot = ShipperCollectionOrder::where('shipper_collection_id', $shipperCollection->id)
+                ->where('order_id', $order->id)
+                ->first();
+
+            if ($pivot) {
+                // Update collection totals
+                $shipperCollection->total_amount = max(0, $shipperCollection->total_amount - $pivot->order_amount);
+                $shipperCollection->net_amount = max(0, $shipperCollection->net_amount - $pivot->net_amount);
+                $shipperCollection->number_of_orders = max(0, $shipperCollection->number_of_orders - 1);
+                
+                if ($shipperCollection->number_of_orders <= 0) {
+                    $shipperCollection->delete();
+                } else {
+                    $shipperCollection->save();
+                }
+
+                // Delete pivot record
+                $pivot->delete();
+
+                // Reset order state
+                $order->update([
+                    'is_in_shipper_collection' => false,
+                    'is_shipper_collected' => false,
+                    'shipper_collected_at' => null,
+                ]);
+            }
+        });
+
+        if (!ShipperCollection::where('id', $shipperCollection->id)->exists()) {
+            return response()->json([
+                'message' => 'Collection deleted because it had no more orders.',
+                'deleted' => true
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Order removed from collection.',
+            'data' => $this->filterVisibleColumns($request, $shipperCollection->fresh(['shipper:id,name', 'orders.client:id,name']))
+        ]);
     }
 }

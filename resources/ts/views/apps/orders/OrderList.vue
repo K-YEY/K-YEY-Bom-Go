@@ -15,6 +15,7 @@ const props = defineProps<{
   statusFilter?: string[]
   fixedFilters?: Record<string, any>
   title?: string
+  trashed?: 'with' | 'only'
 }>()
 
 const isAddEditOrderModalVisible = ref(false)
@@ -303,8 +304,12 @@ const fetchOrders = async () => {
     const { data: oData } = await useApi<any>(createUrl('/orders', {
       query: {
         q: searchQueryDebounced.value,
-        status: selectedStatus.value || props.statusFilter,
-        approval_status: props.fixedFilters && 'approval_status' in props.fixedFilters ? props.fixedFilters.approval_status : 'APPROVED',
+        status: Array.isArray(selectedStatus.value || props.statusFilter) 
+          ? (selectedStatus.value as any || props.statusFilter).join(',') 
+          : (selectedStatus.value || props.statusFilter),
+        approval_status: props.fixedFilters && 'approval_status' in props.fixedFilters 
+          ? (Array.isArray(props.fixedFilters.approval_status) ? props.fixedFilters.approval_status.join(',') : props.fixedFilters.approval_status)
+          : 'APPROVED',
         governorate_id: selectedGovernorate.value,
         shipper_user_id: selectedShipper.value,
         client_user_id: selectedClient.value,
@@ -320,7 +325,10 @@ const fetchOrders = async () => {
         has_return: filters.value.has_return,
         is_client_settled: filters.value.is_client_settled,
         is_client_returned: filters.value.is_client_returned,
-        ...(props.fixedFilters || {}),
+        trashed: props.trashed,
+        ...Object.fromEntries(
+          Object.entries(props.fixedFilters || {}).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v])
+        ),
       },
     })).get().json()
 
@@ -338,14 +346,21 @@ const initializePage = async () => {
     const { data: res, error } = await useApi<any>(createUrl('/orders/init', {
       query: {
         q: searchQueryDebounced.value,
-        status: selectedStatus.value || props.statusFilter,
-        approval_status: props.fixedFilters && 'approval_status' in props.fixedFilters ? props.fixedFilters.approval_status : 'APPROVED',
+        status: Array.isArray(selectedStatus.value || props.statusFilter) 
+          ? (selectedStatus.value as any || props.statusFilter).join(',') 
+          : (selectedStatus.value || props.statusFilter),
+        approval_status: props.fixedFilters && 'approval_status' in props.fixedFilters 
+          ? (Array.isArray(props.fixedFilters.approval_status) ? props.fixedFilters.approval_status.join(',') : props.fixedFilters.approval_status)
+          : 'APPROVED',
         governorate_id: selectedGovernorate.value,
         shipper_user_id: selectedShipper.value,
         client_user_id: selectedClient.value,
         per_page: itemsPerPage.value,
         page: page.value,
-        ...(props.fixedFilters || {}),
+        trashed: props.trashed,
+        ...Object.fromEntries(
+          Object.entries(props.fixedFilters || {}).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v])
+        ),
       },
     })).get().json()
 
@@ -405,10 +420,10 @@ const resolveStatusColor = (status: string) => statusColors[status] || 'secondar
 const resetFilters = () => {
   searchQuery.value = ''
   searchQueryDebounced.value = ''
-  selectedStatus.value = null
+  selectedStatus.value = props.status || null
   selectedGovernorate.value = null
-  selectedShipper.value = null
-  selectedClient.value = null
+  selectedShipper.value = props.shipperId ? Number(props.shipperId) : null
+  selectedClient.value = props.clientId ? Number(props.clientId) : null
   filters.value = {
     code: '',
     receiver_name: '',
@@ -448,6 +463,24 @@ const deleteOrder = async (id: number) => {
   if (!confirm('Are you sure you want to delete this order?')) return
 
   const { error } = await useApi(`/orders/${id}`).delete()
+  if (!error.value) {
+    fetchOrders()
+  }
+}
+
+const restoreOrder = async (id: number) => {
+  if (!confirm('Are you sure you want to restore this order?')) return
+
+  const { error } = await useApi(`/orders/${id}/restore`).patch().json()
+  if (!error.value) {
+    fetchOrders()
+  }
+}
+
+const forceDeleteOrder = async (id: number) => {
+  if (!confirm('Are you sure you want to PERMANENTLY delete this order?')) return
+
+  const { error } = await useApi(`/orders/${id}/force-delete`).delete()
   if (!error.value) {
     fetchOrders()
   }
@@ -593,7 +626,7 @@ const handleNewOrder = () => {
 
     <VCard elevation="2">
       <VCardTitle v-if="props.title" class="pt-4 px-6 pb-0">
-        <h5 class="text-h5">{{ props.title }}</h5>
+        <h5 class="text-h5">{{ props.title ?? 'Orders Management' }}</h5>
       </VCardTitle>
 
       <!-- 📦 Bulk Actions Row (Header Position) -->
@@ -675,7 +708,7 @@ const handleNewOrder = () => {
       <VDivider />
 
       <VDataTableServer
-        v-model:model-value="selectedOrders"
+        v-model:selected="selectedOrders"
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
         :loading="isLoading"
@@ -796,9 +829,11 @@ const handleNewOrder = () => {
 
         <template #item.status="{ item }: { item: any }">
           <VChip 
-            size="14" 
+            size="x-small" 
             :color="resolveStatusColor(item.status)" 
             variant="tonal" 
+            class="text-capitalize"
+            style="font-size: 11px !important;"
             :class="(item.is_shipper_collected || !can('order.change-status' as any, 'all' as any)) ? 'cursor-not-allowed' : 'cursor-pointer'" 
             @click="(!item.is_shipper_collected && can('order.change-status' as any, 'all' as any)) && openStatusModal(item)"
           >
@@ -848,32 +883,49 @@ const handleNewOrder = () => {
               <VIcon icon="tabler-dots-vertical" />
               <VMenu activator="parent">
                 <VList density="compact">
-                  <VListItem
-                    v-if="!item.is_shipper_collected && can('order.update' as any, 'all' as any)"
-                    prepend-icon="tabler-edit"
-                    title="Edit"
-                    @click="editOrder(item.id)"
-                  />
-                  <VListItem
-                    v-if="can('order.view' as any, 'all' as any)"
-                    prepend-icon="tabler-file-invoice"
-                    title="Shipping Label"
-                    @click="printLabel(item.id)"
-                  />
-                  <VListItem
-                    v-if="!item.is_shipper_collected && can('order.delete' as any, 'all' as any)"
-                    prepend-icon="tabler-trash"
-                    title="Delete"
-                    color="error"
-                    @click="deleteOrder(item.id)"
-                  />
-                  <VDivider />
-                  <VListItem
-                    v-if="can('order.view' as any, 'all' as any)"
-                    prepend-icon="tabler-history"
-                    title="History"
-                    @click="openHistory(item)"
-                  />
+                  <template v-if="props.trashed === 'only'">
+                    <VListItem
+                      v-if="can('order.delete' as any, 'all' as any)"
+                      prepend-icon="tabler-refresh"
+                      title="Restore"
+                      @click="restoreOrder(item.id)"
+                    />
+                    <VListItem
+                      v-if="can('order.delete' as any, 'all' as any)"
+                      prepend-icon="tabler-trash-x"
+                      title="Force Delete"
+                      color="error"
+                      @click="forceDeleteOrder(item.id)"
+                    />
+                  </template>
+                  <template v-else>
+                    <VListItem
+                      v-if="!item.is_shipper_collected && can('order.update' as any, 'all' as any)"
+                      prepend-icon="tabler-edit"
+                      title="Edit"
+                      @click="editOrder(item.id)"
+                    />
+                    <VListItem
+                      v-if="can('order.view' as any, 'all' as any)"
+                      prepend-icon="tabler-file-invoice"
+                      title="Shipping Label"
+                      @click="printLabel(item.id)"
+                    />
+                    <VListItem
+                      v-if="!item.is_shipper_collected && can('order.delete' as any, 'all' as any)"
+                      prepend-icon="tabler-trash"
+                      title="Delete"
+                      color="error"
+                      @click="deleteOrder(item.id)"
+                    />
+                    <VDivider />
+                    <VListItem
+                      v-if="can('order.view' as any, 'all' as any)"
+                      prepend-icon="tabler-history"
+                      title="History"
+                      @click="openHistory(item)"
+                    />
+                  </template>
                 </VList>
               </VMenu>
             </VBtn>

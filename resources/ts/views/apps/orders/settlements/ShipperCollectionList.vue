@@ -11,6 +11,8 @@ const selectedShipper = ref<number | null>(null);
 const { can } = useAbility();
 
 const STORAGE_KEY = "shipper-collections-visible-columns";
+const selectedIds = ref<number[]>([]);
+const processingAction = ref(false);
 
 // Define permission mapping for columns
 const columnPermissions: Record<string, string> = {
@@ -86,6 +88,22 @@ const {
 
 const collections = computed(() => collectionsData.value || []);
 
+// Totals for visible collections
+const visibleTotals = computed(() => {
+  const list = collections.value;
+  let total_amount = 0;
+  let net_amount = 0;
+  let shipper_fees = 0;
+  let number_of_orders = 0;
+  for (const c of list) {
+    total_amount += Number(c.total_amount) || 0;
+    net_amount += Number(c.net_amount) || 0;
+    shipper_fees += Number(c.shipper_fees) || 0;
+    number_of_orders += Number(c.number_of_orders) || 0;
+  }
+  return { total_amount, net_amount, shipper_fees, number_of_orders };
+});
+
 const statusColors: any = {
   PENDING: "warning",
   COMPLETED: "success",
@@ -105,7 +123,6 @@ const isCreateDialogVisible = ref(false);
 const isApprovalDialogVisible = ref(false);
 const approvalAction = ref<"approve" | "reject">("approve");
 const approvalNote = ref("");
-const processingAction = ref(false);
 
 const viewDetails = async (id: number) => {
   const { data } = await useApi<any>(`/shipper-collections/${id}`).get().json();
@@ -163,18 +180,55 @@ const shippers = computed(() => {
 });
 
 import ShipperCollectionModal from "./ShipperCollectionModal.vue";
+const removeOrderFromCollection = async (orderId: number) => {
+  if (!selectedCollection.value) return;
+  
+  processingAction.value = true;
+  const { data, error } = await useApi(`/shipper-collections/${selectedCollection.value.id}/orders/${orderId}`)
+    .delete()
+    .json();
+
+  if (!error.value) {
+    if (data.value?.deleted) {
+      isDetailsDialogVisible.value = false;
+      selectedCollection.value = null;
+    } else {
+      selectedCollection.value = data.value?.data || data.value;
+    }
+    fetchCollections();
+  }
+  processingAction.value = false;
+};
+
+const bulkUpdateStatus = async (status: string) => {
+  if (selectedIds.value.length === 0) return;
+
+  processingAction.value = true;
+  const { error } = await useApi("/shipper-collections/bulk-status")
+    .patch({
+      ids: selectedIds.value.map((i: any) => i.id || i),
+      status: status,
+    })
+    .json();
+
+  if (!error.value) {
+    selectedIds.value = [];
+    fetchCollections();
+  }
+  processingAction.value = false;
+};
+
 const printInvoice = (id: number) => {
   window.open(`/apps/orders/print/${id}?type=collection`, "_blank");
 };
 
 // 👉 Export
-const selectedIds = ref<number[]>([]);
 
 const exportCollections = async () => {
   const params: any = {};
 
   if (selectedIds.value.length > 0) {
-    params.ids = selectedIds.value.join(",");
+    params.ids = selectedIds.value.map((i: any) => i.id || i).join(",");
   } else {
     if (searchQuery.value) params.search = searchQuery.value;
     if (selectedStatus.value) params.status = selectedStatus.value;
@@ -194,6 +248,54 @@ const exportCollections = async () => {
 
 <template>
   <section>
+    <!-- Totals Cards -->
+    <VRow class="mb-4">
+      <VCol cols="6" md="3">
+        <VCard elevation="2">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="primary" icon="tabler-currency-dollar" size="38" />
+            <div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.total_amount.toLocaleString() }}</div>
+              <div class="text-xs text-disabled">Total Amount</div>
+            </div>
+          </VCardText>
+        </VCard>
+      </VCol>
+      <VCol cols="6" md="3">
+        <VCard elevation="2">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="success" icon="tabler-cash" size="38" />
+            <div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.net_amount.toLocaleString() }}</div>
+              <div class="text-xs text-disabled">Net Amount</div>
+            </div>
+          </VCardText>
+        </VCard>
+      </VCol>
+      <VCol cols="6" md="3">
+        <VCard elevation="2">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="error" icon="tabler-receipt-tax" size="38" />
+            <div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.shipper_fees.toLocaleString() }}</div>
+              <div class="text-xs text-disabled">Shipper Fees</div>
+            </div>
+          </VCardText>
+        </VCard>
+      </VCol>
+      <VCol cols="6" md="3">
+        <VCard elevation="2">
+          <VCardText class="d-flex align-center gap-3 pa-3">
+            <VAvatar variant="tonal" color="info" icon="tabler-list-numbers" size="38" />
+            <div>
+              <div class="text-h6 font-weight-bold">{{ visibleTotals.number_of_orders }}</div>
+              <div class="text-xs text-disabled">Total Orders</div>
+            </div>
+          </VCardText>
+        </VCard>
+      </VCol>
+    </VRow>
+
     <ShipperCollectionModal
       v-model:is-dialog-visible="isCreateDialogVisible"
       @collection-created="fetchCollections"
@@ -234,14 +336,49 @@ const exportCollections = async () => {
           />
         </div>
         <div class="d-flex gap-2">
+          <!-- Bulk Status Update -->
+          <VBtn
+            v-if="
+              selectedIds.length > 0 &&
+              can('shipper-collection.update' as any, 'all' as any)
+            "
+            color="secondary"
+            variant="tonal"
+            prepend-icon="tabler-settings"
+          >
+            Bulk Status
+            <VMenu activator="parent">
+              <VList>
+                <VListItem @click="bulkUpdateStatus('PENDING')">
+                  <VListItemTitle>Mark as Pending</VListItemTitle>
+                </VListItem>
+                <VListItem @click="bulkUpdateStatus('COMPLETED')">
+                  <VListItemTitle>Mark as Completed</VListItemTitle>
+                </VListItem>
+                <VListItem @click="bulkUpdateStatus('CANCELLED')">
+                  <VListItemTitle>Mark as Cancelled</VListItemTitle>
+                </VListItem>
+              </VList>
+            </VMenu>
+          </VBtn>
+
           <VBtn
             v-if="can('shipper-collection.export' as any, 'all' as any)"
-            color="success"
             variant="tonal"
-            prepend-icon="tabler-file-spreadsheet"
+            color="primary"
+            :prepend-icon="
+              selectedIds.length > 0
+                ? 'tabler-file-spreadsheet'
+                : 'tabler-file-download'
+            "
+            :loading="processingAction"
             @click="exportCollections"
           >
-            Export Excel
+            {{
+              selectedIds.length > 0
+                ? `Export Selected (${selectedIds.length})`
+                : "Export All"
+            }}
           </VBtn>
           <VBtn
             v-if="can('shipper-collection.create' as any, 'all' as any)"
@@ -281,7 +418,9 @@ const exportCollections = async () => {
       <VDivider />
 
       <VDataTable
-        v-model:selected="selectedIds"
+        v-model="selectedIds"
+        item-value="id"
+        return-object
         show-select
         :items="collections"
         :headers="activeHeaders"
@@ -338,10 +477,11 @@ const exportCollections = async () => {
         <!-- Status -->
         <template #item.status="{ item }: { item: any }">
           <VChip
-            size="small"
+            size="x-small"
             :color="statusColors[item.status]"
             variant="tonal"
             class="text-capitalize"
+            style="font-size: 11px !important;"
           >
             {{ item.status }}
           </VChip>
@@ -413,38 +553,29 @@ const exportCollections = async () => {
               </IconBtn>
             </template>
 
-            <!-- Collection Status (Complete/Cancel) -->
-            <template
-              v-if="
-                item.status === 'PENDING' && item.approval_status === 'APPROVED'
-              "
+            <!-- Collection Status Change -->
+            <VBtn
+              v-if="can('shipper-collection.update' as any, 'all' as any)"
+              size="x-small"
+              color="secondary"
+              variant="tonal"
+              :loading="processingAction"
             >
-              <VDivider
-                v-if="can('shipper-collection.update' as any, 'all' as any)"
-                vertical
-                class="mx-1"
-              />
-              <VBtn
-                v-if="can('shipper-collection.update' as any, 'all' as any)"
-                size="x-small"
-                color="success"
-                variant="elevated"
-                :loading="processingAction"
-                @click="updateStatus(item.id, 'COMPLETED')"
-              >
-                Complete
-              </VBtn>
-              <VBtn
-                v-if="can('shipper-collection.update' as any, 'all' as any)"
-                size="x-small"
-                color="error"
-                variant="outlined"
-                :loading="processingAction"
-                @click="updateStatus(item.id, 'CANCELLED')"
-              >
-                Cancel
-              </VBtn>
-            </template>
+              Status
+              <VMenu activator="parent">
+                <VList density="compact">
+                  <VListItem @click="updateStatus(item.id, 'PENDING')">
+                    <VListItemTitle>Pending</VListItemTitle>
+                  </VListItem>
+                  <VListItem @click="updateStatus(item.id, 'COMPLETED')">
+                    <VListItemTitle>Complete</VListItemTitle>
+                  </VListItem>
+                  <VListItem @click="updateStatus(item.id, 'CANCELLED')">
+                    <VListItemTitle>Cancel</VListItemTitle>
+                  </VListItem>
+                </VList>
+              </VMenu>
+            </VBtn>
           </div>
         </template>
       </VDataTable>
@@ -455,14 +586,21 @@ const exportCollections = async () => {
       <VCard :title="`Collection Details - #${selectedCollection?.id}`">
         <VCardText>
           <VRow>
-            <VCol cols="12" md="6">
+            <VCol cols="12" md="4">
               <div class="text-subtitle-2 mb-1">Total Amount</div>
               <div class="text-body-1 font-weight-bold">
                 {{ selectedCollection?.total_amount }} EGP
               </div>
             </VCol>
 
-            <VCol cols="12" md="6">
+            <VCol cols="12" md="4">
+              <div class="text-subtitle-2 mb-1">Total Fees</div>
+              <div class="text-body-1 font-weight-bold text-error">
+                {{ (selectedCollection?.total_amount - selectedCollection?.net_amount).toFixed(2) }} EGP
+              </div>
+            </VCol>
+
+            <VCol cols="12" md="4">
               <div class="text-subtitle-2 mb-1">COD Amount</div>
               <div class="text-body-1 font-weight-bold text-success">
                 {{ selectedCollection?.net_amount }} EGP
@@ -480,21 +618,35 @@ const exportCollections = async () => {
                 <th>Code</th>
                 <th>EX-CODE</th>
                 <th>Client</th>
-                <th></th>
                 <th>Amount</th>
                 <th>Commission</th>
                 <th>Net</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="order in selectedCollection?.orders" :key="order.id">
                 <td>#{{ order.id }}</td>
                 <td>{{ order.code }}</td>
+                <td>{{ order.external_code || "-" }}</td>
                 <td>{{ order.client?.name || "-" }}</td>
                 <td>{{ order.pivot?.order_amount }} EGP</td>
                 <td class="text-error">{{ order.pivot?.shipper_fee }} EGP</td>
                 <td class="text-success font-weight-bold">
                   {{ order.pivot?.net_amount }} EGP
+                </td>
+                <td>
+                   <IconBtn 
+                     v-if="can('shipper-collection.update' as any, 'all' as any)"
+                     size="small" 
+                     color="error"
+                     variant="tonal"
+                     :disabled="processingAction"
+                     @click="removeOrderFromCollection(order.id)"
+                   >
+                     <VIcon icon="tabler-trash" />
+                     <VTooltip activator="parent">Remove from collection</VTooltip>
+                   </IconBtn>
                 </td>
               </tr>
             </tbody>

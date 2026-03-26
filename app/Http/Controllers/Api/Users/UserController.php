@@ -163,6 +163,7 @@ class UserController extends Controller
                 'integer',
                 'exists:content,id',
             ],
+            'can_settle_before_shipper_collected' => ['nullable', 'boolean'],
         ]);
 
         $data = array_merge($data, $typeSpecificData);
@@ -235,6 +236,7 @@ class UserController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'plan_id' => ['nullable', 'integer', 'exists:plans,id'],
             'shipping_content_id' => ['nullable', 'integer', 'exists:content,id'],
+            'can_settle_before_shipper_collected' => ['nullable', 'boolean'],
         ]);
 
         $this->authorizeEditableColumns($request, array_keys($data));
@@ -264,11 +266,11 @@ class UserController extends Controller
                     'commission_rate' => $data['commission_rate'],
                 ]);
             } elseif ($user->client) {
-                $clientData = collect($data)->only(['address', 'plan_id', 'shipping_content_id'])->toArray();
-
-                if (! empty($clientData)) {
-                    $user->client()->update($clientData);
-                }
+                $clientData = collect($data)->only(['address', 'plan_id', 'shipping_content_id', 'can_settle_before_shipper_collected'])->toArray();
+ 
+                 if (! empty($clientData)) {
+                     $user->client()->update($clientData);
+                 }
             }
         });
 
@@ -321,6 +323,7 @@ class UserController extends Controller
                     'address' => $data['address'] ?? null,
                     'plan_id' => $data['plan_id'] ?? null,
                     'shipping_content_id' => $data['shipping_content_id'] ?? null,
+                    'can_settle_before_shipper_collected' => $data['can_settle_before_shipper_collected'] ?? false,
                 ]
             );
 

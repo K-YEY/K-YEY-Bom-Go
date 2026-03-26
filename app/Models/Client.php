@@ -11,6 +11,11 @@ class Client extends Model
         'address',
         'plan_id',
         'shipping_content_id',
+        'can_settle_before_shipper_collected',
+    ];
+
+    protected $casts = [
+        'can_settle_before_shipper_collected' => 'boolean',
     ];
 
     public function user()
