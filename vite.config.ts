@@ -53,7 +53,7 @@ export default defineConfig({
       defaultLayout: 'default',
     }), // Docs: https://github.com/antfu/unplugin-vue-components#unplugin-vue-components
     Components({
-      dirs: ['resources/ts/@core/components', 'resources/ts/components'],
+      dirs: ['resources/ts/@core/components', 'resources/ts/components', 'resources/ts/views/apps'],
       dts: true,
       resolvers: [
         componentName => {
