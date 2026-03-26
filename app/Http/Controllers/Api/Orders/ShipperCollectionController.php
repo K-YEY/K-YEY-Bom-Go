@@ -261,7 +261,10 @@ class ShipperCollectionController extends Controller
 
         $shipperCollection->load(['shipper:id,name', 'orders.client:id,name']);
 
-        return response()->json($this->filterVisibleColumns($request, $shipperCollection));
+        $result = $this->filterVisibleColumns($request, $shipperCollection);
+        $result['orders'] = $shipperCollection->orders;
+
+        return response()->json($result);
     }
 
     public function update(Request $request, ShipperCollection $shipperCollection): JsonResponse

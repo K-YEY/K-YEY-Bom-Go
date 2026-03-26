@@ -249,7 +249,10 @@ class ClientSettlementController extends Controller
 
         $clientSettlement->load(['client:id,name', 'orders.client:id,name']);
 
-        return response()->json($this->filterVisibleColumns($request, $clientSettlement));
+        $result = $this->filterVisibleColumns($request, $clientSettlement);
+        $result['orders'] = $clientSettlement->orders;
+
+        return response()->json($result);
     }
 
     public function update(Request $request, ClientSettlement $clientSettlement): JsonResponse

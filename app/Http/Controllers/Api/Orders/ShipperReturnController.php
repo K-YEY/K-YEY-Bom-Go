@@ -215,7 +215,10 @@ class ShipperReturnController extends Controller
 
         $shipperReturn->load(['shipper:id,name', 'orders.client:id,name']);
 
-        return response()->json($this->filterVisibleColumns($request, $shipperReturn));
+        $result = $this->filterVisibleColumns($request, $shipperReturn);
+        $result['orders'] = $shipperReturn->orders;
+
+        return response()->json($result);
     }
 
     public function update(Request $request, ShipperReturn $shipperReturn): JsonResponse

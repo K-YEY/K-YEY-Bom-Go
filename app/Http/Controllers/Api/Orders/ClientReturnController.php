@@ -218,7 +218,10 @@ class ClientReturnController extends Controller
 
         $clientReturn->load(['client:id,name', 'orders.client:id,name']);
 
-        return response()->json($this->filterVisibleColumns($request, $clientReturn));
+        $result = $this->filterVisibleColumns($request, $clientReturn);
+        $result['orders'] = $clientReturn->orders;
+
+        return response()->json($result);
     }
 
     public function update(Request $request, ClientReturn $clientReturn): JsonResponse
