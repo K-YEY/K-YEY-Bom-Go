@@ -1,8 +1,60 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+
+interface Props {
+  userData: {
+    id: number
+    login_sessions: {
+      id: number
+      device_type: string
+      browser_name: string
+      ip_address: string
+      location: string
+      last_activity: string
+    }[]
+  }
+}
+
+const props = defineProps<Props>()
+
 const isNewPasswordVisible = ref(false)
 const isConfirmPasswordVisible = ref(false)
-const smsVerificationNumber = ref('+1(968) 819-2547')
 const isTwoFactorDialogOpen = ref(false)
+const smsVerificationNumber = ref('+1(968) 819-2547')
+
+const passwordData = ref({
+  password: '',
+  confirmPassword: '',
+})
+
+const isSubmitting = ref(false)
+const alertMessage = ref('')
+const alertType = ref<'success' | 'error' | 'warning'>('warning')
+
+const onSubmit = async () => {
+  if (passwordData.value.password !== passwordData.value.confirmPassword) {
+    alertMessage.value = 'Passwords do not match'
+    alertType.value = 'error'
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    // @ts-ignore
+    await $api(`/users/${props.userData.id}`, {
+      method: 'PUT',
+      body: { password: passwordData.value.password },
+    })
+    alertMessage.value = 'Password updated successfully'
+    alertType.value = 'success'
+    passwordData.value = { password: '', confirmPassword: '' }
+  } catch (e: any) {
+    alertMessage.value = e.response?._data?.message || 'Failed to update password'
+    alertType.value = 'error'
+  } finally {
+    isSubmitting.value = false
+  }
+}
 
 // Recent devices Headers
 const recentDeviceHeader = [
@@ -12,41 +64,27 @@ const recentDeviceHeader = [
   { title: 'RECENT ACTIVITY', key: 'activity' },
 ]
 
-const recentDevices = [
-  {
-    browser: ' Chrome on Windows',
-    icon: 'tabler-brand-windows',
-    color: 'info',
-    device: 'HP Spectre 360',
-    location: 'Switzerland',
-    activity: '10, July 2021 20:07',
-  },
-  {
-    browser: 'Chrome on Android',
-    icon: 'tabler-brand-android',
-    color: 'success',
-    device: 'Oneplus 9 Pro',
-    location: 'Dubai',
-    activity: '14, July 2021 15:15',
-  },
-  {
-    browser: 'Chrome on macOS',
-    icon: 'tabler-brand-apple',
-    color: 'secondary',
-    device: 'Apple iMac',
-    location: 'India',
-    activity: '16, July 2021 16:17',
-  },
-  {
-    browser: 'Chrome on iPhone',
-    icon: 'tabler-device-mobile',
-    color: 'error',
-    device: 'iPhone 12x',
-    location: 'Australia',
-    activity: '13, July 2021 10:10',
-  },
+const resolveDeviceIcon = (platform: string) => {
+  if (platform.toLowerCase().includes('windows')) return { icon: 'tabler-brand-windows', color: 'info' }
+  if (platform.toLowerCase().includes('android')) return { icon: 'tabler-brand-android', color: 'success' }
+  if (platform.toLowerCase().includes('apple') || platform.toLowerCase().includes('ios') || platform.toLowerCase().includes('mac')) return { icon: 'tabler-brand-apple', color: 'secondary' }
+  return { icon: 'tabler-device-laptop', color: 'primary' }
+}
 
-]
+const recentDevices = computed(() => {
+  return props.userData.login_sessions.map(session => {
+    const { icon, color } = resolveDeviceIcon(session.device_type)
+
+    return {
+      browser: `${session.browser_name} on ${session.device_type}`,
+      icon,
+      color,
+      device: session.device_type,
+      location: session.location,
+      activity: session.last_activity,
+    }
+  })
+})
 </script>
 
 <template>
@@ -56,21 +94,32 @@ const recentDevices = [
       <VCard title="Change Password">
         <VCardText>
           <VAlert
+            v-if="alertMessage"
+            closable
+            variant="tonal"
+            :type="alertType"
+            class="mb-4"
+            :text="alertMessage"
+          />
+          
+          <VAlert
+            v-else
             closable
             variant="tonal"
             color="warning"
             class="mb-4"
             title="Ensure that these requirements are met"
-            text="Minimum 8 characters long, uppercase & symbol"
+            text="Minimum 8 characters long"
           />
 
-          <VForm @submit.prevent="() => { }">
+          <VForm @submit.prevent="onSubmit">
             <VRow>
               <VCol
                 cols="12"
                 md="6"
               >
                 <AppTextField
+                  v-model="passwordData.password"
                   label="New Password"
                   placeholder="············"
                   :type="isNewPasswordVisible ? 'text' : 'password'"
@@ -83,6 +132,7 @@ const recentDevices = [
                 md="6"
               >
                 <AppTextField
+                  v-model="passwordData.confirmPassword"
                   label="Confirm Password"
                   autocomplete="confirm-password"
                   placeholder="············"
@@ -93,7 +143,10 @@ const recentDevices = [
               </VCol>
 
               <VCol cols="12">
-                <VBtn type="submit">
+                <VBtn
+                  type="submit"
+                  :loading="isSubmitting"
+                >
                   Change Password
                 </VBtn>
               </VCol>

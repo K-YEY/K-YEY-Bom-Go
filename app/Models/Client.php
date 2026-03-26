@@ -32,4 +32,9 @@ class Client extends Model
     {
         return $this->belongsTo(Content::class, 'shipping_content_id');
     }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'client_user_id', 'user_id');
+    }
 }

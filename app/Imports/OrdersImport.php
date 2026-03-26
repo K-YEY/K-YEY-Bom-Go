@@ -93,7 +93,7 @@ class OrdersImport implements ToCollection, WithHeadingRow
                 $orderData = $this->applyAutomaticFinancials($orderData);
 
                 // Auto-generate Code
-                $orderData['code'] = $this->generateOrderCode();
+                $orderData['code'] = Order::generateUniqueCode();
 
                 if (!empty($orderData['shipper_user_id'])) {
                     $orderData['shipper_date'] = now()->toDateString();
@@ -167,16 +167,5 @@ class OrdersImport implements ToCollection, WithHeadingRow
             $data['shipper_user_id'] = (int) $defaultShipperUserId;
         }
         return $data;
-    }
-
-    private function generateOrderCode(): string
-    {
-        $prefix = Setting::where('key', 'order_prefix')->value('value') ?? 'ORD';
-        $digits = (int) (Setting::where('key', 'order_digits')->value('value') ?? 5);
-
-        $lastOrder = Order::orderByDesc('id')->first();
-        $nextNumber = $lastOrder ? ($lastOrder->id + 1) : 1;
-
-        return $prefix . str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
     }
 }

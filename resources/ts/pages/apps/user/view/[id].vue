@@ -6,12 +6,14 @@ import UserTabConnections from '@/views/apps/user/view/UserTabConnections.vue'
 import UserTabNotifications from '@/views/apps/user/view/UserTabNotifications.vue'
 import UserTabSecurity from '@/views/apps/user/view/UserTabSecurity.vue'
 
+
 const route = useRoute('apps-user-view-id')
 
 const userTab = ref(null)
 
 const tabs = [
   { icon: 'tabler-users', title: 'Account' },
+  { icon: 'tabler-history', title: 'Timeline' },
   { icon: 'tabler-lock', title: 'Security' },
   { icon: 'tabler-bookmark', title: 'Billing & Plan' },
   { icon: 'tabler-bell', title: 'Notifications' },
@@ -63,23 +65,27 @@ const { data: userData, execute: fetchUserData } = await useApi<any>(`/users/${r
         :touch="false"
       >
         <VWindowItem>
-          <UserTabAccount />
+          <UserTabAccount :user-data="userData" />
         </VWindowItem>
 
         <VWindowItem>
-          <UserTabSecurity />
+          <UserTabTimeline :user-data="userData" />
         </VWindowItem>
 
         <VWindowItem>
-          <UserTabBillingsPlans />
+          <UserTabSecurity :user-data="userData" />
         </VWindowItem>
 
         <VWindowItem>
-          <UserTabNotifications />
+          <UserTabBillingsPlans :user-data="userData" />
         </VWindowItem>
 
         <VWindowItem>
-          <UserTabConnections />
+          <UserTabNotifications :user-data="userData" />
+        </VWindowItem>
+
+        <VWindowItem>
+          <UserTabConnections :user-data="userData" />
         </VWindowItem>
       </VWindow>
     </VCol>

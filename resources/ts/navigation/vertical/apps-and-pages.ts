@@ -10,7 +10,7 @@ export default [
     ],
   },
   {
-    title: 'Quick Actions',
+    title: 'Tools & Filters',
     icon: { icon: 'tabler-filter' },
     children: [
       { title: 'HOLD & Out For Delivery', to: 'apps-orders-hold-outfordelivery', action: 'manage', subject: 'order.page' },
@@ -19,19 +19,7 @@ export default [
       { title: 'Unreturn Shipper', to: 'apps-orders-unreturnshipper', action: 'manage', subject: 'order.page' },
       { title: 'Unreturn Client', to: 'apps-orders-unreturnclient', action: 'manage', subject: 'order.page' },
       { title: 'Rejected Orders', to: 'apps-orders-rejected', action: 'manage', subject: 'order.page' },
-      { title: 'Deleted Orders (Trash)', to: 'apps-orders-deleted', action: 'manage', subject: 'order.page' },
-    ],
-  },
-  {
-    title: 'Financials',
-    icon: { icon: 'tabler-currency-dollar' },
-    children: [
-      { title: 'Shipper Collections', to: 'apps-orders-shipper-collections', action: 'manage', subject: 'shipper-collection.page' },
-      { title: 'Shipper Returns', to: 'apps-orders-shipper-returns', action: 'manage', subject: 'shipper-return.page' },
-      { title: 'Client Settlements', to: 'apps-orders-client-settlements', action: 'manage', subject: 'client-settlement.page' },
-      { title: 'Client Returns', to: 'apps-orders-client-returns', action: 'manage', subject: 'client-return.page' },
-      { title: 'Expense List', to: 'expenses', action: 'manage', subject: 'expense.page' },
-      { title: 'Expense Categories', to: 'expense-categories', action: 'manage', subject: 'expense-category.page' },
+      { title: 'Deleted (Trash)', to: 'apps-orders-deleted', action: 'manage', subject: 'order.page' },
     ],
   },
   {
@@ -45,12 +33,24 @@ export default [
     ],
   },
   {
+    title: 'Financials',
+    icon: { icon: 'tabler-currency-dollar' },
+    children: [
+      { title: 'Shipper Collections', to: 'apps-orders-shipper-collections', action: 'manage', subject: 'shipper-collection.page' },
+      { title: 'Shipper Returns', to: 'apps-orders-shipper-returns', action: 'manage', subject: 'shipper-return.page' },
+      { title: 'Client Settlements', to: 'apps-orders-client-settlements', action: 'manage', subject: 'client-settlement.page' },
+      { title: 'Client Returns', to: 'apps-orders-client-returns', action: 'manage', subject: 'client-return.page' },
+      { title: 'Expense List', to: 'expenses', action: 'manage', subject: 'expense.page' },
+      { title: 'Expense categories', to: 'expense-categories', action: 'manage', subject: 'expense-category.page' },
+    ],
+  },
+  {
     title: 'Users & CRM',
     icon: { icon: 'tabler-users' },
     children: [
       { title: 'Clients', to: 'apps-user-clients', action: 'manage', subject: 'client.page' },
       { title: 'Shippers', to: 'apps-user-shippers', action: 'manage', subject: 'shipper.page' },
-      { title: 'User List', to: 'apps-user-list', action: 'manage', subject: 'user.page' },
+      { title: 'Staff Users', to: 'apps-user-list', action: 'manage', subject: 'user.page' },
     ],
   },
   {

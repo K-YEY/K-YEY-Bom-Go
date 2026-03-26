@@ -20,7 +20,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ClientSettlementController extends Controller
 {
-    private const ELIGIBLE_ORDER_STATUSES = ['DELIVERED', 'UNDELIVERED'];
+    public const ELIGIBLE_ORDER_STATUSES = ['DELIVERED', 'UNDELIVERED'];
 
     public function index(Request $request): JsonResponse
     {

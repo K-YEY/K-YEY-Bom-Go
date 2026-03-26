@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Order extends Model
 {
     use ScopesByUserRole, SoftDeletes;
+
+
     protected $fillable = [
         'code',
         'external_code',
@@ -140,4 +142,27 @@ class Order extends Model
     {
         return $this->activityLogs()->orderByDesc('id');
     }
+
+
+    public static function generateUniqueCode(): string
+    {
+        $prefix = Setting::where('key', 'order_prefix')->value('value') ?? 'ORD';
+        $digits = (int) (Setting::where('key', 'order_digits')->value('value') ?? 5);
+
+        // Get the last order by ID to determine the next numeric part
+        // We use ID instead of code parsing for reliability
+        $lastOrder = self::query()->orderByDesc('id')->first();
+        $nextNumber = $lastOrder ? ($lastOrder->id + 1) : 1;
+
+        $code = $prefix . '-' . str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
+
+        // Safety check: ensure the code is actually unique
+        while (self::where('code', $code)->exists()) {
+            $nextNumber++;
+            $code = $prefix . '-' . str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
+        }
+
+        return $code;
+    }
+
 }

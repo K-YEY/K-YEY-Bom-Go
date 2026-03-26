@@ -22,7 +22,7 @@ use App\Traits\ChecksWorkingHours;
 class ShipperCollectionController extends Controller
 {
     use ChecksWorkingHours;
-    private const ELIGIBLE_ORDER_STATUSES = ['DELIVERED', 'UNDELIVERED'];
+    public const ELIGIBLE_ORDER_STATUSES = ['DELIVERED', 'UNDELIVERED'];
 
     public function index(Request $request): JsonResponse
     {

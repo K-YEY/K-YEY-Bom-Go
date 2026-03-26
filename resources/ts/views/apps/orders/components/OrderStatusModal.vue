@@ -116,7 +116,7 @@ const onSubmit = async () => {
                 { title: 'On hold', value: 'HOLD' },
                 { title: 'Undelivered', value: 'UNDELIVERED' },
               ]"
-              @update:model-value="statusData.selectedReasonIds = []"
+              @update:model-value="statusData.refused_reason_ids = []"
             />
           </VCol>
 

@@ -1,20 +1,15 @@
 <script setup lang="ts">
 interface UserData {
   id: number | null
-  fullName: string
-  company: string
+  name: string
   username: string
-  role: string
-  country: string
-  contact: string | undefined
-  email: string | undefined
-  currentPlan: string
-  status: string | undefined
-  avatar: string
-  taskDone: number | null
-  projectDone: number | null
-  taxId: string
-  language: string
+  phone: string | undefined
+  account_type: number
+  commission_rate: number | string | undefined
+  plan_id: number | undefined
+  address: string | undefined
+  is_blocked: boolean
+  password?: string
 }
 
 interface Props {
@@ -23,47 +18,58 @@ interface Props {
 }
 
 interface Emit {
-  (e: 'submit', value: UserData): void
+  (e: 'submit', value: any): void
   (e: 'update:isDialogVisible', val: boolean): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   userData: () => ({
-    id: 0,
-    fullName: '',
-    company: '',
-    role: '',
+    id: null,
+    name: '',
     username: '',
-    country: '',
-    contact: '',
-    email: '',
-    currentPlan: '',
-    status: '',
-    avatar: '',
-    taskDone: null,
-    projectDone: null,
-    taxId: '',
-    language: '',
+    phone: '',
+    account_type: 0,
+    commission_rate: 0,
+    plan_id: undefined,
+    address: '',
+    is_blocked: false,
   }),
 })
 
 const emit = defineEmits<Emit>()
 
 const userData = ref<UserData>(structuredClone(toRaw(props.userData)))
-const isUseAsBillingAddress = ref(false)
 
-watch(() => props, () => {
-  userData.value = structuredClone(toRaw(props.userData))
+watch(() => props.isDialogVisible, (val) => {
+  if (val) userData.value = structuredClone(toRaw(props.userData))
+})
+
+const plans = ref<any[]>([])
+const contents = ref<any[]>([])
+
+const fetchMetadata = async () => {
+  try {
+    const res = await $api('/orders/init')
+    plans.value = res.plans || []
+    contents.value = res.contents || []
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+onMounted(() => {
+  fetchMetadata()
 })
 
 const onFormSubmit = () => {
-  emit('update:isDialogVisible', false)
-  emit('submit', userData.value)
+  const submitData = { ...userData.value }
+  if (!submitData.password) delete submitData.password
+  
+  emit('submit', submitData)
 }
 
 const onFormReset = () => {
   userData.value = structuredClone(toRaw(props.userData))
-
   emit('update:isDialogVisible', false)
 }
 
@@ -74,156 +80,105 @@ const dialogModelValueUpdate = (val: boolean) => {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 900"
+    :width="$vuetify.display.smAndDown ? 'auto' : 800"
     :model-value="props.isDialogVisible"
     @update:model-value="dialogModelValueUpdate"
   >
-    <!-- Dialog close btn -->
     <DialogCloseBtn @click="dialogModelValueUpdate(false)" />
 
     <VCard class="pa-sm-10 pa-2">
       <VCardText>
-        <!-- 👉 Title -->
         <h4 class="text-h4 text-center mb-2">
           Edit User Information
         </h4>
         <p class="text-body-1 text-center mb-6">
-          Updating user details will receive a privacy audit.
+          Update the profile details and project-specific settings.
         </p>
 
-        <!-- 👉 Form -->
         <VForm
           class="mt-6"
           @submit.prevent="onFormSubmit"
         >
           <VRow>
-            <!-- 👉 First Name -->
-            <VCol
-              cols="12"
-              md="6"
-            >
+            <VCol cols="12" md="6">
               <AppTextField
-                v-model="userData.fullName.split(' ')[0]"
-                label="First Name"
-                placeholder="John"
+                v-model="userData.name"
+                label="Full Name"
+                placeholder="John Doe"
               />
             </VCol>
 
-            <!-- 👉 Last Name -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="userData.fullName.split(' ')[1]"
-                label="Last Name"
-                placeholder="Doe"
-              />
-            </VCol>
-
-            <!-- 👉 Username -->
-            <VCol cols="12">
+            <VCol cols="12" md="6">
               <AppTextField
                 v-model="userData.username"
                 label="Username"
-                placeholder="john.doe.007"
+                placeholder="johndoe"
               />
             </VCol>
 
-            <!-- 👉 Billing Email -->
-            <VCol
-              cols="12"
-              md="6"
-            >
+            <VCol cols="12" md="6">
               <AppTextField
-                v-model="userData.email"
-                label="Email"
-                placeholder="johndoe@email.com"
-              />
-            </VCol>
-
-            <!-- 👉 Status -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppSelect
-                v-model="userData.status"
-                label="Status"
-                placeholder="Active"
-                :items="['Active', 'Inactive', 'Pending']"
-              />
-            </VCol>
-
-            <!-- 👉 Tax Id -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="userData.taxId"
-                label="Tax ID"
-                placeholder="123456789"
-              />
-            </VCol>
-
-            <!-- 👉 Contact -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppTextField
-                v-model="userData.contact"
+                v-model="userData.phone"
                 label="Phone Number"
-                placeholder="+1 9876543210"
+                placeholder="01xxxxxxxxx"
               />
             </VCol>
 
-            <!-- 👉 Language -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppSelect
-                v-model="userData.language"
-                closable-chips
-                chips
-                multiple
-                label="Language"
-                placeholder="English"
-                :items="['English', 'Spanish', 'French']"
+            <VCol cols="12" md="6">
+              <AppTextField
+                v-model="userData.password"
+                label="New Password (Leave blank to keep current)"
+                type="password"
+                placeholder="············"
               />
             </VCol>
 
-            <!-- 👉 Country -->
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppSelect
-                v-model="userData.country"
-                label="Country"
-                placeholder="United States"
-                :items="['United States', 'United Kingdom', 'France']"
-              />
-            </VCol>
+            <!-- Project Specific Fields -->
+            <template v-if="userData.account_type === 1"> <!-- Client -->
+              <VCol cols="12" md="6">
+                <AppSelect
+                  v-model="userData.plan_id"
+                  label="Shipping Plan"
+                  :items="plans"
+                  item-title="title"
+                  item-value="id"
+                  placeholder="Select Plan"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <AppTextField
+                  v-model="userData.address"
+                  label="Address"
+                  placeholder="City, Street..."
+                />
+              </VCol>
+            </template>
 
-            <!-- 👉 Switch -->
+            <template v-else-if="userData.account_type === 2"> <!-- Shipper -->
+              <VCol cols="12">
+                <AppTextField
+                  v-model="userData.commission_rate"
+                  label="Commission Rate (EGP)"
+                  type="number"
+                  placeholder="50"
+                />
+              </VCol>
+            </template>
+
             <VCol cols="12">
               <VSwitch
-                v-model="isUseAsBillingAddress"
-                density="compact"
-                label="Use as a billing address?"
+                v-model="userData.is_blocked"
+                label="Block User"
+                color="error"
               />
             </VCol>
 
-            <!-- 👉 Submit and Cancel -->
             <VCol
               cols="12"
               class="d-flex flex-wrap justify-center gap-4"
             >
               <VBtn type="submit">
-                Submit
+                Save Changes
               </VBtn>
 
               <VBtn

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CardWidgetsEarningReportsYearlyOverview from '@/views/pages/cards/card-widgets/CardWidgetsEarningReportsYearlyOverview.vue'
 import { hexToRgb } from '@core/utils/colorConverter'
+import { useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
 
 const { can } = useAbility()
@@ -138,6 +139,36 @@ const payload = computed(() => {
     unreturn_client_total: 0,
   }
 })
+
+const router = useRouter()
+
+const cardRoutes: Record<string, string> = {
+  all_order: '/apps/orders',
+  out_for_delivery: '/apps/orders/hold-outfordelivery?status=OUT_FOR_DELIVERY',
+  hold: '/apps/orders/hold-outfordelivery?status=HOLD',
+  delivered: '/apps/orders?status=DELIVERED',
+  undelivered: '/apps/orders?status=UNDELIVERED',
+  
+  pending_approval: '/apps/orders/approval-requests',
+  rejected: '/apps/orders/rejected',
+  
+  collected_shipper: '/apps/orders/shipper-collections',
+  uncollected_shipper: '/apps/orders/uncollectedshipper',
+  settled_client: '/apps/orders/client-settlements',
+  uncollected_client: '/apps/orders/uncollectedclient',
+  return_shipper: '/apps/orders/shipper-returns',
+  unreturn_shipper: '/apps/orders/unreturnshipper',
+  return_client: '/apps/orders/client-returns',
+  unreturn_client: '/apps/orders/unreturnclient',
+  delivered_total: '/apps/orders?status=DELIVERED',
+  cash_ready: '/apps/orders/shipper-collections',
+  net: '/apps/orders/client-settlements',
+}
+
+const goToRoute = (key: string) => {
+  const route = cardRoutes[key]
+  if (route) router.push(route)
+}
 
 const isMoneyKey = (key: string) => cardMeta[key]?.isMoney || key.endsWith('_total') || key.endsWith('_sum') || ['cash_ready', 'net', 'total_fees', 'total_shipper_fees', 'total_cop'].includes(key)
 
@@ -559,8 +590,9 @@ const refreshDashboard = () => execute()
         md="3"
       >
         <VCard
-          class="dash-stat-card"
+          class="dash-stat-card cursor-pointer"
           :style="`--stat-color: var(--v-theme-${kpi.color})`"
+          @click="goToRoute(kpi.key)"
         >
           <VCardText>
             <div class="d-flex align-center gap-x-4 mb-3">
@@ -705,8 +737,9 @@ const refreshDashboard = () => execute()
             lg="3"
           >
             <VCard
-              class="dash-stat-card"
+              class="dash-stat-card cursor-pointer"
               :style="`--stat-color: var(--v-theme-${card.color})`"
+              @click="goToRoute(card.key)"
             >
               <VCardText>
                 <div class="d-flex align-center gap-x-3 mb-2">
@@ -749,8 +782,9 @@ const refreshDashboard = () => execute()
             lg="3"
           >
             <VCard
-              class="dash-stat-card dash-stat-card--money"
+              class="dash-stat-card dash-stat-card--money cursor-pointer"
               :style="`--stat-color: var(--v-theme-${card.color})`"
+              @click="goToRoute(card.key)"
             >
               <VCardText>
                 <div class="d-flex align-center gap-x-3 mb-2">

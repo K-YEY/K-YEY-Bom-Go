@@ -11,6 +11,7 @@ const emit = defineEmits(['update:isDialogVisible', 'returnCreated'])
 const loading = ref(false)
 const fetchingOrders = ref(false)
 const errorMessages = ref<string[]>([])
+const search = ref('')
 
 const formData = ref({
   shipper_user_id: null as number | null,
@@ -114,10 +115,10 @@ const onSubmit = async () => {
 
         <VRow>
           <VCol cols="12" md="4">
-            <AppSelect
+            <AppAutocomplete
               v-model="formData.shipper_user_id"
               label="Select Shipper"
-              placeholder="Choose a shipper"
+              placeholder="Search and choose a shipper"
               :items="shippers"
               item-title="name"
               item-value="user_id"
@@ -142,18 +143,27 @@ const onSubmit = async () => {
 
         <VDivider class="my-6" />
 
-        <div class="d-flex justify-space-between align-center mb-4">
+        <div class="d-flex justify-space-between align-center mb-4 flex-wrap gap-4">
           <div class="text-h6">Eligible Orders</div>
           <div v-if="selectedOrders.length > 0" class="text-primary font-weight-bold">
             Selected: {{ selectedOrders.length }}
           </div>
         </div>
 
+        <AppTextField
+          v-model="search"
+          placeholder="Search Order ID, Client, Code, etc."
+          class="mb-4"
+          prepend-inner-icon="tabler-search"
+          clearable
+        />
+
         <VDataTable
           v-model="selectedOrders"
           :headers="headers"
           :items="eligibleOrders"
           :loading="fetchingOrders"
+          :search="search"
           item-value="id"
           show-select
           class="text-no-wrap border rounded"

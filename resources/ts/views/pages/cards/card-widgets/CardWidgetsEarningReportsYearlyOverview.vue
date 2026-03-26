@@ -1,8 +1,27 @@
 <script setup lang="ts">
-import { useTheme } from 'vuetify'
 import { hexToRgb } from '@layouts/utils'
+import { useTheme } from 'vuetify'
 
 const vuetifyTheme = useTheme()
+
+interface Report {
+  title: string
+  icon: string
+  categories: string[]
+  data: number[]
+  highlightIndex?: number
+}
+
+interface Props {
+  title?: string
+  subtitle?: string
+  reports: Report[]
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  title: 'Earning Reports',
+  subtitle: 'Yearly Earnings Overview',
+})
 
 const currentTab = ref<number>(0)
 const refVueApexChart = ref()
@@ -16,559 +35,98 @@ const chartConfigs = computed(() => {
   const borderColor = `rgba(${hexToRgb(String(variableTheme['border-color']))},${variableTheme['border-opacity']})`
   const labelColor = `rgba(${hexToRgb(currentTheme['on-surface'])},${variableTheme['disabled-opacity']})`
 
-  return [
-    {
-      title: 'Orders',
-      icon: 'tabler-shopping-cart',
+  return props.reports.map((report, reportIdx) => {
+    const maxVal = Math.max(...report.data) || 10
+    const tickAmount = 5
+
+    return {
+      title: report.title,
+      icon: report.icon,
       chartOptions: {
         chart: {
           parentHeightOffset: 0,
           type: 'bar',
-          toolbar: {
-            show: false,
-          },
+          toolbar: { show: false },
         },
         plotOptions: {
           bar: {
-            columnWidth: '32%',
-            borderRadiusApplication: 'end',
-            borderRadius: 4,
-            distributed: true,
-            dataLabels: {
-              position: 'top',
-            },
-          },
-        },
-        grid: {
-          show: false,
-          padding: {
-            top: 0,
-            bottom: 0,
-            left: -10,
-            right: -10,
-          },
-        },
-        colors: [
-          labelPrimaryColor,
-          labelPrimaryColor,
-          `rgba(${hexToRgb(currentTheme.primary)}, 1)`,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-        ],
-        dataLabels: {
-          enabled: true,
-          formatter(val: unknown) {
-            return `${val}k`
-          },
-          offsetY: -25,
-          style: {
-            fontSize: '15px',
-            colors: [legendColor],
-            fontWeight: '600',
-            fontFamily: 'Public Sans',
-          },
-        },
-        legend: {
-          show: false,
-        },
-        tooltip: {
-          enabled: false,
-        },
-        xaxis: {
-          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-          axisBorder: {
-            show: true,
-            color: borderColor,
-          },
-          axisTicks: {
-            show: false,
-          },
-          labels: {
-            style: {
-              colors: labelColor,
-              fontSize: '13px',
-              fontFamily: 'Public Sans',
-            },
-          },
-        },
-        yaxis: {
-          labels: {
-            offsetX: -15,
-            formatter(val: number) {
-              return `${(val / 1)}k`
-            },
-            style: {
-              fontSize: '13px',
-              colors: labelColor,
-              fontFamily: 'Public Sans',
-            },
-            min: 0,
-            max: 60000,
-            tickAmount: 6,
-          },
-        },
-        responsive: [
-          {
-            breakpoint: 1441,
-            options: {
-              plotOptions: {
-                bar: {
-                  columnWidth: '41%',
-                },
-              },
-            },
-          },
-          {
-            breakpoint: 590,
-            options: {
-              plotOptions: {
-                bar: {
-                  columnWidth: '40%',
-                },
-              },
-              yaxis: {
-                labels: {
-                  show: false,
-                },
-              },
-              dataLabels: {
-                style: {
-                  fontSize: '12px',
-                  fontWeight: '400',
-                },
-              },
-            },
-          },
-        ],
-      },
-      series: [
-        {
-          data: [28, 10, 45, 38, 15, 30, 35, 30, 8],
-        },
-      ],
-    },
-    {
-      title: 'Sales',
-      icon: 'tabler-chart-bar',
-      chartOptions: {
-        chart: {
-          parentHeightOffset: 0,
-          type: 'bar',
-          toolbar: {
-            show: false,
-          },
-        },
-        plotOptions: {
-          bar: {
-            columnWidth: '32%',
-            borderRadiusApplication: 'end',
-            borderRadius: 4,
-            distributed: true,
-            dataLabels: {
-              position: 'top',
-            },
-          },
-        },
-        grid: {
-          show: false,
-          padding: {
-            top: 0,
-            bottom: 0,
-            left: -10,
-            right: -10,
-          },
-        },
-        colors: [
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          `rgba(${hexToRgb(currentTheme.primary)}, 1)`,
-          labelPrimaryColor,
-          labelPrimaryColor,
-        ],
-        dataLabels: {
-          enabled: true,
-          formatter(val: number) {
-            return `${val}k`
-          },
-          offsetY: -25,
-          style: {
-            fontSize: '15px',
-            colors: [legendColor],
-            fontWeight: '600',
-            fontFamily: 'Public Sans',
-          },
-        },
-        legend: {
-          show: false,
-        },
-        tooltip: {
-          enabled: false,
-        },
-        xaxis: {
-          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-          axisBorder: {
-            show: true,
-            color: borderColor,
-          },
-          axisTicks: {
-            show: false,
-          },
-          labels: {
-            style: {
-              colors: labelColor,
-              fontSize: '13px',
-              fontFamily: 'Public Sans',
-            },
-          },
-        },
-        yaxis: {
-          labels: {
-            offsetX: -15,
-            formatter(val: number) {
-              return `${(val / 1)}k`
-            },
-            style: {
-              fontSize: '13px',
-              colors: labelColor,
-              fontFamily: 'Public Sans',
-            },
-            min: 0,
-            max: 60000,
-            tickAmount: 6,
-          },
-        },
-        responsive: [
-          {
-            breakpoint: 1441,
-            options: {
-              plotOptions: {
-                bar: {
-                  columnWidth: '41%',
-                },
-              },
-            },
-          },
-          {
-            breakpoint: 590,
-            options: {
-              plotOptions: {
-                bar: {
-                  columnWidth: '61%',
-                },
-              },
-              grid: {
-                padding: {
-                  right: 0,
-                },
-              },
-              dataLabels: {
-                style: {
-                  fontSize: '12px',
-                  fontWeight: '400',
-                },
-              },
-              yaxis: {
-                labels: {
-                  show: false,
-                },
-              },
-            },
-          },
-        ],
-      },
-      series: [
-        {
-          data: [35, 25, 15, 40, 42, 25, 48, 8, 30],
-        },
-      ],
-    },
-    {
-      title: 'Profit',
-      icon: 'tabler-currency-dollar',
-      chartOptions: {
-        chart: {
-          parentHeightOffset: 0,
-          type: 'bar',
-          toolbar: {
-            show: false,
-          },
-        },
-        plotOptions: {
-          bar: {
-            columnWidth: '32%',
-            borderRadiusApplication: 'end',
-            borderRadius: 4,
-            distributed: true,
-            dataLabels: {
-              position: 'top',
-            },
-          },
-        },
-        grid: {
-          show: false,
-          padding: {
-            top: 0,
-            bottom: 0,
-            left: -10,
-            right: -10,
-          },
-        },
-        colors: [
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          `rgba(${hexToRgb(currentTheme.primary)}, 1)`,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-        ],
-        dataLabels: {
-          enabled: true,
-          formatter(val: number) {
-            return `${val}k`
-          },
-          offsetY: -25,
-          style: {
-            fontSize: '15px',
-            colors: [legendColor],
-            fontWeight: '600',
-            fontFamily: 'Public Sans',
-          },
-        },
-        legend: {
-          show: false,
-        },
-        tooltip: {
-          enabled: false,
-        },
-        xaxis: {
-          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-          axisBorder: {
-            show: true,
-            color: borderColor,
-          },
-          axisTicks: {
-            show: false,
-          },
-          labels: {
-            style: {
-              colors: labelColor,
-              fontSize: '13px',
-              fontFamily: 'Public Sans',
-            },
-          },
-        },
-        yaxis: {
-          labels: {
-            offsetX: -15,
-            formatter(val: number) {
-              return `${(val / 1)}k`
-            },
-            style: {
-              fontSize: '13px',
-              colors: labelColor,
-              fontFamily: 'Public Sans',
-            },
-            min: 0,
-            max: 60000,
-            tickAmount: 6,
-          },
-        },
-        responsive: [
-          {
-            breakpoint: 1441,
-            options: {
-              plotOptions: {
-                bar: {
-                  columnWidth: '41%',
-                },
-              },
-            },
-          },
-          {
-            breakpoint: 590,
-            options: {
-              plotOptions: {
-                bar: {
-                  columnWidth: '61%',
-                },
-              },
-              grid: {
-                padding: {
-                  right: 0,
-                },
-              },
-              dataLabels: {
-                style: {
-                  fontSize: '12px',
-                  fontWeight: '400',
-                },
-              },
-              yaxis: {
-                labels: {
-                  show: false,
-                },
-              },
-            },
-          },
-        ],
-      },
-      series: [
-        {
-          data: [10, 22, 27, 33, 42, 32, 27, 22, 8],
-        },
-      ],
-    },
-    {
-      title: 'Income',
-      icon: 'tabler-chart-pie-2',
-      chartOptions: {
-        chart: {
-          parentHeightOffset: 0,
-          type: 'bar',
-          toolbar: {
-            show: false,
-          },
-        },
-        plotOptions: {
-          bar: {
-            columnWidth: '32%',
+            columnWidth: '35%',
             borderRadius: 6,
             distributed: true,
-            borderRadiusApplication: 'end',
-            dataLabels: {
-              position: 'top',
-            },
+            dataLabels: { position: 'top' },
           },
         },
         grid: {
           show: false,
-          padding: {
-            top: 0,
-            bottom: 0,
-            left: -10,
-            right: -10,
-          },
+          padding: { top: 0, bottom: 0, left: -10, right: -10 },
         },
-        colors: [
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          labelPrimaryColor,
-          `rgba(${hexToRgb(currentTheme.primary)}, 1)`,
-        ],
+        colors: report.data.map((_, idx) => 
+          idx === report.highlightIndex 
+            ? `rgba(${hexToRgb(currentTheme.primary)}, 1)` 
+            : labelPrimaryColor
+        ),
         dataLabels: {
           enabled: true,
           formatter(val: number) {
-            return `${val}k`
+            return val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val.toString()
           },
           offsetY: -25,
           style: {
-            fontSize: '15px',
+            fontSize: '12px',
             colors: [legendColor],
             fontWeight: '600',
             fontFamily: 'Public Sans',
           },
         },
-        legend: {
-          show: false,
-        },
-        tooltip: {
-          enabled: false,
-        },
+        legend: { show: false },
+        tooltip: { enabled: true },
         xaxis: {
-          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-          axisBorder: {
-            show: true,
-            color: borderColor,
-          },
-          axisTicks: {
-            show: false,
-          },
+          categories: report.categories,
+          axisBorder: { show: true, color: borderColor },
+          axisTicks: { show: false },
           labels: {
             style: {
               colors: labelColor,
-              fontSize: '13px',
+              fontSize: '11px',
               fontFamily: 'Public Sans',
             },
+            rotate: -45,
+            rotateAlways: false,
           },
         },
         yaxis: {
           labels: {
             offsetX: -15,
             formatter(val: number) {
-              return `${(val / 1)}k`
+              return val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val.toString()
             },
             style: {
-              fontSize: '13px',
+              fontSize: '12px',
               colors: labelColor,
               fontFamily: 'Public Sans',
             },
-            min: 0,
-            max: 60000,
-            tickAmount: 6,
           },
+          min: 0,
+          max: maxVal * 1.2,
+          tickAmount: tickAmount,
         },
         responsive: [
           {
             breakpoint: 1441,
-            options: {
-              plotOptions: {
-                bar: {
-                  columnWidth: '41%',
-                },
-              },
-            },
+            options: { plotOptions: { bar: { columnWidth: '45%' } } },
           },
           {
-            breakpoint: 590,
+            breakpoint: 600,
             options: {
-              plotOptions: {
-                bar: {
-                  columnWidth: '50%',
-                },
-              },
-              dataLabels: {
-                style: {
-                  fontSize: '12px',
-                  fontWeight: '400',
-                },
-              },
-              grid: {
-                padding: {
-                  right: 0,
-                },
-              },
-              yaxis: {
-                labels: {
-                  show: false,
-                },
-              },
+              yaxis: { labels: { show: false } },
+              dataLabels: { style: { fontSize: '10px' } },
             },
           },
         ],
       },
-      series: [
-        {
-          data: [5, 9, 12, 18, 20, 25, 30, 36, 48],
-        },
-      ],
-    },
-  ]
+      series: [{ data: report.data }],
+    }
+  })
 })
 
 const moreList = [
@@ -579,8 +137,8 @@ const moreList = [
 
 <template>
   <VCard
-    title="Earning Reports"
-    subtitle="Yearly Earnings Overview"
+    :title="props.title"
+    :subtitle="props.subtitle"
   >
     <template #append>
       <div class="mt-n4 me-n2">

@@ -22,4 +22,9 @@ class Shipper extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'shipper_user_id', 'user_id');
+    }
 }

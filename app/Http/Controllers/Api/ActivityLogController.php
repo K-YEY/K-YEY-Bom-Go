@@ -15,13 +15,17 @@ class ActivityLogController extends Controller
         $this->authorizePermission($request, 'activity-log.page');
         $this->authorizePermission($request, 'activity-log.view');
 
-        $logs = ActivityLog::query()
+        $query = ActivityLog::query()
             ->with([
                 'user:id,name,username',
                 'loginSession:id,ip_address,country,city',
             ])
-            ->orderByDesc('id')
-            ->paginate($request->input('itemsPerPage', 50));
+            ->when($request->filled('user_id'), function($q) use ($request) {
+                $q->where('user_id', $request->user_id);
+            })
+            ->orderByDesc('id');
+
+        $logs = $query->paginate($request->input('itemsPerPage', 50));
 
         return response()->json([
             'data' => collect($logs->items())->map(fn (ActivityLog $log): array => $this->filterVisibleColumns($request, $log)),

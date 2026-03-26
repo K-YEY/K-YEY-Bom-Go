@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import type { Invoice } from '@db/apps/invoice/types'
+interface Props {
+  userData: {
+    id: number
+    account_type: number // 1: Client, 2: Shipper
+  }
+}
+
+const props = defineProps<Props>()
 
 const searchQuery = ref('')
 const selectedStatus = ref()
@@ -18,77 +25,79 @@ const updateOptions = (options: any) => {
 
 const isLoading = ref(false)
 
-// 👉 headers
-const headers = [
-  { title: '#', key: 'id' },
-  { title: 'Status', key: 'trending', sortable: false },
-  { title: 'Total', key: 'total' },
-  { title: 'Issued Date', key: 'date' },
-  { title: 'Actions', key: 'actions', sortable: false },
-]
+// 👉 Determine Endpoint and Base Params
+const endpoint = computed(() => {
+  if (props.userData.account_type === 1) return '/client-settlements'
+  if (props.userData.account_type === 2) return '/shipper-collections'
+  return '/apps/invoice' // Default fallback
+})
 
-// 👉 Fetch Invoices
-const { data: invoiceData, execute: fetchInvoices } = await useApi<any>(createUrl('/apps/invoice', {
+const baseParams = computed(() => {
+  if (props.userData.account_type === 1) return { client_user_id: props.userData.id }
+  if (props.userData.account_type === 2) return { shipper_user_id: props.userData.id }
+  return {}
+})
+
+// 👉 headers
+const headers = computed(() => {
+  const common = [
+    { title: '#ID', key: 'id' },
+    { title: 'Date', key: props.userData.account_type === 1 ? 'settlement_date' : 'collection_date' },
+    { title: 'Orders', key: 'number_of_orders' },
+    { title: 'Total', key: 'total_amount' },
+    { title: 'Net', key: 'net_amount' },
+    { title: 'Status', key: 'status' },
+    { title: 'Actions', key: 'actions', sortable: false },
+  ]
+  return common
+})
+
+// 👉 Fetch Data
+const { data: listData, execute: fetchList } = await useApi<any>(createUrl(endpoint.value, {
   query: {
-    q: searchQuery,
+    ...baseParams.value,
+    search: searchQuery,
     status: selectedStatus,
-    itemsPerPage,
+    per_page: itemsPerPage,
     page,
-    sortBy,
-    orderBy,
   },
 }))
 
-const invoices = computed((): Invoice[] => invoiceData.value?.invoices)
-const totalInvoices = computed(() => invoiceData.value?.totalInvoices)
+const items = computed(() => listData.value?.data || listData.value || [])
+const totalItems = computed(() => listData.value?.total || 0)
 
-// 👉 Invoice status variant resolver
-const resolveInvoiceStatusVariantAndIcon = (status: string) => {
-  if (status === 'Partial Payment')
-    return { variant: 'success', icon: 'tabler-check' }
-  if (status === 'Paid')
-    return { variant: 'warning', icon: 'tabler-chart-pie' }
-  if (status === 'Downloaded')
-    return { variant: 'info', icon: 'tabler-arrow-down' }
-  if (status === 'Draft')
-    return { variant: 'primary', icon: 'tabler-folder' }
-  if (status === 'Sent')
-    return { variant: 'secondary', icon: 'tabler-mail' }
-  if (status === 'Past Due')
-    return { variant: 'error', icon: 'tabler-info-circle' }
+// 👉 Status variant resolver
+const resolveStatusVariant = (status: string) => {
+  if (status === 'COMPLETED' || status === 'Paid' || status === 'APPROVED')
+    return { variant: 'success', icon: 'tabler-circle-check' }
+  if (status === 'PENDING')
+    return { variant: 'warning', icon: 'tabler-clock' }
+  if (status === 'CANCELLED' || status === 'REJECTED')
+    return { variant: 'error', icon: 'tabler-circle-x' }
 
-  return { variant: 'secondary', icon: 'tabler-x' }
+  return { variant: 'secondary', icon: 'tabler-help' }
 }
 
 const computedMoreList = computed(() => {
   return (paramId: number) => ([
     { title: 'Download', value: 'download', prependIcon: 'tabler-download' },
-    {
-      title: 'Edit',
-      value: 'edit',
-      prependIcon: 'tabler-pencil',
-      to: { name: 'apps-invoice-edit-id', params: { id: paramId } },
-    },
-    { title: 'Duplicate', value: 'duplicate', prependIcon: 'tabler-layers-intersect' },
   ])
 })
 
-// 👉 Delete Invoice
-// 👉 Delete Invoice
-const deleteInvoice = async (id: number) => {
-  await $api(`/apps/invoice/${id}`, { method: 'DELETE' })
-
-  fetchInvoices()
+const viewFullInvoice = (id: number) => {
+  const type = props.userData.account_type === 1 ? 'settlements' : 'collections'
+  // Redirect to the appropriate app page or show details
+  window.location.href = `/apps/orders/${type}`
 }
 </script>
 
 <template>
-  <section v-if="invoices">
+  <section v-if="items">
     <VCard id="invoice-list">
       <VCardText>
         <div class="d-flex align-center justify-space-between flex-wrap gap-4">
           <div class="text-h5">
-            Invoice List
+            {{ props.userData.account_type === 1 ? 'Settlements' : 'Collections' }} List
           </div>
           <div class="d-flex align-center gap-x-4">
             <AppSelect
@@ -103,15 +112,6 @@ const deleteInvoice = async (id: number) => {
               style="inline-size: 6.25rem;"
               @update:model-value="itemsPerPage = parseInt($event, 10)"
             />
-
-            <!-- 👉 Export invoice -->
-            <VBtn
-              append-icon="tabler-upload"
-              variant="tonal"
-              color="secondary"
-            >
-              Export
-            </VBtn>
           </div>
         </div>
       </VCardText>
@@ -123,79 +123,64 @@ const deleteInvoice = async (id: number) => {
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
         :loading="isLoading"
-        :items-length="totalInvoices"
+        :items-length="totalItems"
         :headers="headers"
-        :items="invoices"
-        item-value="total"
+        :items="items"
+        item-value="id"
         class="text-no-wrap text-sm rounded-0"
         @update:options="updateOptions"
       >
         <!-- id -->
-        <template #item.id="{ item }">
-          <RouterLink :to="{ name: 'apps-invoice-preview-id', params: { id: item.id } }">
-            #{{ item.id }}
-          </RouterLink>
+        <template #item.id="{ item }: { item: any }">
+          <span class="text-primary font-weight-bold">#{{ item.id }}</span>
         </template>
 
-        <!-- trending -->
-        <template #item.trending="{ item }">
-          <VTooltip>
-            <template #activator="{ props }">
-              <VAvatar
-                :size="28"
-                v-bind="props"
-                :color="resolveInvoiceStatusVariantAndIcon(item.invoiceStatus).variant"
-                variant="tonal"
-              >
-                <VIcon
-                  :size="16"
-                  :icon="resolveInvoiceStatusVariantAndIcon(item.invoiceStatus).icon"
-                />
-              </VAvatar>
-            </template>
-            <p class="mb-0">
-              {{ item.invoiceStatus }}
-            </p>
-            <p class="mb-0">
-              Balance: {{ item.balance }}
-            </p>
-            <p class="mb-0">
-              Due date: {{ item.dueDate }}
-            </p>
-          </VTooltip>
+        <!-- Status -->
+        <template #item.status="{ item }: { item: any }">
+          <VAvatar
+            :size="28"
+            :color="resolveStatusVariant(item.status).variant"
+            variant="tonal"
+          >
+            <VIcon
+              :size="16"
+              :icon="resolveStatusVariant(item.status).icon"
+            />
+          </VAvatar>
+          <span class="ms-2 text-capitalize">{{ item.status }}</span>
         </template>
 
         <!-- Total -->
-        <template #item.total="{ item }">
-          ${{ item.total }}
+        <template #item.total_amount="{ item }: { item: any }">
+          {{ item.total_amount }} EGP
         </template>
 
-        <!-- issued Date -->
-        <template #item.date="{ item }">
-          {{ item.issuedDate }}
+        <!-- Net -->
+        <template #item.net_amount="{ item }: { item: any }">
+          {{ item.net_amount }} EGP
+        </template>
+
+        <!-- Date -->
+        <template #item.settlement_date="{ item }: { item: any }">
+          {{ new Date(item.settlement_date).toLocaleDateString() }}
+        </template>
+
+        <template #item.collection_date="{ item }: { item: any }">
+          {{ new Date(item.collection_date).toLocaleDateString() }}
         </template>
 
         <!-- Actions -->
-        <template #item.actions="{ item }">
-          <IconBtn @click="deleteInvoice(item.id)">
-            <VIcon icon="tabler-trash" />
-          </IconBtn>
-
-          <IconBtn :to="{ name: 'apps-invoice-preview-id', params: { id: item.id } }">
+        <template #item.actions="{ item }: { item: any }">
+          <IconBtn @click="viewFullInvoice(item.id)">
             <VIcon icon="tabler-eye" />
           </IconBtn>
-
-          <MoreBtn
-            :menu-list="computedMoreList(item.id)"
-            color="undefined"
-            item-props
-          />
         </template>
+        
         <template #bottom>
           <TablePagination
             v-model:page="page"
             :items-per-page="itemsPerPage"
-            :total-items="totalInvoices"
+            :total-items="totalItems"
           />
         </template>
       </VDataTableServer>

@@ -1,32 +1,6 @@
 
-
-// دالة لتغيير حالة المجموعة (status)
-const changeStatus = async (newStatus: string) => {
-  if (!formData.value.shipper_user_id) {
-    errorMessages.value = ['Please select a shipper first.']
-    return
-  }
-  loading.value = true
-  errorMessages.value = []
-  try {
-    // هنا يجب أن يكون لديك collectionId أو طريقة لتحديد المجموعة
-    // هذا مثال توضيحي: عدل collectionId حسب السياق الفعلي
-    const collectionId = formData.value.collection_id || 1
-    const { data, error } = await useApi(`/shipper-collections/${collectionId}`).patch({
-      status: newStatus
-    }).json()
-    if (error.value) {
-      errorMessages.value = [error.value.message || 'Failed to change status']
-    } else {
-      errorMessages.value = ['Status updated successfully!']
-    }
-  } catch (e) {
-    errorMessages.value = ['An error occurred while changing status.']
-  }
-  loading.value = false
-}
-<script setup lang="ts">import { useApi } from '@/composables/useApi';
-
+<script setup lang="ts">
+import { useApi } from '@/composables/useApi';
 
 interface Props {
   isDialogVisible: boolean
@@ -38,6 +12,7 @@ const emit = defineEmits(['update:isDialogVisible', 'collectionCreated'])
 const loading = ref(false)
 const fetchingOrders = ref(false)
 const errorMessages = ref<string[]>([])
+const search = ref('')
 
 const formData = ref({
   shipper_user_id: null as number | null,
@@ -132,11 +107,7 @@ const onSubmit = async () => {
   errorMessages.value = []
 
   try {
-    // Convert order ids to unique integers
-    console.log('selectedOrders:', selectedOrders.value)
-    // إذا كانت selectedOrders عبارة عن أرقام مباشرة (IDs)
     const orderIds = Array.from(new Set(selectedOrders.value)).map(id => Number(id)).filter(id => Number.isInteger(id))
-    console.log('orderIds to send:', orderIds)
     const { data, error } = await useApi('/shipper-collections').post({
       shipper_user_id: formData.value.shipper_user_id,
       collection_date: formData.value.collection_date,
@@ -144,37 +115,20 @@ const onSubmit = async () => {
     }).json()
 
     if (error.value) {
-      // Debug: log all possible error details
-      console.log('API Error (raw):', error.value)
-      if (error.value.data) {
-        console.log('API Error data:', error.value.data)
-      }
-      if (error.value.data?.errors) {
-        console.log('API Error data.errors:', error.value.data.errors)
-      }
-      if (error.value.response) {
-        console.log('API Error response:', error.value.response)
-      }
-      // Try to extract Laravel validation errors
-      if (error.value.data && error.value.data.errors) {
-        // Flatten all error messages into a single array
-        errorMessages.value = Object.values(error.value.data.errors).flat()
-      } else if (error.value.message) {
-        errorMessages.value = [`Failed to create collection: ${error.value.message}`]
+      if ((error.value as any).data?.errors) {
+        errorMessages.value = Object.values((error.value as any).data.errors).flat() as string[]
       } else {
-        errorMessages.value = ['Failed to create collection']
+        errorMessages.value = [(error.value as any).message || 'Failed to create collection']
       }
     } else {
       emit('collectionCreated')
       emit('update:isDialogVisible', false)
-      // Reset form
       formData.value.shipper_user_id = null
       selectedOrders.value = []
     }
-  } catch (e) {
-    // Try to extract error messages from exception
+  } catch (e: any) {
     if (e?.response?.data?.errors) {
-      errorMessages.value = Object.values(e.response.data.errors).flat()
+      errorMessages.value = Object.values(e.response.data.errors).flat() as string[]
     } else {
       errorMessages.value = ['An error occurred.']
     }
@@ -205,10 +159,10 @@ const onSubmit = async () => {
 
         <VRow>
           <VCol cols="12" md="6">
-            <AppSelect
+            <AppAutocomplete
               v-model="formData.shipper_user_id"
               label="Select Shipper"
-              placeholder="Choose a shipper"
+              placeholder="Search and choose a shipper"
               :items="shippers"
               item-title="name"
               item-value="user_id"
@@ -226,18 +180,27 @@ const onSubmit = async () => {
 
         <VDivider class="my-6" />
 
-        <div class="d-flex justify-space-between align-center mb-4">
+        <div class="d-flex justify-space-between align-center mb-4 flex-wrap gap-4">
           <div class="text-h6">Eligible Orders</div>
           <div v-if="selectedOrders.length > 0" class="text-primary font-weight-bold">
             Selected: {{ selectedOrders.length }} | Total: {{ totalAmount }} EGP | Net: {{ netAmount }} EGP
           </div>
         </div>
 
+        <AppTextField
+          v-model="search"
+          placeholder="Search Order ID, Client, etc."
+          class="mb-4"
+          prepend-inner-icon="tabler-search"
+          clearable
+        />
+
         <VDataTable
           v-model="selectedOrders"
           :headers="headers"
           :items="eligibleOrders"
           :loading="fetchingOrders"
+          :search="search"
           item-value="id"
           show-select
           class="text-no-wrap border rounded"

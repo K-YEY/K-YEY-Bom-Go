@@ -284,7 +284,7 @@ class OrderController extends Controller
         }
 
         if (empty($data['code'])) {
-            $data['code'] = $this->generateOrderCode();
+            $data['code'] = Order::generateUniqueCode();
         }
 
         $order = Order::query()->create($data);
@@ -1335,16 +1335,6 @@ class OrderController extends Controller
         ];
     }
 
-    private function generateOrderCode(): string
-    {
-        $prefix = Setting::where('key', 'order_prefix')->value('value') ?? 'ORD';
-        $digits = (int) (Setting::where('key', 'order_digits')->value('value') ?? 5);
-
-        $lastOrder = Order::orderByDesc('id')->first();
-        $nextNumber = $lastOrder ? ($lastOrder->id + 1) : 1;
-
-        return $prefix.'-'.str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
-    }
 
     public function restore(Request $request, $id): JsonResponse
     {

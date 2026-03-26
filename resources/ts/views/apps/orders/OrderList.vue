@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import { useApi } from '@/composables/useApi'
-import { createUrl } from '@core/composable/createUrl'
-import AddEditOrderModal from './components/AddEditOrderModal.vue'
-import BulkOrderShipperModal from './components/BulkOrderShipperModal.vue'
-import BulkOrderStatusModal from './components/BulkOrderStatusModal.vue'
-import OrderShipperModal from './components/OrderShipperModal.vue'
-import OrderStatusModal from './components/OrderStatusModal.vue'
+import { useApi } from '@/composables/useApi';
+import { createUrl } from '@core/composable/createUrl';
 
 // 👉 Props
 const props = defineProps<{
@@ -185,8 +180,7 @@ const totals = ref({
   total_net: 0,
 })
 
-const searchShippers = async (val: string) => {
-  if (!val) return
+const searchShippers = async (val: string = '') => {
   try {
     const { data: res } = await useApi<any>(createUrl('/shippers', { query: { q: val, per_page: 20 } })).get().json()
     const data = (res.value?.data || res.value || [])
@@ -267,8 +261,7 @@ const handleImport = async (event: Event) => {
   target.value = ''
 }
 
-const searchClients = async (val: string) => {
-  if (!val) return
+const searchClients = async (val: string = '') => {
   try {
     const { data: res } = await useApi<any>(createUrl('/clients', { query: { q: val, per_page: 20 } })).get().json()
     const data = (res.value?.data || res.value || [])
@@ -580,6 +573,10 @@ const handleNewOrder = () => {
   editingOrderId.value = null
   isAddEditOrderModalVisible.value = true
 }
+
+// 👉 Initial fetch
+searchShippers()
+searchClients()
 </script>
 
 <template>
@@ -625,8 +622,8 @@ const handleNewOrder = () => {
     </VRow>
 
     <VCard elevation="2">
-      <VCardTitle v-if="props.title" class="pt-4 px-6 pb-0">
-        <h5 class="text-h5">{{ props.title ?? 'Orders Management' }}</h5>
+      <VCardTitle class="pt-4 px-6 pb-0">
+        <h5 class="text-h5">{{ props.title || 'Orders Management' }}</h5>
       </VCardTitle>
 
       <!-- 📦 Bulk Actions Row (Header Position) -->
@@ -781,12 +778,12 @@ const handleNewOrder = () => {
           </div>
         </template>
 
-        <template #header.shipper_user_id="{ column }">
+        <template #header.shipper="{ column }">
           <div class="header-filter"><span class="header-title">{{ column.title }}</span>
             <VAutocomplete v-model="selectedShipper" :items="shippers" item-title="name" item-value="id" clearable density="compact" hide-details variant="plain" class="filter-select" placeholder="Search..." @update:search="searchShippers" />
           </div>
         </template>
-        <template #header.client_user_id="{ column }">
+        <template #header.client="{ column }">
           <div class="header-filter"><span class="header-title">{{ column.title }}</span>
             <VAutocomplete v-model="selectedClient" :items="clients" item-title="name" item-value="id" clearable density="compact" hide-details variant="plain" class="filter-select" placeholder="Search..." @update:search="searchClients" />
           </div>
@@ -833,7 +830,7 @@ const handleNewOrder = () => {
             :color="resolveStatusColor(item.status)" 
             variant="tonal" 
             class="text-capitalize"
-            style="font-size: 11px !important;"
+            style="font-size: 14px !important;"
             :class="(item.is_shipper_collected || !can('order.change-status' as any, 'all' as any)) ? 'cursor-not-allowed' : 'cursor-pointer'" 
             @click="(!item.is_shipper_collected && can('order.change-status' as any, 'all' as any)) && openStatusModal(item)"
           >

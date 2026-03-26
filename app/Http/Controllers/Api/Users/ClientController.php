@@ -36,9 +36,9 @@ class ClientController extends Controller
         if ($request->filled('q')) {
             $search = (string) $request->get('q');
             $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', $search.'%')
-                  ->orWhere('username', 'like', $search.'%')
-                  ->orWhere('phone', 'like', $search.'%');
+                $q->where('name', 'like', '%'.$search.'%')
+                  ->orWhere('username', 'like', '%'.$search.'%')
+                  ->orWhere('phone', 'like', '%'.$search.'%');
             });
         }
 
