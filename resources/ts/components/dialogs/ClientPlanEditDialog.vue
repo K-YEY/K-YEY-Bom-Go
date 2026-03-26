@@ -32,7 +32,7 @@ const plans = ref<any[]>([])
 const fetchPlans = async () => {
   try {
     const res = await $api('/orders/init')
-    plans.value = res.plans || []
+    plans.value = res.metadata?.plans || []
   } catch (e) {
     console.error(e)
   }
@@ -81,7 +81,7 @@ const dialogModelValueUpdate = (val: boolean) => {
                 v-model="formData.plan_id"
                 label="Select Plan"
                 :items="plans"
-                item-title="title"
+                item-title="name"
                 item-value="id"
                 placeholder="Choose Shipping Plan"
               />

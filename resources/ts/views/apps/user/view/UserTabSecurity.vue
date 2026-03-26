@@ -156,42 +156,6 @@ const recentDevices = computed(() => {
       </VCard>
     </VCol>
 
-    <VCol cols="12">
-      <!-- 👉 Two step verification -->
-      <VCard
-        title="Two-steps verification"
-        subtitle="Keep your account secure with authentication step."
-      >
-        <VCardText>
-          <div class="text-h6 mb-1">
-            SMS
-          </div>
-          <AppTextField placeholder="+1(968) 819-2547">
-            <template #append>
-              <IconBtn color="secondary">
-                <VIcon
-                  icon="tabler-edit"
-                  size="22"
-                />
-              </IconBtn>
-              <IconBtn color="secondary">
-                <VIcon
-                  icon="tabler-user-plus"
-                  size="22"
-                />
-              </IconBtn>
-            </template>
-          </AppTextField>
-
-          <p class="mb-0 mt-4">
-            Two-factor authentication adds an additional layer of security to your account by requiring more than just a password to log in. <a
-              href="javascript:void(0)"
-              class="text-decoration-none"
-            >Learn more</a>.
-          </p>
-        </VCardText>
-      </VCard>
-    </VCol>
 
     <VCol cols="12">
       <!-- 👉 Recent devices -->

@@ -8,8 +8,6 @@ interface UserData {
   commission_rate: number | string | undefined
   plan_id: number | undefined
   address: string | undefined
-  is_blocked: boolean
-  password?: string
 }
 
 interface Props {
@@ -32,7 +30,6 @@ const props = withDefaults(defineProps<Props>(), {
     commission_rate: 0,
     plan_id: undefined,
     address: '',
-    is_blocked: false,
   }),
 })
 
@@ -63,7 +60,6 @@ onMounted(() => {
 
 const onFormSubmit = () => {
   const submitData = { ...userData.value }
-  if (!submitData.password) delete submitData.password
   
   emit('submit', submitData)
 }
@@ -124,35 +120,14 @@ const dialogModelValueUpdate = (val: boolean) => {
               />
             </VCol>
 
-            <VCol cols="12" md="6">
+            
+            <VCol v-if="userData.account_type === 1" cols="12">
               <AppTextField
-                v-model="userData.password"
-                label="New Password (Leave blank to keep current)"
-                type="password"
-                placeholder="············"
+                v-model="userData.address"
+                label="Address"
+                placeholder="City, Street..."
               />
             </VCol>
-
-            <!-- Project Specific Fields -->
-            <template v-if="userData.account_type === 1"> <!-- Client -->
-              <VCol cols="12" md="6">
-                <AppSelect
-                  v-model="userData.plan_id"
-                  label="Shipping Plan"
-                  :items="plans"
-                  item-title="title"
-                  item-value="id"
-                  placeholder="Select Plan"
-                />
-              </VCol>
-              <VCol cols="12" md="6">
-                <AppTextField
-                  v-model="userData.address"
-                  label="Address"
-                  placeholder="City, Street..."
-                />
-              </VCol>
-            </template>
 
             <template v-else-if="userData.account_type === 2"> <!-- Shipper -->
               <VCol cols="12">
@@ -164,14 +139,6 @@ const dialogModelValueUpdate = (val: boolean) => {
                 />
               </VCol>
             </template>
-
-            <VCol cols="12">
-              <VSwitch
-                v-model="userData.is_blocked"
-                label="Block User"
-                color="error"
-              />
-            </VCol>
 
             <VCol
               cols="12"

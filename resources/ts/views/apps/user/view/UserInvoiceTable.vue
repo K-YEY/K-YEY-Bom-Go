@@ -85,9 +85,9 @@ const computedMoreList = computed(() => {
 })
 
 const viewFullInvoice = (id: number) => {
-  const type = props.userData.account_type === 1 ? 'settlements' : 'collections'
-  // Redirect to the appropriate app page or show details
-  window.location.href = `/apps/orders/${type}`
+  const type = props.userData.account_type === 1 ? 'client-settlements' : 'shipper-collections'
+  const filterKey = props.userData.account_type === 1 ? 'client_user_id' : 'shipper_user_id'
+  window.location.href = `/apps/orders/${type}?${filterKey}=${props.userData.id}`
 }
 </script>
 

@@ -1,8 +1,19 @@
 <script setup lang="ts">
 import ClientPlanEditDialog from '@/components/dialogs/ClientPlanEditDialog.vue'
 import ShipperCommissionEditDialog from '@/components/dialogs/ShipperCommissionEditDialog.vue'
-import UpdateUserRoleDialog from '@/components/dialogs/UpdateUserRoleDialog.vue'
 import { avatarText } from '@core/utils/formatters'
+
+// Avatars imports
+import avatar1 from '@images/avatars/avatar-1.png'
+import avatar2 from '@images/avatars/avatar-2.png'
+import avatar3 from '@images/avatars/avatar-3.png'
+import avatar4 from '@images/avatars/avatar-4.png'
+import avatar5 from '@images/avatars/avatar-5.png'
+import avatar6 from '@images/avatars/avatar-6.png'
+import avatar7 from '@images/avatars/avatar-7.png'
+import avatar8 from '@images/avatars/avatar-8.png'
+
+const avatars = [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6, avatar7, avatar8]
 
 interface Props {
   userData: {
@@ -23,7 +34,7 @@ interface Props {
     }
     client?: {
       plan_id: number
-      plan?: { title: string }
+      plan?: { name: string }
       address: string
     }
   }
@@ -33,48 +44,33 @@ const props = defineProps<Props>()
 const emit = defineEmits(['update'])
 
 const isUserInfoEditDialogVisible = ref(false)
-const isUpdateRoleDialogVisible = ref(false)
 const isChangePlanDialogVisible = ref(false)
 const isUpdateCommissionDialogVisible = ref(false)
 
-const onRoleUpdateSuccess = () => {
-  emit('update')
-}
 
 // 👉 Role variant resolver
 const resolveUserRoleVariant = (role: string) => {
-  if (role === 'client') return { color: 'success', icon: 'tabler-user' }
-  if (role === 'shipper') return { color: 'info', icon: 'tabler-truck' }
-  if (role === 'admin') return { color: 'error', icon: 'tabler-server-2' }
+  const roleLower = role?.toLowerCase()
+  if (roleLower === 'client') return { color: 'success', icon: 'tabler-user' }
+  if (roleLower === 'shipper' || roleLower === 'delivery') return { color: 'info', icon: 'tabler-truck' }
+  if (roleLower === 'admin' || roleLower === 'super-admin') return { color: 'error', icon: 'tabler-server-2' }
   return { color: 'primary', icon: 'tabler-user' }
 }
 
-const refInputEl = ref<HTMLElement>()
+const userRole = computed(() => {
+  const role = props.userData.role || props.userData.roles?.[0]?.name || 'user'
+  return String(role)
+})
 
-const changeAvatar = (file: Event) => {
-  const fileReader = new FileReader()
-  const { files } = file.target as HTMLInputElement
-
-  if (files && files.length) {
-    fileReader.readAsDataURL(files[0])
-    fileReader.onload = async () => {
-      if (typeof fileReader.result === 'string') {
-        // Send to server
-        const formData = new FormData()
-        formData.append('avatar', files[0])
-        formData.append('_method', 'PUT')
-
-        try {
-          await $api(`/users/${props.userData.id}`, {
-            method: 'POST', // Use POST with _method PUT for file upload
-            body: formData,
-          })
-          emit('update')
-        } catch (e) {
-          console.error(e)
-        }
-      }
-    }
+const selectAvatar = async (avatar: string | null) => {
+  try {
+    await $api(`/users/${props.userData.id}`, {
+      method: 'PUT',
+      body: { avatar },
+    })
+    emit('update')
+  } catch (e) {
+    // 
   }
 }
 
@@ -86,7 +82,7 @@ const resetAvatar = async () => {
     })
     emit('update')
   } catch (e) {
-    console.error(e)
+    // 
   }
 }
 
@@ -101,14 +97,14 @@ const onUserInfoUpdate = async (updatedData: any) => {
     isChangePlanDialogVisible.value = false
     isUpdateCommissionDialogVisible.value = false
   } catch (e) {
-    console.error(e)
+    // 
   }
 }
 
 const suspendUser = async () => {
   try {
     await $api(`/users/${props.userData.id}/toggle-block`, {
-      method: 'POST',
+      method: 'PATCH',
     })
     emit('update')
   } catch (e) {
@@ -143,7 +139,6 @@ const suspendUser = async () => {
               </span>
             </VAvatar>
             
-            <!-- Upload Button -->
             <VBtn
               icon="tabler-camera"
               variant="elevated"
@@ -151,16 +146,34 @@ const suspendUser = async () => {
               size="x-small"
               class="position-absolute"
               style="bottom: -10px; right: -10px;"
-              @click="refInputEl?.click()"
-            />
-            <input
-              ref="refInputEl"
-              type="file"
-              name="file"
-              accept=".jpeg,.png,.jpg,GIF"
-              hidden
-              @input="changeAvatar"
             >
+              <VIcon icon="tabler-camera" />
+              <VMenu activator="parent" location="bottom end" :close-on-content-click="true">
+                <VCard width="200" class="pa-2">
+                  <div class="d-flex flex-wrap gap-2 justify-center">
+                    <VAvatar
+                      v-for="img in avatars"
+                      :key="img"
+                      size="40"
+                      class="cursor-pointer border-sm"
+                      @click="selectAvatar(img)"
+                    >
+                      <VImg :src="img" />
+                    </VAvatar>
+                    <VAvatar
+                      size="40"
+                      color="secondary"
+                      variant="tonal"
+                      class="cursor-pointer border-sm"
+                      @click="selectAvatar(null)"
+                    >
+                      <VIcon icon="tabler-trash" size="18" />
+                      <VTooltip activator="parent">Reset to Letters</VTooltip>
+                    </VAvatar>
+                  </div>
+                </VCard>
+              </VMenu>
+            </VBtn>
           </div>
 
           <!-- 👉 User name -->
@@ -172,11 +185,11 @@ const suspendUser = async () => {
             <!-- 👉 Role chip -->
             <VChip
               label
-              :color="resolveUserRoleVariant(props.userData.role).color"
+              :color="resolveUserRoleVariant(userRole).color"
               size="small"
               class="text-capitalize"
             >
-              {{ props.userData.role }}
+              {{ userRole }}
             </VChip>
 
             <!-- Status chip -->
@@ -229,7 +242,7 @@ const suspendUser = async () => {
                   <h6 class="text-h6">
                     Shipping Plan:
                     <div class="d-inline-block text-body-1 text-primary">
-                      {{ props.userData.client?.plan?.title || 'No Plan' }}
+                      {{ props.userData.client?.plan?.name || 'No Plan' }}
                     </div>
                   </h6>
                 </VListItemTitle>
@@ -283,14 +296,6 @@ const suspendUser = async () => {
 
           <VBtn
             variant="tonal"
-            color="success"
-            @click="isUpdateRoleDialogVisible = true"
-          >
-            Update Role
-          </VBtn>
-
-          <VBtn
-            variant="tonal"
             :color="props.userData.is_blocked ? 'success' : 'error'"
             @click="suspendUser"
           >
@@ -308,7 +313,7 @@ const suspendUser = async () => {
           <div class="d-flex justify-space-between align-center">
             <div>
               <h6 class="text-h6 mb-1">Current Active Plan</h6>
-              <h4 class="text-h4 text-primary">{{ props.userData.client?.plan?.title || 'Standard Plan' }}</h4>
+              <h4 class="text-h4 text-primary">{{ props.userData.client?.plan?.name || 'Standard Plan' }}</h4>
             </div>
             <VAvatar size="48" color="primary" variant="elevated">
               <VIcon icon="tabler-premium-rights" size="28" />
@@ -371,16 +376,6 @@ const suspendUser = async () => {
       is_blocked: props.userData.is_blocked
     }"
     @submit="onUserInfoUpdate"
-  />
-
-  <UpdateUserRoleDialog
-    v-model:is-dialog-visible="isUpdateRoleDialogVisible"
-    :user="{
-      id: props.userData.id,
-      name: props.userData.name,
-      roles: props.userData.roles || [],
-    }"
-    @success="onRoleUpdateSuccess"
   />
 
   <ClientPlanEditDialog

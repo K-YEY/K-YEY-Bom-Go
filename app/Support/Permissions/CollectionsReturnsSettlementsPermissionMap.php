@@ -34,7 +34,6 @@ class CollectionsReturnsSettlementsPermissionMap
         'shipper' => 'shipper-collection.column.shipper_user_id.view',
         'created_at' => 'shipper-collection.column.created_at.view',
         'updated_at' => 'shipper-collection.column.updated_at.view',
-        'orders' => null,
     ];
 
     public const SHIPPER_COLLECTION_EDIT_COLUMNS = [
@@ -71,7 +70,6 @@ class CollectionsReturnsSettlementsPermissionMap
         'shipper' => 'shipper-return.column.shipper_user_id.view',
         'created_at' => 'shipper-return.column.created_at.view',
         'updated_at' => 'shipper-return.column.updated_at.view',
-        'orders' => null,
     ];
 
     public const SHIPPER_RETURN_EDIT_COLUMNS = [
@@ -110,7 +108,6 @@ class CollectionsReturnsSettlementsPermissionMap
         'client' => 'client-settlement.column.client_user_id.view',
         'created_at' => 'client-settlement.column.created_at.view',
         'updated_at' => 'client-settlement.column.updated_at.view',
-        'orders' => null,
     ];
 
     public const CLIENT_SETTLEMENT_EDIT_COLUMNS = [
@@ -147,7 +144,6 @@ class CollectionsReturnsSettlementsPermissionMap
         'client' => 'client-return.column.client_user_id.view',
         'created_at' => 'client-return.column.created_at.view',
         'updated_at' => 'client-return.column.updated_at.view',
-        'orders' => null,
     ];
 
     public const CLIENT_RETURN_EDIT_COLUMNS = [

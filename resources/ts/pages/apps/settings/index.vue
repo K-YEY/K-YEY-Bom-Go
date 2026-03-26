@@ -40,7 +40,7 @@ const updateSettings = async () => {
 
   try {
     await $api('/settings', {
-      method: 'PATCH',
+      method: 'PUT',
       body: { settings: flatSettings },
     })
     alert('Settings updated successfully!')

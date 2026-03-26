@@ -2,11 +2,14 @@
 import { useApi } from "@/composables/useApi";
 import { createUrl } from "@core/composable/createUrl";
 import { avatarText } from "@core/utils/formatters";
+import { useRoute } from 'vue-router';
+
+const route = useRoute()
 
 const searchQuery = ref("");
 const selectedStatus = ref<string | null>(null);
 const selectedApprovalStatus = ref<string | null>(null);
-const selectedShipper = ref<number | null>(null);
+const selectedShipper = ref<number | null>(route.query.shipper_user_id ? Number(route.query.shipper_user_id) : null);
 
 const { can } = useAbility();
 
@@ -86,7 +89,8 @@ const {
   }),
 );
 
-const collections = computed(() => collectionsData.value || []);
+const collections = computed(() => collectionsData.value?.data || []);
+const totalCollections = computed(() => collectionsData.value?.meta?.total || 0);
 
 // Totals for visible collections
 const visibleTotals = computed(() => {

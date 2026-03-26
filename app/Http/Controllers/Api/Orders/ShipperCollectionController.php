@@ -70,12 +70,18 @@ class ShipperCollectionController extends Controller
                 $validated['search'] ?? null,
                 fn (Builder $query, string $search): Builder => $query->whereHas('shipper', fn ($q) => $q->where('name', 'like', "%{$search}%"))
             )
-            ->orderByDesc('id')
-            ->get();
+            ->paginate($request->input('per_page', 100))
+            ->appends($request->query());
 
-        return response()->json(
-            $collections->map(fn (ShipperCollection $collection): array => $this->filterVisibleColumns($request, $collection))->values()
-        );
+        return response()->json([
+            'data' => collect($collections->items())->map(fn (ShipperCollection $collection): array => $this->filterVisibleColumns($request, $collection))->values(),
+            'meta' => [
+                'current_page' => $collections->currentPage(),
+                'per_page' => $collections->perPage(),
+                'last_page' => $collections->lastPage(),
+                'total' => $collections->total(),
+            ],
+        ]);
     }
 
     public function export(Request $request)

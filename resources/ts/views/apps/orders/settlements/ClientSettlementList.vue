@@ -2,13 +2,16 @@
 import { useApi } from "@/composables/useApi";
 import { createUrl } from "@core/composable/createUrl";
 import { avatarText } from "@core/utils/formatters";
+import { useRoute } from 'vue-router';
+
+const route = useRoute()
 
 const searchQuery = ref("");
 const selectedIds = ref<number[]>([]);
 const processingAction = ref(false);
 const selectedStatus = ref<string | null>(null);
 const selectedApprovalStatus = ref<string | null>(null);
-const selectedClient = ref<number | null>(null);
+const selectedClient = ref<number | null>(route.query.client_user_id ? Number(route.query.client_user_id) : null);
 
 // 👉 Headers
 const headers = [
@@ -86,7 +89,11 @@ const {
   }),
 );
 
-const settlements = computed(() => settlementsData.value || []);
+const settlements = computed(() => settlementsData.value?.data || []);
+const totalSettlements = computed(() => settlementsData.value?.meta?.total || 0);
+
+// For simplicity, we keep VDataTable (client side) for now but use the fetched data.
+// If you want full server side pagination, you would need v-model:page etc.
 
 // Totals for visible settlements
 const visibleTotals = computed(() => {

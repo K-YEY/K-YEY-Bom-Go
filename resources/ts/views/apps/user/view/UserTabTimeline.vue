@@ -9,23 +9,36 @@ const props = defineProps<Props>()
 
 const logs = ref<any[]>([])
 const isFetching = ref(false)
+const totalLogs = ref(0)
+const itemsPerPage = ref(10)
+const page = ref(1)
 
 const fetchLogs = async () => {
   isFetching.value = true
   try {
     const res = await $api('/activity-logs', {
-      params: { user_id: props.userData.id, itemsPerPage: 20 }
+      params: { 
+        user_id: props.userData.id, 
+        itemsPerPage: itemsPerPage.value,
+        page: page.value
+      }
     })
     logs.value = res.data || []
+    totalLogs.value = res.total || 0
   } catch (e) {
-    console.error(e)
+    // 
   }
   isFetching.value = false
 }
 
-onMounted(() => {
-  fetchLogs()
-})
+watch([page, itemsPerPage], fetchLogs)
+
+const headers = [
+  { title: 'Action', key: 'action' },
+  { title: 'Model', key: 'model_type' },
+  { title: 'Message', key: 'message' },
+  { title: 'Date', key: 'created_at' },
+]
 
 const getIcon = (action: string) => {
   if (action === 'created') return 'tabler-circle-plus'
@@ -41,60 +54,55 @@ const getColor = (action: string) => {
   return 'primary'
 }
 
-const getLabel = (log: any) => {
-  const model = log.model_type?.split('\\').pop() || 'Record'
-  return `${log.action} ${model}`
-}
+onMounted(() => {
+  fetchLogs()
+})
 </script>
 
 <template>
-  <VCard title="User Activity Timeline">
+  <VCard title="User Activity History">
     <VCardText>
-      <VTimeline
-        side="end"
-        align="start"
-        truncate-line="both"
-        density="compact"
-        class="v-timeline-density-compact"
+      <VDataTableServer
+        v-model:items-per-page="itemsPerPage"
+        v-model:page="page"
+        :headers="headers"
+        :items="logs"
+        :items-length="totalLogs"
+        :loading="isFetching"
+        class="text-no-wrap"
       >
-        <VTimelineItem
-          v-for="log in logs"
-          :key="log.id"
-          :dot-color="getColor(log.action)"
-          size="x-small"
-        >
-          <template #icon>
-            <VIcon
-              :icon="getIcon(log.action)"
-              size="12"
-            />
-          </template>
+        <template #item.action="{ item }: { item: any }">
+          <VChip
+            :color="getColor(item.action)"
+            size="small"
+            label
+            class="text-capitalize"
+          >
+            <VIcon start :icon="getIcon(item.action)" size="14" />
+            {{ item.action }}
+          </VChip>
+        </template>
 
-          <div class="d-flex justify-space-between align-center flex-wrap gap-2 mb-1">
-            <span class="app-timeline-title">
-              {{ getLabel(log) }}
-            </span>
-            <span class="app-timeline-meta">{{ new Date(log.created_at).toLocaleString() }}</span>
-          </div>
+        <template #item.model_type="{ item }: { item: any }">
+          <span class="font-weight-medium">
+            {{ item.model_type?.split('\\').pop() }}
+          </span>
+        </template>
 
-          <p class="app-timeline-text mb-2">
-            {{ log.message }}
-          </p>
+        <template #item.created_at="{ item }: { item: any }">
+          <span class="text-xs text-disabled">
+            {{ new Date(item.created_at).toLocaleString() }}
+          </span>
+        </template>
 
-          <div v-if="log.new_values && Object.keys(log.new_values).length" class="d-inline-flex align-center bg-light rounded pa-2">
-            <VIcon icon="tabler-info-circle" size="16" class="me-2" />
-            <span class="text-xs">Data Updated</span>
-          </div>
-        </VTimelineItem>
-      </VTimeline>
-
-      <div v-if="!logs.length && !isFetching" class="text-center py-4 text-disabled">
-        No activity logs found for this user.
-      </div>
-      
-      <div v-if="isFetching" class="text-center py-4">
-        <VProgressCircular indeterminate color="primary" />
-      </div>
+        <template #bottom>
+          <TablePagination
+            v-model:page="page"
+            :items-per-page="itemsPerPage"
+            :total-items="totalLogs"
+          />
+        </template>
+      </VDataTableServer>
     </VCardText>
   </VCard>
 </template>

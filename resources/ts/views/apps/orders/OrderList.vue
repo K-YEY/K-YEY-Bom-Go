@@ -328,7 +328,7 @@ const fetchOrders = async () => {
     if (oData.value) {
       applyOrdersData(oData.value)
     }
-  } catch (e) { console.error('Orders fetch error:', e) }
+  } catch (e) { /*  */ }
   isLoading.value = false
 }
 
@@ -372,7 +372,7 @@ const initializePage = async () => {
       applyOrdersData(res.value.orders)
     }
   } catch (e) {
-    console.error('Init fetch error:', e)
+    // 
     fetchOrders()
   }
   isLoading.value = false

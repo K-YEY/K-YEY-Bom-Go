@@ -53,7 +53,7 @@ const fetchFilters = async () => {
 
         const { data: cliData } = await useApi<any>('/clients').get().json()
         clients.value = cliData.value?.data || []
-    } catch (e) { console.error('Filter fetch error:', e) }
+  } catch (e) { /*  */ }
 }
 
 // 👉 Fetching Orders

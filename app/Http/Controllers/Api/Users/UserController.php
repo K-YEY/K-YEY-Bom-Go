@@ -355,6 +355,7 @@ class UserController extends Controller
 
         $accountType = $user->shipper ? 'shipper' : ($user->client ? 'client' : 'user');
         $payload['account_type'] = $this->accountTypeToCode($accountType);
+        $payload['role'] = $user->roles->first()?->name ?? 'user';
 
         $result = [];
 
@@ -373,6 +374,9 @@ class UserController extends Controller
         }
         if (! array_key_exists('account_type', $result)) {
             $result['account_type'] = $payload['account_type'];
+        }
+        if (! array_key_exists('role', $result)) {
+            $result['role'] = $payload['role'];
         }
 
         return $result;

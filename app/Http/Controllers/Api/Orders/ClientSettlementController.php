@@ -31,6 +31,7 @@ class ClientSettlementController extends Controller
             'status' => ['nullable', Rule::in(['PENDING', 'COMPLETED', 'CANCELLED'])],
             'statuses' => ['nullable', 'array'],
             'statuses.*' => [Rule::in(['PENDING', 'COMPLETED', 'CANCELLED'])],
+            'client_user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
         $statuses = [];
@@ -52,12 +53,23 @@ class ClientSettlementController extends Controller
                 $statuses !== [],
                 fn (Builder $query): Builder => $query->whereIn('status', $statuses)
             )
+            ->when(
+                $validated['client_user_id'] ?? null,
+                fn (Builder $query, $clientUserId): Builder => $query->where('client_user_id', $clientUserId)
+            )
             ->orderByDesc('id')
-            ->get();
+            ->paginate($request->input('per_page', 100))
+            ->appends($request->query());
 
-        return response()->json(
-            $settlements->map(fn (ClientSettlement $settlement): array => $this->filterVisibleColumns($request, $settlement))->values()
-        );
+        return response()->json([
+            'data' => collect($settlements->items())->map(fn (ClientSettlement $settlement): array => $this->filterVisibleColumns($request, $settlement))->values(),
+            'meta' => [
+                'current_page' => $settlements->currentPage(),
+                'per_page' => $settlements->perPage(),
+                'last_page' => $settlements->lastPage(),
+                'total' => $settlements->total(),
+            ],
+        ]);
     }
 
     public function export(Request $request)

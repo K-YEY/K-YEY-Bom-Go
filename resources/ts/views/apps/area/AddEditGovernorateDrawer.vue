@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { integerValidator, requiredValidator } from '@/@core/utils/validators'
 import { useApi } from '@/composables/useApi'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import type { VForm } from 'vuetify/components/VForm'
-import { requiredValidator, integerValidator } from '@/@core/utils/validators'
 
 interface Props {
   isDrawerOpen: boolean
@@ -51,8 +51,6 @@ watch(() => props.isDrawerOpen, (isOpen) => {
       defaultShipperId.value = shipperId ? Number(shipperId) : null
       
       cities.value = props.governorate.cities?.map((c: any) => c.name) || []
-      console.log('Editing governorate:', props.governorate)
-      console.log('Set defaultShipperId to:', defaultShipperId.value)
     } else {
       id.value = null
       name.value = ''
@@ -64,7 +62,7 @@ watch(() => props.isDrawerOpen, (isOpen) => {
 })
 
 watch(defaultShipperId, (newVal) => {
-  console.log('defaultShipperId changed to:', newVal, typeof newVal)
+  // 
 })
 
 const addCity = () => {
@@ -86,9 +84,7 @@ const closeNavigationDrawer = () => {
 }
 
 const onSubmit = async () => {
-  console.log('Submitting form...')
   const { valid } = await refForm.value!.validate()
-  console.log('Form valid:', valid)
   if (!valid) return
 
   const payload = {
@@ -98,25 +94,21 @@ const onSubmit = async () => {
     cities: cities.value,
   }
   
-  console.log('Payload:', payload)
 
   const method = id.value ? 'PATCH' : 'POST'
   const url = id.value ? `/governorates/${id.value}` : '/governorates'
   
-  console.log('Method:', method, 'URL:', url)
 
   try {
     const response = await $api(url, {
       method,
       body: payload,
     })
-    console.log('Response:', response)
     
     alert('Area saved successfully!')
     emit('submit')
     emit('update:isDrawerOpen', false)
   } catch (error) {
-    console.error('Error submitting form:', error)
     alert('Error saving area. Check console for details.')
   }
 }

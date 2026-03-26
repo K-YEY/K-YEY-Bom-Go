@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import UserBioPanel from '@/views/apps/user/view/UserBioPanel.vue'
 import UserTabAccount from '@/views/apps/user/view/UserTabAccount.vue'
-import UserTabBillingsPlans from '@/views/apps/user/view/UserTabBillingsPlans.vue'
-import UserTabConnections from '@/views/apps/user/view/UserTabConnections.vue'
-import UserTabNotifications from '@/views/apps/user/view/UserTabNotifications.vue'
 import UserTabSecurity from '@/views/apps/user/view/UserTabSecurity.vue'
 
 
@@ -15,9 +12,6 @@ const tabs = [
   { icon: 'tabler-users', title: 'Account' },
   { icon: 'tabler-history', title: 'Timeline' },
   { icon: 'tabler-lock', title: 'Security' },
-  { icon: 'tabler-bookmark', title: 'Billing & Plan' },
-  { icon: 'tabler-bell', title: 'Notifications' },
-  { icon: 'tabler-link', title: 'Connections' },
 ]
 
 // Re-fetching function
@@ -77,15 +71,7 @@ const { data: userData, execute: fetchUserData } = await useApi<any>(`/users/${r
         </VWindowItem>
 
         <VWindowItem>
-          <UserTabBillingsPlans :user-data="userData" />
-        </VWindowItem>
-
-        <VWindowItem>
-          <UserTabNotifications :user-data="userData" />
-        </VWindowItem>
-
-        <VWindowItem>
-          <UserTabConnections :user-data="userData" />
+          <UserTabSecurity :user-data="userData" />
         </VWindowItem>
       </VWindow>
     </VCol>

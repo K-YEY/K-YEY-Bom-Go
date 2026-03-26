@@ -32,7 +32,7 @@ class SettingController extends Controller
 
         $data = $request->validate([
             'settings' => ['required', 'array'],
-            'settings.*' => ['nullable', 'string'],
+            'settings.*' => ['nullable'],
         ]);
 
         foreach ($data['settings'] as $key => $value) {

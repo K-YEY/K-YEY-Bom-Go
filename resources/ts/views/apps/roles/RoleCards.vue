@@ -41,6 +41,7 @@ interface ApiRole {
   label?: string
   users_count: number
   permissions: any[]
+  users?: any[]
 }
 
 // 👉 Roles List
@@ -50,16 +51,12 @@ const isLoading = ref(true)
 const fetchRoles = async () => {
   isLoading.value = true
   try {
-    console.log('Fetching roles...')
     const res = await $api('/roles')
-    console.log('Roles raw response:', res)
     
     // Support various formats: { data: [...] }, { data: { data: [...] } }, or [...]
     roles.value = res.data?.data || res.data || (Array.isArray(res) ? res : [])
     
-    console.log('Roles state populated:', roles.value)
   } catch (e) {
-    console.error('Fetch roles error:', e)
     roles.value = []
   } finally {
     isLoading.value = false
@@ -83,7 +80,6 @@ const editPermission = (item: ApiRole) => {
 
 watch([isRoleDialogVisible, isAddRoleDialogVisible], ([roleDialog, addDialog]) => {
   if (!roleDialog && !addDialog) {
-    console.log('Dialog closed, refetching roles...')
     fetchRoles()
   }
 })
@@ -95,7 +91,6 @@ const deleteRole = async (id: number) => {
       alert('Role deleted successfully!')
       fetchRoles()
     } catch (e: any) {
-      console.error('Delete role error:', e)
       const errorMsg = e.response?._data?.message || e.message || 'Failed to delete role'
       alert(errorMsg)
     }
