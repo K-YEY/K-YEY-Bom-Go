@@ -37,7 +37,11 @@ const fetchReasons = async () => {
   reasonsLoading.value = false
 }
 
-onMounted(fetchReasons)
+watch(() => props.isDialogVisible, (newVal) => {
+  if (newVal) {
+    fetchReasons()
+  }
+})
 
 const filteredReasons = computed(() => {
   return allReasons.value.filter((r: any) => r.is_active && r.status === statusData.value.status)

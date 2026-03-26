@@ -21,7 +21,7 @@ const formData = ref({
 const selectedOrders = ref<any[]>([])
 
 // 👉 Shippers
-const { data: shippersData } = await useApi<any>('/shippers').get().json()
+const { data: shippersData } = await useApi<any>('/shippers?eligible_for=return&per_page=100').get().json()
 const shippers = computed(() => {
   let raw = shippersData.value
   const data = Array.isArray(raw)

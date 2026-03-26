@@ -162,8 +162,10 @@ watch(() => props.orderId, async (newVal) => {
   }
 }, { immediate: true })
 
-onMounted(() => {
-  fetchStaticData()
+watch(() => props.isDialogVisible, (newVal) => {
+  if (newVal) {
+    fetchStaticData()
+  }
 })
 
 const onFormSubmit = async () => {

@@ -34,8 +34,10 @@ const fetchReasons = async () => {
   reasonsLoading.value = false
 }
 
-onMounted(() => {
-  fetchReasons()
+watch(() => props.isDialogVisible, (newVal) => {
+  if (newVal) {
+    fetchReasons()
+  }
 })
 
 const filteredReasons = computed(() => {

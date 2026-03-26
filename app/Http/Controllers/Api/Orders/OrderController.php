@@ -1343,7 +1343,7 @@ class OrderController extends Controller
         $lastOrder = Order::orderByDesc('id')->first();
         $nextNumber = $lastOrder ? ($lastOrder->id + 1) : 1;
 
-        return $prefix.str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
+        return $prefix.'-'.str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
     }
 
     public function restore(Request $request, $id): JsonResponse

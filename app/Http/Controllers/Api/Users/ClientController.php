@@ -42,6 +42,27 @@ class ClientController extends Controller
             });
         }
 
+        if ($request->filled('eligible_for')) {
+            $type = $request->get('eligible_for');
+            if ($type === 'settlement') {
+                $query->whereHas('orders', function ($q) {
+                    $q->whereIn('status', \App\Http\Controllers\Api\Orders\ClientSettlementController::ELIGIBLE_ORDER_STATUSES)
+                      ->where('is_in_client_settlement', false)
+                      ->where('is_client_settled', false);
+                    
+                    // Note: Ideally we should check the individual client setting for 'require_shipper_collection_first' 
+                    // but for a general 'has anything at all' check, we can just check those statuses.
+                });
+            } elseif ($type === 'return') {
+                $query->whereHas('orders', function ($q) {
+                    $q->whereIn('status', \App\Http\Controllers\Api\Orders\ClientReturnController::ELIGIBLE_ORDER_STATUSES)
+                      ->where('is_shipper_returned', true)
+                      ->where('is_in_client_return', false)
+                      ->where('is_client_returned', false);
+                });
+            }
+        }
+
         $clients = $query->orderByDesc('id')
             ->paginate($request->get('per_page', 20));
 

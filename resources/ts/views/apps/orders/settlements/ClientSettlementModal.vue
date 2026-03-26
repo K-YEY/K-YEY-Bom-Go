@@ -20,7 +20,7 @@ const formData = ref({
 const selectedOrders = ref<any[]>([])
 
 // 👉 Clients
-const { data: clientsData } = await useApi<any>('/clients').get().json()
+const { data: clientsData } = await useApi<any>('/clients?eligible_for=settlement&per_page=100').get().json()
 const clients = computed(() => {
   let raw = clientsData.value
   const data = Array.isArray(raw)

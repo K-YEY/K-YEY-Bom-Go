@@ -26,6 +26,29 @@ class ShipperController extends Controller
             });
         }
 
+        if ($request->filled('eligible_for')) {
+            $type = $request->get('eligible_for');
+            if ($type === 'collection') {
+                $query->whereHas('orders', function ($q) {
+                    $q->whereIn('status', \App\Http\Controllers\Api\Orders\ShipperCollectionController::ELIGIBLE_ORDER_STATUSES)
+                      ->where('approval_status', 'APPROVED')
+                      ->where('is_in_shipper_collection', false)
+                      ->where('is_shipper_collected', false)
+                      ->where(function ($qq) {
+                          $qq->where('total_amount', '>', 0)
+                            ->orWhere('company_amount', '>', 0)
+                            ->orWhere('shipping_fee', '>', 0);
+                      });
+                });
+            } elseif ($type === 'return') {
+                $query->whereHas('orders', function ($q) {
+                    $q->whereIn('status', \App\Http\Controllers\Api\Orders\ShipperReturnController::ELIGIBLE_ORDER_STATUSES)
+                      ->where('is_in_shipper_return', false)
+                      ->where('is_shipper_returned', false);
+                });
+            }
+        }
+
         $shippers = $query->orderByDesc('id')
             ->paginate($request->get('per_page', 20));
 
