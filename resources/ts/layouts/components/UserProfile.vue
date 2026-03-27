@@ -24,15 +24,17 @@ const logout = async () => {
   await router.push({ name: 'pages-authentication-login-v1' })
 }
 
-const userProfileList = [
+const userProfileList = computed(() => [
   { type: 'divider' },
-  { type: 'navItem', icon: 'tabler-user', title: 'Profile', to: { name: 'apps-user-view-id', params: { id: 21 } } },
+  { 
+    type: 'navItem', 
+    icon: 'tabler-user', 
+    title: 'Profile', 
+    to: { name: 'apps-user-view-id', params: { id: userData.value?.id || userData.value?.user_id } } 
+  },
   { type: 'navItem', icon: 'tabler-settings', title: 'Settings', to: { name: 'pages-account-settings-tab', params: { tab: 'account' } } },
-  { type: 'navItem', icon: 'tabler-file-dollar', title: 'Billing Plan', to: { name: 'pages-account-settings-tab', params: { tab: 'billing-plans' } }, badgeProps: { color: 'error', content: '4' } },
   { type: 'divider' },
-  { type: 'navItem', icon: 'tabler-currency-dollar', title: 'Pricing', to: { name: 'pages-pricing' } },
-  { type: 'navItem', icon: 'tabler-question-mark', title: 'FAQ', to: { name: 'pages-faq' } },
-]
+])
 </script>
 
 <template>
@@ -108,7 +110,7 @@ const userProfileList = [
 
           <PerfectScrollbar :options="{ wheelPropagation: false }">
             <template
-              v-for="item in userProfileList"
+              v-for="item in (userProfileList as any)"
               :key="item.title"
             >
               <VListItem
@@ -124,16 +126,6 @@ const userProfileList = [
 
                 <VListItemTitle>{{ item.title }}</VListItemTitle>
 
-                <template
-                  v-if="item.badgeProps"
-                  #append
-                >
-                  <VBadge
-                    rounded="sm"
-                    class="me-3"
-                    v-bind="item.badgeProps"
-                  />
-                </template>
               </VListItem>
 
               <VDivider

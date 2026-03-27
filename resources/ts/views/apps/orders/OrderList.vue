@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useApi } from '@/composables/useApi';
 import { createUrl } from '@core/composable/createUrl';
+import { useI18n } from 'vue-i18n';
 
 // 👉 Props
 const props = defineProps<{
@@ -12,6 +13,8 @@ const props = defineProps<{
   title?: string
   trashed?: 'with' | 'only'
 }>()
+
+const { t } = useI18n()
 
 const isAddEditOrderModalVisible = ref(false)
 const isStatusModalVisible = ref(false)
@@ -81,27 +84,27 @@ const bulkPrintLabels = () => {
 
 // 👉 Headers
 const headers = [
-  { title: 'CODE', key: 'code', width: '120px' },
-  { title: 'DATE ENTRY', key: 'created_at', width: '100px' },
-  { title: 'SHIPPER DATE', key: 'shipper_date', width: '100px' },
-  { title: 'RECEIVER', key: 'receiver_name', width: '180px' },
-  { title: 'AREA', key: 'area', width: '200px' },
-  { title: 'TOTAL', key: 'total_amount', width: '80px' },
-  { title: 'SHIPPING', key: 'shipping_fee', width: '80px' },
-  { title: 'COMMISSION', key: 'commission_amount', width: '80px' },
-  { title: 'NET', key: 'company_amount', width: '80px' },
-  { title: 'COD', key: 'cod_amount', width: '80px' },
-  { title: 'STATUS', key: 'status', width: '110px' },
-  { title: 'STATUS NOTE', key: 'latest_status_note', width: '180px' },
-  { title: 'ORDER NOTE', key: 'order_note', width: '180px' },
-  { title: 'ت. كابتن', key: 'shipper_collection', sortable: false, width: '60px' },
-  { title: 'م. كابتن', key: 'shipper_return', sortable: false, width: '60px' },
-  { title: 'مرتجع', key: 'has_return', sortable: false, width: '60px' },
-  { title: 'ت. عميل', key: 'client_settlement', sortable: false, width: '60px' },
-  { title: 'م. عميل', key: 'client_return', sortable: false, width: '60px' },
-  { title: 'SHIPPER', key: 'shipper', width: '150px' },
-  { title: 'CLIENT', key: 'client', width: '150px' },
-  { title: 'ACTIONS', key: 'actions', sortable: false, width: '80px' },
+  { title: t('CODE'), key: 'code', width: '120px' },
+  { title: t('DATE ENTRY'), key: 'created_at', width: '100px' },
+  { title: t('SHIPPER DATE'), key: 'shipper_date', width: '100px' },
+  { title: t('RECEIVER'), key: 'receiver_name', width: '180px' },
+  { title: t('AREA'), key: 'area', width: '200px' },
+  { title: t('TOTAL'), key: 'total_amount', width: '80px' },
+  { title: t('SHIPPING'), key: 'shipping_fee', width: '80px' },
+  { title: t('COMMISSION'), key: 'commission_amount', width: '80px' },
+  { title: t('NET'), key: 'company_amount', width: '80px' },
+  { title: t('COD'), key: 'cod_amount', width: '80px' },
+  { title: t('STATUS'), key: 'status', width: '110px' },
+  { title: t('STATUS NOTE'), key: 'latest_status_note', width: '180px' },
+  { title: t('ORDER NOTE'), key: 'order_note', width: '180px' },
+  { title: t('ت. كابتن'), key: 'shipper_collection', sortable: false, width: '60px' },
+  { title: t('م. كابتن'), key: 'shipper_return', sortable: false, width: '60px' },
+  { title: t('مرتجع'), key: 'has_return', sortable: false, width: '60px' },
+  { title: t('ت. عميل'), key: 'client_settlement', sortable: false, width: '60px' },
+  { title: t('م. عميل'), key: 'client_return', sortable: false, width: '60px' },
+  { title: t('SHIPPER'), key: 'shipper', width: '150px' },
+  { title: t('CLIENT'), key: 'client', width: '150px' },
+  { title: t('ACTIONS'), key: 'actions', sortable: false, width: '80px' },
 ]
 
 const { can } = useAbility()
@@ -623,7 +626,7 @@ searchClients()
 
     <VCard elevation="2">
       <VCardTitle class="pt-4 px-6 pb-0">
-        <h5 class="text-h5">{{ props.title || 'Orders Management' }}</h5>
+        <h5 class="text-h5">{{ props.title || t('Orders Management') }}</h5>
       </VCardTitle>
 
       <!-- 📦 Bulk Actions Row (Header Position) -->
@@ -631,13 +634,13 @@ searchClients()
         <div class="d-flex align-center gap-4 flex-wrap">
           <div class="text-subtitle-2 text-primary font-weight-bold">
             <VChip color="primary" size="small" class="me-2">{{ selectedOrders.length }}</VChip>
-            Elements Selected
+            {{ t('Elements Selected') }}
           </div>
           <VDivider vertical class="mx-2" />
-          <VBtn v-if="can('order.change-shipper' as any, 'all' as any)" size="small" color="primary" variant="elevated" prepend-icon="tabler-truck" @click="openBulkShipperModal">تغيير المندوب</VBtn>
-          <VBtn v-if="can('order.view' as any, 'all' as any)" size="small" color="info" variant="elevated" prepend-icon="tabler-file-invoice" @click="bulkPrintLabels">طباعة البوالص</VBtn>
-          <VBtn v-if="can('order.export' as any, 'all' as any)" size="small" color="secondary" variant="elevated" prepend-icon="tabler-file-spreadsheet" @click="exportOrders">Export Excel</VBtn>
-          <VBtn v-if="can('order.change-status' as any, 'all' as any)" size="small" color="success" variant="elevated" prepend-icon="tabler-settings" @click="openBulkStatusModal">تغيير الحالة</VBtn>
+          <VBtn v-if="can('order.change-shipper' as any, 'all' as any)" size="small" color="primary" variant="elevated" prepend-icon="tabler-truck" @click="openBulkShipperModal">{{ t('Change Shipper') }}</VBtn>
+          <VBtn v-if="can('order.view' as any, 'all' as any)" size="small" color="info" variant="elevated" prepend-icon="tabler-file-invoice" @click="bulkPrintLabels">{{ t('Print Labels') }}</VBtn>
+          <VBtn v-if="can('order.export' as any, 'all' as any)" size="small" color="secondary" variant="elevated" prepend-icon="tabler-file-spreadsheet" @click="exportOrders">{{ t('Export Excel') }}</VBtn>
+          <VBtn v-if="can('order.change-status' as any, 'all' as any)" size="small" color="success" variant="elevated" prepend-icon="tabler-settings" @click="openBulkStatusModal">{{ t('Change Status') }}</VBtn>
           <VSpacer />
           <VBtn icon size="x-small" variant="text" color="secondary" @click="selectedOrders = []"><VIcon icon="tabler-x" /></VBtn>
         </div>
@@ -646,12 +649,12 @@ searchClients()
       <VCardText class="pb-2">
         <VRow align="center">
           <VCol cols="12" md="2">
-            <AppTextField v-model="searchQuery" placeholder="Quick Search..." prepend-inner-icon="tabler-search" density="compact" hide-details />
+            <AppTextField v-model="searchQuery" :placeholder="t('Quick Search...')" prepend-inner-icon="tabler-search" density="compact" hide-details />
           </VCol>
           <VCol cols="12" md="2">
             <AppSelect
               v-model="selectedStatus"
-              placeholder="Status"
+              :placeholder="t('Status')"
               :items="['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED']"
               clearable
               density="compact"
@@ -659,31 +662,31 @@ searchClients()
             />
           </VCol>
           <VCol cols="auto">
-            <VBtn variant="tonal" color="secondary" size="small" @click="resetFilters"><VIcon start icon="tabler-refresh" />Reset</VBtn>
+            <VBtn variant="tonal" color="secondary" size="small" @click="resetFilters"><VIcon start icon="tabler-refresh" />{{ t('Reset') }}</VBtn>
           </VCol>
           <VCol cols="auto">
-            <VBtn variant="tonal" color="info" size="small" prepend-icon="tabler-calendar-event" @click="applyTodayFilter">أوردرات اليوم</VBtn>
+            <VBtn variant="tonal" color="info" size="small" prepend-icon="tabler-calendar-event" @click="applyTodayFilter">{{ t('Today\'s Orders') }}</VBtn>
           </VCol>
           <VCol cols="auto" class="ms-auto text-end d-flex gap-2">
             <VMenu>
               <template #activator="{ props }">
-                <VBtn color="secondary" size="small" variant="tonal" prepend-icon="tabler-file-import" v-bind="props">Import</VBtn>
+                <VBtn color="secondary" size="small" variant="tonal" prepend-icon="tabler-file-import" v-bind="props">{{ t('Import') }}</VBtn>
               </template>
               <VList box-shadow="2">
                 <VListItem @click="downloadTemplate">
                   <template #prepend><VIcon icon="tabler-download" size="20" class="me-2"/></template>
-                  <VListItemTitle>Download Template</VListItemTitle>
+                  <VListItemTitle>{{ t('Download Template') }}</VListItemTitle>
                 </VListItem>
                 <VListItem @click="inputRef?.click()">
                   <template #prepend><VIcon icon="tabler-upload" size="20" class="me-2"/></template>
-                  <VListItemTitle>Upload Orders</VListItemTitle>
+                  <VListItemTitle>{{ t('Upload Orders') }}</VListItemTitle>
                 </VListItem>
               </VList>
             </VMenu>
             <input ref="inputRef" type="file" class="d-none" accept=".xlsx,.csv" @change="handleImport">
 
-            <VBtn v-if="can('order.export', 'all')" color="secondary" size="small" variant="tonal" prepend-icon="tabler-file-spreadsheet" @click="exportOrders">Export All</VBtn>
-            <VBtn v-if="can('order.create', 'all')" color="primary" size="small" prepend-icon="tabler-plus" @click="handleNewOrder">New Order</VBtn>
+            <VBtn v-if="can('order.export', 'all')" color="secondary" size="small" variant="tonal" prepend-icon="tabler-file-spreadsheet" @click="exportOrders">{{ t('Export All') }}</VBtn>
+            <VBtn v-if="can('order.create', 'all')" color="primary" size="small" prepend-icon="tabler-plus" @click="handleNewOrder">{{ t('New Order') }}</VBtn>
 
             <!-- 👉 Column Visibility Toggle -->
             <VMenu :close-on-content-click="false">

@@ -1,42 +1,41 @@
 <script setup lang="ts">
 const shortcuts = [
   {
-    icon: 'tabler-calendar',
-    title: 'Calendar',
-    subtitle: 'Appointments',
-    to: { name: 'apps-calendar' },
+    icon: 'tabler-package',
+    title: 'Orders',
+    subtitle: 'Manage Orders',
+    to: { name: 'apps-orders' },
   },
   {
-    icon: 'tabler-file-dollar',
-    title: 'Invoice App',
-    subtitle: 'Manage Accounts',
-    to: { name: 'apps-invoice-list' },
-  },
-  {
-    icon: 'tabler-user',
-    title: 'Users',
-    subtitle: 'Manage Users',
+    icon: 'tabler-users-group',
+    title: 'Staff',
+    subtitle: 'Staff Users',
     to: { name: 'apps-user-list' },
   },
   {
     icon: 'tabler-users',
-    title: 'Role Management',
-    subtitle: 'Permission',
-    to: { name: 'apps-roles' },
+    title: 'Clients',
+    subtitle: 'Manage Clients',
+    to: { name: 'apps-user-clients' },
   },
   {
-    icon: 'tabler-device-desktop-analytics',
-    title: 'Orders Dashboard',
-    subtitle: 'Operations Overview',
-    to: { name: 'dashboards-orders' },
+    icon: 'tabler-truck',
+    title: 'Shippers',
+    subtitle: 'Manage Shippers',
+    to: { name: 'apps-user-shippers' },
+  },
+  {
+    icon: 'tabler-currency-dollar',
+    title: 'Settlements',
+    subtitle: 'Client Settlements',
+    to: { name: 'apps-orders-client-settlements' },
   },
   {
     icon: 'tabler-settings',
     title: 'Settings',
-    subtitle: 'Account Settings',
-    to: { name: 'pages-account-settings-tab', params: { tab: 'account' } },
+    subtitle: 'System Settings',
+    to: { name: 'apps-settings' },
   },
-
 ]
 </script>
 

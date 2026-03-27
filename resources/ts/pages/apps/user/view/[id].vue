@@ -2,6 +2,7 @@
 import UserBioPanel from '@/views/apps/user/view/UserBioPanel.vue'
 import UserTabAccount from '@/views/apps/user/view/UserTabAccount.vue'
 import UserTabSecurity from '@/views/apps/user/view/UserTabSecurity.vue'
+import UserTabTimeline from '@/views/apps/user/view/UserTabTimeline.vue'
 
 
 const route = useRoute('apps-user-view-id')
@@ -64,10 +65,6 @@ const { data: userData, execute: fetchUserData } = await useApi<any>(`/users/${r
 
         <VWindowItem>
           <UserTabTimeline :user-data="userData" />
-        </VWindowItem>
-
-        <VWindowItem>
-          <UserTabSecurity :user-data="userData" />
         </VWindowItem>
 
         <VWindowItem>

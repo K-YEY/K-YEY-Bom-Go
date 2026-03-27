@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useApi } from '@/composables/useApi';
+import { useI18n } from 'vue-i18n';
 
 interface Props {
   isDialogVisible: boolean
@@ -9,6 +10,8 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits(['update:isDialogVisible', 'orderSaved'])
+
+const { t } = useI18n()
 
 const isFormValid = ref(false)
 const refForm = ref()
@@ -198,7 +201,7 @@ const closeDialog = () => {
     persistent
     @update:model-value="val => emit('update:isDialogVisible', val)"
   >
-    <VCard :loading="isLoading" :title="props.orderId ? 'Edit Order' : 'Add New Order'">
+    <VCard :loading="isLoading" :title="props.orderId ? t('Edit Order') : t('Add New Order')">
       <VCardText>
         <VForm
           ref="refForm"
@@ -208,103 +211,104 @@ const closeDialog = () => {
           <VRow>
             <!-- 1. Codes -->
             <VCol cols="12" md="6">
-              <AppTextField v-model="orderData.code" label="Internal Code" disabled placeholder="Auto-generated" />
+              <AppTextField v-model="orderData.code" :label="t('Internal Code')" disabled :placeholder="t('Auto-generated')" />
             </VCol>
             <VCol cols="12" md="6">
-              <AppTextField v-model="orderData.external_code" label="External Code" placeholder="EXT-456" />
+              <AppTextField v-model="orderData.external_code" :label="t('External Code')" placeholder="EXT-456" />
             </VCol>
 
             <VCol cols="12"><VDivider class="my-2" /></VCol>
 
             <!-- 2. Receiver Data -->
             <VCol cols="12" md="6">
-              <AppTextField v-model="orderData.receiver_name" label="Receiver Name" required :rules="[(v: any) => !!v || 'Required']" />
+              <AppTextField v-model="orderData.receiver_name" :label="t('Receiver Name')" required :rules="[(v: any) => !!v || t('Required')]" />
             </VCol>
             <VCol cols="12" md="3">
-              <AppTextField v-model="orderData.phone" label="Phone" required :rules="[(v: any) => !!v || 'Required']" />
+              <AppTextField v-model="orderData.phone" :label="t('Phone')" required :rules="[(v: any) => !!v || t('Required')]" />
             </VCol>
             <VCol cols="12" md="3">
-              <AppTextField v-model="orderData.phone_2" label="Secondary Phone" />
+              <AppTextField v-model="orderData.phone_2" :label="t('Secondary Phone')" />
             </VCol>
 
             <VCol cols="12"><VDivider class="my-2" /></VCol>
 
             <!-- 3. Address -->
             <VCol cols="12" md="4">
-              <AppAutocomplete v-model="orderData.governorate_id" label="Governorate" :items="governorates" item-title="name" item-value="id" required :rules="[(v: any) => !!v || 'Required']" @update:model-value="orderData.city_id = null" />
+              <AppAutocomplete v-model="orderData.governorate_id" :label="t('Governorate')" :items="governorates" item-title="name" item-value="id" required :rules="[(v: any) => !!v || t('Required')]" @update:model-value="orderData.city_id = null" />
             </VCol>
             <VCol cols="12" md="4">
-              <AppAutocomplete v-model="orderData.city_id" label="City" :items="filteredCities" item-title="name" item-value="id" required :rules="[(v: any) => !!v || 'Required']" :disabled="!orderData.governorate_id" />
+              <AppAutocomplete v-model="orderData.city_id" :label="t('City')" :items="filteredCities" item-title="name" item-value="id" required :rules="[(v: any) => !!v || t('Required')]" :disabled="!orderData.governorate_id" />
             </VCol>
             <VCol cols="12" md="4">
-              <AppTextarea v-model="orderData.address" label="Street / Full Address" rows="1" auto-grow required :rules="[(v: any) => !!v || 'Required']" />
+              <AppTextarea v-model="orderData.address" :label="t('Street / Full Address')" rows="1" auto-grow required :rules="[(v: any) => !!v || t('Required')]" />
             </VCol>
 
             <VCol cols="12"><VDivider class="my-2" /></VCol>
 
             <!-- 4. Client & Shipper -->
             <VCol cols="12" md="6">
-              <AppAutocomplete v-model="orderData.client_user_id" label="Client" :items="clients" item-title="name" item-value="id" required :rules="[(v: any) => !!v || 'Required']" />
+              <AppAutocomplete v-model="orderData.client_user_id" :label="t('Client')" :items="clients" item-title="name" item-value="id" required :rules="[(v: any) => !!v || t('Required')]" />
             </VCol>
             <VCol cols="12" md="6">
-              <AppAutocomplete v-model="orderData.shipper_user_id" label="Shipper" :items="shippers" item-title="name" item-value="id" clearable />
+              <AppAutocomplete v-model="orderData.shipper_user_id" :label="t('Shipper')" :items="shippers" item-title="name" item-value="id" clearable />
             </VCol>
 
             <VCol cols="12"><VDivider class="my-2" /></VCol>
 
             <!-- 5. Notes -->
             <VCol cols="12">
-              <AppTextarea v-model="orderData.order_note" label="Order Notes" rows="2" />
+              <AppTextarea v-model="orderData.order_note" :label="t('Order Notes')" rows="2" />
             </VCol>
 
             <VCol cols="12"><VDivider class="my-2" /></VCol>
 
             <!-- 6. Others -->
             <VCol cols="12" md="3">
-              <AppSelect v-model="orderData.status" label="Status" :items="[{ title: 'Out for delivery', value: 'OUT_FOR_DELIVERY' }, { title: 'Delivered', value: 'DELIVERED' }, { title: 'On hold', value: 'HOLD' }, { title: 'Undelivered', value: 'UNDELIVERED' }]" required :rules="[(v: any) => !!v || 'Required']" />
+              <AppSelect v-model="orderData.status" :label="t('Status')" :items="[{ title: t('Out for delivery'), value: 'OUT_FOR_DELIVERY' }, { title: t('Delivered'), value: 'DELIVERED' }, { title: t('On hold'), value: 'HOLD' }, { title: t('Undelivered'), value: 'UNDELIVERED' }]" required :rules="[(v: any) => !!v || t('Required')]" />
             </VCol>
             <VCol cols="12" md="3">
-              <AppDateTimePicker v-model="orderData.captain_date" label="Assign Date" />
+              <AppDateTimePicker v-model="orderData.captain_date" :label="t('Assign Date')" />
             </VCol>
             <VCol cols="12" md="4">
-              <AppAutocomplete v-model="orderData.shipping_content_id" label="Shipping Content" :items="contents" item-title="name" item-value="id" clearable />
+              <AppAutocomplete v-model="orderData.shipping_content_id" :label="t('Shipping Content')" :items="contents" item-title="name" item-value="id" clearable />
             </VCol>
             <VCol cols="12" md="2" class="d-flex align-center">
-              <VCheckbox v-model="orderData.allow_open" label="Allow Open" hide-details />
+              <VCheckbox v-model="orderData.allow_open" :label="t('Allow Open')" hide-details />
             </VCol>
 
             <VCol cols="12"><VDivider class="my-4" /></VCol>
 
             <!-- 7. Financials (LAST) -->
             <VCol cols="12">
-               <span class="text-overline mb-2 d-block">Financial Details</span>
+                <span class="text-overline mb-2 d-block">{{ t('Financial Details') }}</span>
             </VCol>
             
             <VCol cols="12" md="4">
-              <AppTextField v-model="orderData.total_amount" label="TOTAL AMOUNT" type="number" required :rules="[(v: any) => !!v || 'Required']" />
+              <AppTextField v-model="orderData.total_amount" :label="t('TOTAL AMOUNT')" type="number" required :rules="[(v: any) => !!v || t('Required')]" />
             </VCol>
             <VCol cols="12" md="4">
-              <AppTextField v-model="orderData.shipping_fee" label="SHIPPING FEE" type="number" />
+              <AppTextField v-model="orderData.shipping_fee" :label="t('SHIPPING FEE')" type="number" />
             </VCol>
             <VCol cols="12" md="4">
-              <AppTextField v-model="orderData.commission_amount" label="SHIPPER PRICE" type="number" />
+              <AppTextField v-model="orderData.commission_amount" :label="t('SHIPPER PRICE')" type="number" />
             </VCol>
 
             <VCol cols="12" md="6">
-              <AppTextField :model-value="codAmount" label="COD (Cash on Delivery)" disabled prefix="EGP" bg-color="success-lighten-5" />
+              <AppTextField :model-value="codAmount" :label="t('COD (Cash on Delivery)')" disabled prefix="EGP" bg-color="success-lighten-5" />
             </VCol>
             <VCol cols="12" md="6">
-              <AppTextField :model-value="netAmount" label="NET (Company Revenue)" disabled prefix="EGP" bg-color="info-lighten-5" />
+              <AppTextField :model-value="netAmount" :label="t('NET (Company Revenue)')" disabled prefix="EGP" bg-color="info-lighten-5" />
             </VCol>
           </VRow>
 
           <VCardActions class="px-0 pt-6">
             <VSpacer />
-            <VBtn color="secondary" variant="tonal" @click="closeDialog">Cancel</VBtn>
-            <VBtn type="submit" color="primary" :loading="isLoading">{{ props.orderId ? 'Update' : 'Create' }}</VBtn>
+            <VBtn color="secondary" variant="tonal" @click="closeDialog">{{ t('Cancel') }}</VBtn>
+            <VBtn type="submit" color="primary" :loading="isLoading">{{ props.orderId ? t('Update') : t('Create') }}</VBtn>
           </VCardActions>
         </VForm>
       </VCardText>
     </VCard>
   </VDialog>
 </template>
+```

@@ -32,34 +32,17 @@ const suggestionGroups: SuggestionGroup[] = [
   {
     title: 'Popular Searches',
     content: [
-      { icon: 'tabler-package', title: 'Orders Dashboard', url: { name: 'dashboards-orders' } },
+      { icon: 'tabler-package', title: 'Orders List', url: { name: 'apps-orders' } },
+      { icon: 'tabler-users-group', title: 'Staff Users', url: { name: 'apps-user-list' } },
     ],
   },
   {
     title: 'Apps & Pages',
     content: [
-      { icon: 'tabler-calendar', title: 'Calendar', url: { name: 'apps-calendar' } },
-      { icon: 'tabler-lock', title: 'Roles & Permissions', url: { name: 'apps-roles' } },
-      { icon: 'tabler-settings', title: 'Account Settings', url: { name: 'pages-account-settings-tab', params: { tab: 'account' } } },
-      { icon: 'tabler-copy', title: 'Dialog Examples', url: { name: 'pages-dialog-examples' } },
-    ],
-  },
-  {
-    title: 'User Interface',
-    content: [
-      { icon: 'tabler-typography', title: 'Typography', url: { name: 'pages-typography' } },
-      { icon: 'tabler-menu-2', title: 'Accordion', url: { name: 'components-expansion-panel' } },
-      { icon: 'tabler-info-triangle', title: 'Alert', url: { name: 'components-alert' } },
-      { icon: 'tabler-checkbox', title: 'Cards', url: { name: 'pages-cards-card-basic' } },
-    ],
-  },
-  {
-    title: 'Forms & Tables',
-    content: [
-      { icon: 'tabler-circle-dot', title: 'Radio', url: { name: 'forms-radio' } },
-      { icon: 'tabler-file-invoice', title: 'Form Layouts', url: { name: 'forms-form-layouts' } },
-      { icon: 'tabler-table', title: 'Table', url: { name: 'tables-data-table' } },
-      { icon: 'tabler-edit', title: 'Editor', url: { name: 'forms-editors' } },
+      { icon: 'tabler-user', title: 'Clients', url: { name: 'apps-user-clients' } },
+      { icon: 'tabler-truck', title: 'Shippers', url: { name: 'apps-user-shippers' } },
+      { icon: 'tabler-currency-dollar', title: 'Settlements', url: { name: 'apps-orders-client-settlements' } },
+      { icon: 'tabler-settings', title: 'Settings', url: { name: 'apps-settings' } },
     ],
   },
 ]
