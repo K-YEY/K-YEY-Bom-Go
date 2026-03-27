@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useApi } from '@/composables/useApi'
+import { useNotificationStore } from '@/stores/useNotificationStore'
 import EditUserDrawer from '@/views/apps/user/list/EditUserDrawer.vue'
 import { createUrl } from '@core/composable/createUrl'
 import { avatarText } from '@core/utils/formatters'
+
+const { success } = useNotificationStore()
 
 // Headers for Shippers
 const headers = [
@@ -83,7 +86,7 @@ const updateUser = async (userData: any) => {
     body: userData,
   })
   fetchShippers()
-  alert('Shipper updated successfully!')
+  success('Shipper updated successfully!')
 }
 
 const resolveUserStatusVariant = (blocked: boolean) => {

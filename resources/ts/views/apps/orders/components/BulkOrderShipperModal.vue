@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useApi } from '@/composables/useApi';
+import { useNotificationStore } from '@/stores/useNotificationStore';
 
 interface Props {
   isDialogVisible: boolean
@@ -14,6 +15,10 @@ const selectedShipperId = ref<number | null>(null)
 const commissionAmount = ref<number | null>(null)
 const shipperDate = ref(new Date().toISOString().substr(0, 10))
 const isLoading = ref(false)
+const notificationStatus = useNotificationStore()
+const notify = (msg: string, color: string = 'success') => {
+  notificationStatus.notify(msg, color)
+}
 
 watch(selectedShipperId, (newId) => {
   if (newId) {
@@ -27,10 +32,14 @@ watch(selectedShipperId, (newId) => {
 })
 
 const onSubmit = async () => {
-  const validOrders = props.selectedOrders.filter(o => !['DELIVERED', 'UNDELIVERED', 'CANCELLED'].includes(o.status))
+  const validOrders = props.selectedOrders.filter(o => {
+    const isLocked = o.is_shipper_collected || o.is_client_settled || o.is_shipper_returned || o.is_client_returned
+    const isFinal = ['DELIVERED', 'UNDELIVERED', 'CANCELLED'].includes(o.status)
+    return !isLocked && !isFinal
+  })
   
   if (!validOrders.length) {
-    alert('لا يمكن تغيير المندوب لأوردر سلم بالفعل أو مرتجع')
+    notify('لا يوجد أوردرات قابلة للتعديل (تم استثناء الأوردرات المسلمة أو المرتجعة أو التي تم تحصيلها بالفعل)', 'warning')
     return
   }
 
@@ -47,8 +56,13 @@ const onSubmit = async () => {
     if (!error.value) {
       emit('shipperUpdated')
       emit('update:isDialogVisible', false)
+    } else {
+      notify('خطأ أثناء التحديث: ' + (error.value?.message || 'يرجى المحاولة مرة أخرى'), 'error')
     }
-  } catch (e) { console.error(e) }
+  } catch (e) {
+    console.error(e)
+    notify('حدث خطأ غير متوقع', 'error')
+  }
   isLoading.value = false
 }
 </script>

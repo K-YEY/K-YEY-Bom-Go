@@ -103,6 +103,7 @@ Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class
     Route::patch('shipper-returns/{shipperReturn}/reject', [ShipperReturnController::class, 'reject']);
     Route::delete('shipper-returns/{shipperReturn}/orders/{order}', [ShipperReturnController::class, 'removeOrder']);
     Route::patch('shipper-returns/bulk-status', [ShipperReturnController::class, 'bulkStatus']);
+    Route::post('shipper-returns/bulk-scan', [ShipperReturnController::class, 'bulkScan']);
     Route::apiResource('shipper-returns', ShipperReturnController::class);
 
     Route::get('client-settlements/export', [ClientSettlementController::class, 'export']);
@@ -119,6 +120,7 @@ Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class
     Route::patch('client-returns/{clientReturn}/reject', [ClientReturnController::class, 'reject']);
     Route::delete('client-returns/{clientReturn}/orders/{order}', [ClientReturnController::class, 'removeOrder']);
     Route::patch('client-returns/bulk-status', [ClientReturnController::class, 'bulkStatus']);
+    Route::post('client-returns/bulk-scan', [ClientReturnController::class, 'bulkScan']);
     Route::apiResource('client-returns', ClientReturnController::class);
     Route::apiResource('activity-logs', ActivityLogController::class)->only(['index', 'show']);
 });

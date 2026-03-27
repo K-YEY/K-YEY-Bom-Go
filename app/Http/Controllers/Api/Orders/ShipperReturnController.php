@@ -528,4 +528,66 @@ class ShipperReturnController extends Controller
             'data' => $this->filterVisibleColumns($request, $shipperReturn->fresh(['shipper:id,name', 'orders.client:id,name']))
         ]);
     }
+    public function bulkScan(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'shipper-return.create');
+
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['exists:orders,id'],
+            'return_date' => ['nullable', 'date'],
+        ]);
+
+        $orderIds = $data['order_ids'];
+        $returnDate = $data['return_date'] ?? now()->toDateString();
+        $creatorId = $request->user()->id;
+
+        // Fetch eligible orders
+        $orders = Order::query()
+            ->whereIn('id', $orderIds)
+            // Add specific logic requested by user:
+            // Shipper return must be UNDELIVERED OR (DELIVERED with has_return=true)
+            ->where(function (Builder $query) {
+                $query->where('status', 'UNDELIVERED')
+                    ->orWhere(function (Builder $q) {
+                        $q->where('status', 'DELIVERED')->where('has_return', true);
+                    });
+            })
+            ->where('is_in_shipper_return', false)
+            ->where('is_shipper_returned', false)
+            ->get();
+
+        if ($orders->isEmpty()) {
+            return response()->json(['message' => 'No eligible orders found for shipper return.'], 422);
+        }
+
+        $processedIds = [];
+        DB::transaction(function () use ($orders, $returnDate, $creatorId, &$processedIds) {
+            // Group by shipper
+            foreach ($orders->groupBy('shipper_user_id') as $shipperId => $shipperOrders) {
+                if (!$shipperId) continue;
+
+                $return = ShipperReturn::create([
+                    'shipper_user_id' => $shipperId,
+                    'return_date' => $returnDate,
+                    'number_of_orders' => $shipperOrders->count(),
+                    'status' => 'COMPLETED',
+                    'approval_status' => 'APPROVED',
+                    'created_by' => $creatorId,
+                    'approved_by' => $creatorId,
+                    'approved_at' => now(),
+                ]);
+
+                $this->attachOrdersToReturn($return, $shipperOrders);
+                $this->syncReturnOrdersState($return, $shipperOrders->pluck('id')->all());
+                
+                $processedIds = array_merge($processedIds, $shipperOrders->pluck('id')->all());
+            }
+        });
+
+        return response()->json([
+            'message' => 'Processed ' . count($processedIds) . ' orders into shipper returns.',
+            'processed_ids' => $processedIds
+        ]);
+    }
 }

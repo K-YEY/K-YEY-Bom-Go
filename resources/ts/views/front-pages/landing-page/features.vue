@@ -1,18 +1,11 @@
 <script setup lang="ts">
-import check from '@images/svg/Check.svg'
-import keyboard from '@images/svg/keyboard.svg'
-import laptop from '@images/svg/laptop.svg'
-import paper from '@images/svg/paper-send.svg'
-import rocket from '@images/svg/rocket.svg'
-import user from '@images/svg/user.svg'
-
 const featuresData = [
-  { title: 'Quality Code', desc: 'Code structure that all developers will easily understand and fall in love with.', icon: laptop },
-  { title: 'Continuous Updates', desc: 'Free updates for the next 12 months, including new demos and features.', icon: rocket },
-  { title: 'Starter Kit', desc: 'Start your project quickly without having to remove unnecessary features.', icon: paper },
-  { title: 'API Ready', desc: 'Just change the endpoint and see your own data loaded within seconds.', icon: check },
-  { title: 'Excellent Support', desc: 'An easy-to-follow doc with lots of references and code examples.', icon: user },
-  { title: 'Well Documented', desc: 'An easy-to-follow doc with lots of references and code examples.', icon: keyboard },
+  { title: 'نظام تتبع متطور', desc: 'تتبع كل شحنة بدقة متناهية من لحظة الخروج وحتى الاستلام النهائي مع سجل كامل للتحركات.', icon: 'tabler-map-2' },
+  { title: 'تسويات مالية ذكية', desc: 'إدارة كاملة للمبالغ المحصلة وتسويات العملاء والمندوبين بشكل آلي وبدون أخطاء محاسبية.', icon: 'tabler-calculator' },
+  { title: 'ماسح الباركود السريع', desc: 'نظام متكامل للمسح الضوئي لمعالجة المرتجعات والتسليمات بالجملة في ثوانٍ معدودة.', icon: 'tabler-scan' },
+  { title: 'تقارير تحليلية', desc: 'عرض شامل لأداء شركتك من خلال لوحة تحكم ذكية توضح نسب التسليم والمبالغ تحت التحصيل.', icon: 'tabler-chart-pie' },
+  { title: 'إدارة الفروع والمناديب', desc: 'تقسيم العمل على فروع ومناطق مختلفة مع تعيين تلقائي للمناديب بناءً على الموقع الجغرافي.', icon: 'tabler-users' },
+  { title: 'دعم فني متكامل', desc: 'فريق متخصص يقدم الدعم الفني لك ولعملائك لضمان استمرارية العمل بأفضل جودة.', icon: 'tabler-headset' },
 ]
 </script>
 
@@ -26,18 +19,18 @@ const featuresData = [
           class="mb-4"
           size="small"
         >
-          Useful Features
+          مميزات المنصة
         </VChip>
         <div class="d-flex text-h4 mb-1 align-center flex-wrap justify-center">
           <div class="position-relative me-2">
             <div class="section-title">
-              Everything you need
+              كل ما تحتاجه لإدارة
             </div>
           </div>
-          to start your next project
+          منظومة الشحن الخاصة بك
         </div>
         <p class="text-body-1 mb-0">
-          Not just a set of tools, the package includes ready-to-deploy conceptual application.
+          نحن لا نقدم مجرد أدوات، بل نقدم حلولاً لوجستية متكاملة لنمو أعمالك وتوسيع نطاق مبيعاتك.
         </p>
       </div>
       <VRow>
@@ -65,6 +58,22 @@ const featuresData = [
                 {{ data.desc }}
               </p>
             </div>
+          </div>
+        </VCol>
+      </VRow>
+      <VRow>
+        <VCol
+          cols="12"
+          class="text-center mt-10"
+        >
+          <div class="position-relative">
+            <VBtn
+              :size="$vuetify.display.smAndUp ? 'large' : 'default' "
+              :to="{ name: 'pages-authentication-login-v1' }"
+              :active="false"
+            >
+              ابدأ رحلتك معنا
+            </VBtn>
           </div>
         </VCol>
       </VRow>

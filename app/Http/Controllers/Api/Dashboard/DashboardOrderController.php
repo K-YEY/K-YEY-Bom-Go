@@ -27,7 +27,7 @@ class DashboardOrderController extends Controller
 
         $dateField = $validated['date_field'] ?? 'registered_at';
 
-        $query = Order::query();
+        $query = Order::query()->forUserRole();
 
         // Apply Common Filters
         if (! empty($validated['client_user_id'])) {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import joinArrow from '@images/front-pages/icons/Join-community-arrow.png'
 import heroDashboardShippingImg from '@images/front-pages/landing-page/hero-dashboard-shipping.png'
 import heroElementsShippingImg from '@images/front-pages/landing-page/hero-elements-shipping.png'
 import { useMouse } from '@vueuse/core'
@@ -45,22 +44,12 @@ const translateMouse = computed(() => {
               نحن نوفر لك حلولاً كاملة لنمو أعمالك.
             </h6>
             <div class="position-relative">
-              <h6 class="position-absolute hero-btn-item d-md-flex d-none text-h6 text-medium-emphasis">
-                انضم إلينا الآن
-                <VImg
-                  :src="joinArrow"
-                  class="flip-in-rtl"
-                  width="54"
-                  height="31"
-                />
-              </h6>
-
               <VBtn
                 :size="$vuetify.display.smAndUp ? 'large' : 'default' "
                 :to="{ name: 'pages-authentication-login-v1' }"
                 :active="false"
               >
-                ابدأ مجاناً
+                ابدأ رحلتك معنا
               </VBtn>
             </div>
           </div>

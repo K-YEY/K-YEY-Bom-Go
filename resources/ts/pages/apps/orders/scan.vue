@@ -47,25 +47,70 @@ const onScan = async () => {
     } else if (data.value?.data) {
       const order = data.value.data
       
-      // Check if order is already collected by shipper
-      if (order.is_shipper_collected) {
-        playErrorSound()
-        alert(`Order #${order.id} is already collected by shipper and cannot be edited.`)
-        nextTick(() => {
-          inputRef.value?.select()
-        })
-        return
+      // 1. Logic for Shipper Return Scan
+      if (actionType.value === 'shipper_return') {
+        const isUndelivered = order.status === 'UNDELIVERED'
+        const isDeliveredWithReturn = order.status === 'DELIVERED' && order.has_return
+        
+        if (!isUndelivered && !isDeliveredWithReturn) {
+          playErrorSound()
+          alert(`Order #${order.id} is not eligible for Shipper Return (Must be UNDELIVERED or DELIVERED with return flag).`)
+          nextTick(() => { inputRef.value?.select() })
+          return
+        }
+        
+        if (order.is_shipper_returned) {
+          playErrorSound()
+          alert(`Order #${order.id} is already returned by shipper.`)
+          nextTick(() => { inputRef.value?.select() })
+          return
+        }
       }
 
-      // Block finished orders for Change Shipper action
-      const finalStatuses = ['DELIVERED', 'UNDELIVERED', 'RETURNED', 'CANCELLED', 'COLLECTED']
-      if (actionType.value === 'shipper' && finalStatuses.includes(order.status)) {
-        playErrorSound()
-        alert(`Cannot change shipper for order #${order.id} because status is ${order.status}.`)
-        nextTick(() => {
-          inputRef.value?.select()
-        })
-        return
+      // 2. Logic for Client Return Scan
+      if (actionType.value === 'client_return') {
+        const isEligibleStatus = ['DELIVERED', 'UNDELIVERED'].includes(order.status)
+        const hasReturnFlag = order.has_return
+        const isShipperReturned = order.is_shipper_returned
+        
+        if (!isEligibleStatus || !hasReturnFlag) {
+          playErrorSound()
+          alert(`Order #${order.id} is not eligible for Client Return (Must have return flag).`)
+          nextTick(() => { inputRef.value?.select() })
+          return
+        }
+        if (!isShipperReturned) {
+          playErrorSound()
+          alert(`Order #${order.id} cannot be returned to client because it was not returned by shipper yet.`)
+          nextTick(() => { inputRef.value?.select() })
+          return
+        }
+        if (order.is_client_returned) {
+          playErrorSound()
+          alert(`Order #${order.id} is already returned to client.`)
+          nextTick(() => { inputRef.value?.select() })
+          return
+        }
+      }
+
+      // 3. Logic for Other constraints
+      if (!['shipper_return', 'client_return'].includes(actionType.value)) {
+        // Check if order is already collected by shipper
+        if (order.is_shipper_collected) {
+          playErrorSound()
+          alert(`Order #${order.id} is already collected by shipper and cannot be edited.`)
+          nextTick(() => { inputRef.value?.select() })
+          return
+        }
+
+        // Block finished orders for Change Shipper action
+        const finalStatuses = ['DELIVERED', 'UNDELIVERED', 'RETURNED', 'CANCELLED', 'COLLECTED']
+        if (actionType.value === 'shipper' && finalStatuses.includes(order.status)) {
+          playErrorSound()
+          alert(`Cannot change shipper for order #${order.id} because status is ${order.status}.`)
+          nextTick(() => { inputRef.value?.select() })
+          return
+        }
       }
 
       // Add to TOP of table
@@ -113,7 +158,7 @@ const clearAll = () => {
 }
 
 // 👉 Action Logic
-const actionType = ref<'status' | 'shipper' | 'view'>('view')
+const actionType = ref<'status' | 'shipper' | 'view' | 'shipper_return' | 'client_return'>('view')
 const selectedStatus = ref<string | null>(null)
 const selectedShipper = ref<number | null>(null)
 const isActionProcessing = ref(false)
@@ -133,14 +178,7 @@ const applyActionToAll = async () => {
   if (!scannedOrders.value.length) return
   if (actionType.value === 'view') return
   
-  const orderIds = scannedOrders.value
-    .filter(o => !o.is_shipper_collected)
-    .map(o => o.id)
-
-  if (orderIds.length === 0) {
-    alert('No valid orders (orders collected by shipper are locked).')
-    return
-  }
+  const orderIds = scannedOrders.value.map(o => o.id)
 
   isActionProcessing.value = true
 
@@ -148,7 +186,7 @@ const applyActionToAll = async () => {
     if (actionType.value === 'status') {
       if (!selectedStatus.value) return
       
-      const { error } = await useApi('/orders/bulk-change-status').post({
+      const { error } = await useApi('/orders/bulk-change-status').patch({
         order_ids: orderIds,
         status: selectedStatus.value,
       }).json()
@@ -160,7 +198,7 @@ const applyActionToAll = async () => {
     } else if (actionType.value === 'shipper') {
       if (!selectedShipper.value) return
       
-      const { error } = await useApi('/orders/bulk-change-shipper').post({
+      const { error } = await useApi('/orders/bulk-change-shipper').patch({
         order_ids: orderIds,
         shipper_user_id: selectedShipper.value,
       }).json()
@@ -170,6 +208,22 @@ const applyActionToAll = async () => {
         clearAll()
       } else {
         alert('حدث خطأ أثناء تحديث المندوب')
+      }
+    } else if (actionType.value === 'shipper_return') {
+      const { data, error } = await useApi('/shipper-returns/bulk-scan').post({
+        order_ids: orderIds,
+      }).json()
+      if (!error.value) {
+        alert(data.value?.message || 'Shipper returns processed successfully')
+        clearAll()
+      }
+    } else if (actionType.value === 'client_return') {
+      const { data, error } = await useApi('/client-returns/bulk-scan').post({
+        order_ids: orderIds,
+      }).json()
+      if (!error.value) {
+        alert(data.value?.message || 'Client returns processed successfully')
+        clearAll()
       }
     }
   } catch (e) {
@@ -276,16 +330,18 @@ const handleGlobalClick = () => {
       <VCard title="Bulk Actions">
         <VCardText>
           <VRow align="center">
-            <VCol cols="12" md="4">
-              <VLabel class="mb-2">Select Action Type</VLabel>
+            <VCol cols="12" md="5">
+              <VLabel class="mb-2">Select Action Mode</VLabel>
               <VRadioGroup v-model="actionType" inline>
-                <VRadio label="View Only" value="view" />
-                <VRadio label="Update Status" value="status" />
-                <VRadio label="Change Shipper" value="shipper" />
+                <VRadio label="View" value="view" />
+                <VRadio label="Status" value="status" />
+                <VRadio label="Shipper" value="shipper" />
+                <VRadio label="Shipper Return (مرتجع مندوب)" value="shipper_return" color="error" />
+                <VRadio label="Client Return (مرتجع عميل)" value="client_return" color="success" />
               </VRadioGroup>
             </VCol>
 
-            <VCol v-if="actionType === 'status'" cols="12" md="4">
+            <VCol v-if="actionType === 'status'" cols="12" md="3">
               <AppSelect
                 v-model="selectedStatus"
                 label="Choose Status"
@@ -295,10 +351,10 @@ const handleGlobalClick = () => {
               />
             </VCol>
 
-            <VCol v-if="actionType === 'shipper'" cols="12" md="4">
+            <VCol v-if="actionType === 'shipper'" cols="12" md="3">
               <AppSelect
                 v-model="selectedShipper"
-                label="Choose Shipper (المندوب)"
+                label="Choose Shipper"
                 :items="shippers"
                 item-title="name"
                 item-value="user_id"
@@ -307,15 +363,15 @@ const handleGlobalClick = () => {
               />
             </VCol>
 
-            <VCol cols="12" md="4" :class="actionType === 'view' ? 'offset-md-4' : ''" class="d-flex align-end justify-end gap-2">
+            <VCol cols="12" md="4" :class="(actionType === 'view' || actionType === 'shipper_return' || actionType === 'client_return') ? 'ms-auto' : ''" class="d-flex align-end justify-end gap-2">
               <VBtn 
                 v-if="actionType !== 'view'"
                 color="primary" 
                 :loading="isActionProcessing"
-                :disabled="!scannedOrders.length || (actionType === 'status' && !selectedStatus) || (actionType === 'shipper' && !selectedShipper)"
+                :disabled="!scannedOrders.length"
                 @click="applyActionToAll"
               >
-                Apply to All Scanned
+                {{ actionType.includes('return') ? 'Process Returns' : 'Apply to All' }}
               </VBtn>
               <VBtn 
                 color="secondary" 
@@ -323,7 +379,7 @@ const handleGlobalClick = () => {
                 :disabled="!scannedOrders.length"
                 @click="clearAll"
               >
-                Clear List
+                Clear
               </VBtn>
             </VCol>
           </VRow>

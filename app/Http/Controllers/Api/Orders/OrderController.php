@@ -134,7 +134,8 @@ class OrderController extends Controller
         }
 
         // Otherwise export current filtered results
-        $query = $this->applyFilters(Order::query(), $request);
+        $query = Order::query();
+        $this->applyOrderSearch($query, $request->all());
 
         return Excel::download(new OrdersExport($query), 'orders_filtered_export.xlsx');
     }
@@ -423,10 +424,13 @@ class OrderController extends Controller
             'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'reason' => ['nullable', 'string'],
             'refused_reason_id' => ['nullable', 'integer', 'exists:refused_reasons,id'],
+            'refused_reason_ids' => ['nullable', 'array'],
+            'refused_reason_ids.*' => ['integer', 'exists:refused_reasons,id'],
             'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ]);
 
-        $refusedReason = $this->resolveRefusedReason($data['status'], $data['refused_reason_id'] ?? null);
+        $reasonId = $data['refused_reason_id'] ?? ($data['refused_reason_ids'][0] ?? null);
+        $refusedReason = $this->resolveRefusedReason($data['status'], $reasonId);
         $allowsEditAmount = $refusedReason?->is_edit_amount === true;
 
         if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
@@ -466,6 +470,8 @@ class OrderController extends Controller
                 }
 
                 $this->authorizeNoPriceEditOnFinalStatus($order, $payload);
+
+                $payload = $this->applyAutomaticFinancials($payload, $order);
 
                 $order->update($payload);
                 $result[] = $order->id;

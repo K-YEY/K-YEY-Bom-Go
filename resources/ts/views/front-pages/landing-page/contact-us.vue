@@ -1,155 +1,98 @@
 <script setup lang="ts">
-import ConnectImg from '@images/front-pages/landing-page/contact-customer-service.png'
-
-const name = ref('')
-const email = ref('')
-const message = ref('')
+// Contact Us for Shipya
 </script>
 
 <template>
-  <VContainer id="contact-us">
-    <!-- 👉 Headers  -->
-    <div class="contact-us-section">
-      <div class="headers d-flex justify-center flex-column align-center pb-16">
-        <VChip
-          label
-          color="primary"
-          class="mb-4"
-          size="small"
-        >
-          Contact Us
-        </VChip>
-        <h4 class="d-flex align-center text-h4 mb-1 flex-wrap justify-center">
-          <div class="position-relative me-2">
-            <div class="section-title">
-              let's work
+  <div id="contact-us">
+    <VContainer>
+      <div class="contact-us-section pa-12">
+        <div class="headers d-flex justify-center flex-column align-center text-center">
+          <VChip
+            label
+            color="primary"
+            class="mb-4"
+            size="small"
+          >
+            تواصل معنا
+          </VChip>
+          <h4 class="d-flex align-center text-h4 mb-1 flex-wrap justify-center text-center">
+            نحن هنا 
+            <div class="position-relative ms-2">
+              <div class="section-title">
+                لمساعدتك
+              </div>
             </div>
-          </div>
-          together
-        </h4>
-        <p class="text-body-1 mb-0">
-          Any question or remark? just write us a message
-        </p>
-      </div>
+            في أي وقت
+          </h4>
+          <p class="text-body-1 mb-8">
+            هل لديك أي استفسار؟ فريقنا متاح دائماً للرد على أسئلتك.
+          </p>
+        </div>
 
-      <div class="mb-15">
-        <VRow class="match-height">
+        <VRow class="justify-center">
           <VCol
             cols="12"
             md="5"
           >
-            <div class="contact-card h-100">
-              <VCard
-                variant="outlined"
-                border
-                class="pa-2"
-                :style="{ borderRadius: '3.75rem 0.375rem 0.375rem 0.375rem' }"
-              >
-                <VImg
-                  :src="ConnectImg"
-                  :style="{ borderRadius: '3.75rem 0.375rem 0.375rem 0.375rem' }"
-                />
-                <VCardText class="pa-4 pb-1">
-                  <div class="d-flex justify-space-between flex-wrap gap-y-4">
-                    <div
-                      v-for="(item, index) in [
-                        { title: 'Email', icon: 'tabler-mail', color: 'primary', value: 'example@gmail.com' },
-                        { title: 'Phone', icon: 'tabler-phone-call', color: 'success', value: '+1234 568 963' },
-                      ]"
-                      :key="index"
-                      class="d-flex gap-x-3 align-center"
-                    >
-                      <div>
-                        <VAvatar
-                          size="36"
-                          :color="item.color"
-                          variant="tonal"
-                          class="rounded-sm"
-                        >
-                          <VIcon
-                            :icon="item.icon"
-                            size="24"
-                          />
-                        </VAvatar>
-                      </div>
+            <VCard border flat class="h-100 pa-10">
+              <div class="d-flex align-center gap-4 mb-6">
+                <VAvatar color="primary" variant="tonal" rounded size="50">
+                  <VIcon icon="tabler-mail" />
+                </VAvatar>
+                <div>
+                  <div class="text-sm">راسلنا عبر البريد الإلكتروني</div>
+                  <div class="text-h6">support@shipya.com</div>
+                </div>
+              </div>
+              
+              <div class="d-flex align-center gap-4 mb-6">
+                <VAvatar color="primary" variant="tonal" rounded size="50">
+                  <VIcon icon="tabler-phone" />
+                </VAvatar>
+                <div>
+                  <div class="text-sm">اتصل بنا</div>
+                  <div class="text-h6">010XXXXXXXX</div>
+                </div>
+              </div>
 
-                      <div>
-                        <div class="text-body-1">
-                          {{ item .title }}
-                        </div>
-                        <h6 class="text-h6">
-                          {{ item.value }}
-                        </h6>
-                      </div>
-                    </div>
-                  </div>
-                </VCardText>
-              </VCard>
-            </div>
+              <div class="d-flex align-center gap-4 mb-6">
+                <VAvatar color="primary" variant="tonal" rounded size="50">
+                  <VIcon icon="tabler-map-pin" />
+                </VAvatar>
+                <div>
+                  <div class="text-sm">موقعنا</div>
+                  <div class="text-h6">القاهرة، مصر</div>
+                </div>
+              </div> or find us on social media
+            </VCard>
           </VCol>
-
           <VCol
             cols="12"
             md="7"
           >
-            <VCard>
-              <VCardItem class="pb-0">
-                <h4 class="text-h4 mb-1">
-                  Send a message
-                </h4>
-              </VCardItem>
-
-              <VCardText>
-                <p class="mb-6">
-                  If you would like to discuss anything related to payment, account, licensing, partnerships, or have pre-sales questions, you’re at the right place.
-                </p>
-                <VForm @submit.prevent="() => {}">
-                  <VRow>
-                    <VCol
-                      cols="12"
-                      md="6"
-                    >
-                      <AppTextField
-                        v-model="name"
-                        placeholder="John Doe"
-                        label="Full Name"
-                      />
-                    </VCol>
-
-                    <VCol
-                      cols="12"
-                      md="6"
-                    >
-                      <AppTextField
-                        v-model="email"
-                        placeholder="johndoe@gmail.com"
-                        label="Email address"
-                      />
-                    </VCol>
-
-                    <VCol cols="12">
-                      <AppTextarea
-                        v-model="message"
-                        placeholder="Write a message"
-                        rows="3"
-                        label="Message"
-                      />
-                    </VCol>
-
-                    <VCol>
-                      <VBtn type="submit">
-                        Send Inquiry
-                      </VBtn>
-                    </VCol>
-                  </VRow>
-                </VForm>
-              </VCardText>
+            <VCard border flat class="pa-10">
+              <VForm @submit.prevent>
+                <VRow>
+                  <VCol cols="12" md="6">
+                    <VTextField label="الاسم بالكامل" placeholder="ادخل اسمك" />
+                  </VCol>
+                  <VCol cols="12" md="6">
+                    <VTextField label="البريد الإلكتروني" placeholder="البريد الإلكتروني" />
+                  </VCol>
+                  <VCol cols="12">
+                    <VTextarea label="رسالتك" placeholder="كيف يمكننا مساعدتك؟" rows="4" />
+                  </VCol>
+                  <VCol cols="12">
+                    <VBtn block size="large">إرسال الرسالة</VBtn>
+                  </VCol>
+                </VRow>
+              </VForm>
             </VCard>
           </VCol>
         </VRow>
       </div>
-    </div>
-  </VContainer>
+    </VContainer>
+  </div>
 </template>
 
 <style lang="scss" scoped>
@@ -161,34 +104,5 @@ const message = ref('')
   font-size: 24px;
   font-weight: 800;
   line-height: 36px;
-}
-
-.section-title::after {
-  position: absolute;
-  background: url("../../../assets/images/front-pages/icons/section-title-icon.png") no-repeat left bottom;
-  background-size: contain;
-  block-size: 100%;
-  content: "";
-  font-weight: 800;
-  inline-size: 120%;
-  inset-block-end: 12%;
-  inset-inline-start: -12%;
-}
-
-.contact-card {
-  position: relative;
-}
-
-.contact-card::before {
-  position: absolute;
-  content: url("@images/front-pages/icons/contact-border.png");
-  inset-block-start: -2.5rem;
-  inset-inline-start: -2.5rem;
-}
-
-@media screen and (max-width: 999px) {
-  .contact-card::before {
-    display: none;
-  }
 }
 </style>

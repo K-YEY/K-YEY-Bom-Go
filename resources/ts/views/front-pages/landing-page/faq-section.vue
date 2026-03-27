@@ -1,26 +1,20 @@
 <script setup lang="ts">
-import boyWithLogo from '@images/front-pages/landing-page/faq-boy-with-logos.png'
-
 const faqData = [
   {
-    question: 'Do you charge for each upgrade?',
-    answer: 'Lemon drops chocolate cake gummies carrot cake chupa chups muffin topping. Sesame snaps icing marzipan gummi bears macaroon dragée danish caramels powder. Bear claw dragée pastry topping soufflé. Wafer gummi bears marshmallow pastry pie.',
+    question: 'كيف يمكنني البدء مع Shipya؟',
+    answer: 'يمكنك البدء بإنشاء حساب تجريبي مجاني لمدة 14 يوم، وبعدها يمكنك اختيار الخطة التي تناسب حجم أعمالك.',
   },
   {
-    question: 'Do I need to purchase a license for each website?',
-    answer: 'Dessert ice cream donut oat cake jelly-o pie sugar plum cheesecake. Bear claw dragée oat cake dragée ice cream halvah tootsie roll. Danish cake oat cake pie macaroon tart donut gummies. Jelly beans candy canes carrot cake. Fruitcake chocolate chupa chups.',
+    question: 'هل توجد عمولات خفية؟',
+    answer: 'لا، نحن نعتمد على نظام اشتراك شهري واضح ولا نأخذ أي عمولات إضافية على الأوردرات إلا المذكورة في خطتك.',
   },
   {
-    question: 'What is regular license?',
-    answer: 'Regular license can be used for end products that do not charge users for access or service(access is free and there will be no monthly subscription fee). Single regular license can be used for single end product and end product can be used by you or your client. If you want to sell end product to multiple clients then you will need to purchase separate license for each client. The same rule applies if you want to use the same end product on multiple domains(unique setup). For more info on regular license you can check official description.',
+    question: 'كيف يتم تسوية المبالغ المالية؟',
+    answer: 'يتم تسوية المبالغ المحصلة من المناديب بشكل يومي، ويمكنك طلب تحويل مستحقاتك في أي وقت لتصلك خلال 24 ساعة.',
   },
   {
-    question: 'What is extended license?',
-    answer: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Nobis et aliquid quaerat possimus maxime! Mollitia reprehenderit neque repellat deleniti delectus architecto dolorum maxime, blanditiis earum ea, incidunt quam possimus cumque.',
-  },
-  {
-    question: 'Which license is applicable for SASS application?',
-    answer: 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sequi molestias exercitationem ab cum nemo facere voluptates veritatis quia, eveniet veniam at et repudiandae mollitia ipsam quasi labore enim architecto non!',
+    question: 'هل تدعم المنصة ربط الـ API؟',
+    answer: 'نعم، لدينا API متكامل وسهل الاستخدام للربط مع متجرك الإلكتروني (Shopify, WooCommerce, Salla) أو أي نظام خاص.',
   },
 ]
 </script>
@@ -37,18 +31,18 @@ const faqData = [
             size="small"
             class="mb-4"
           >
-            FAQ
+            الأسئلة الشائعة
           </VChip>
           <h4 class="d-flex align-center text-h4 mb-1 flex-wrap justify-center">
-            Frequently Asked
+            إليك إجابات لبعض 
             <div class="position-relative ms-2">
               <div class="section-title">
-                questions
+                الأسئلة المتكررة
               </div>
             </div>
           </h4>
-          <p class="text-body-1 mb-0">
-            Browse through these FAQs to find answers to commonly asked questions.
+          <p class="text-body-1 mb-0 text-center">
+            تصفح الأسئلة الشائعة لتجد إجابات سريعة حول خدماتنا وكيفية العمل معنا.
           </p>
         </div>
         <VRow>
@@ -57,11 +51,7 @@ const faqData = [
             md="5"
           >
             <div class="pt-10 d-flex align-center justify-center h-100">
-              <VImg
-                :src="boyWithLogo"
-                height="330"
-                width="330"
-              />
+               <VIcon icon="tabler-help-circle" size="180" color="primary" style="opacity: 0.1;" />
             </div>
           </VCol>
           <VCol
@@ -108,17 +98,5 @@ const faqData = [
   font-size: 24px;
   font-weight: 800;
   line-height: 36px;
-}
-
-.section-title::after {
-  position: absolute;
-  background: url("../../../assets/images/front-pages/icons/section-title-icon.png") no-repeat left bottom;
-  background-size: contain;
-  block-size: 100%;
-  content: "";
-  font-weight: 800;
-  inline-size: 130%;
-  inset-block-end: 12%;
-  inset-inline-start: -12%;
 }
 </style>

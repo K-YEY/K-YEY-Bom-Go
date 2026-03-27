@@ -101,9 +101,9 @@ export default defineConfig({
       '@api-utils': fileURLToPath(new URL('./resources/ts/plugins/fake-api/utils/', import.meta.url)),
     },
   },
-  build: {
-    chunkSizeWarningLimit: 5000,
-  },
+build: {
+  chunkSizeWarningLimit: 5000,
+},
   optimizeDeps: {
     exclude: ['vuetify'],
     entries: [

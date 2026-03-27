@@ -15,8 +15,8 @@ class OrdersTemplateExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
-            'البيانات' => new DataSheet(),
             'Orders Template' => new OrdersTemplateSheet(),
+            'البيانات' => new DataSheet(),
         ];
     }
 }
@@ -89,8 +89,11 @@ class OrdersTemplateSheet implements
                 $sheet = $event->sheet->getDelegate();
                 $spreadsheet = $sheet->getParent();
                 
-                // الحصول على شيت البيانات (أصبح الآن هو الشيت الأول رقم 0)
-                $dataSheet = $spreadsheet->getSheet(0);
+                // الحصول على شيت البيانات
+                $dataSheet = $spreadsheet->getSheetByName('البيانات');
+                if (!$dataSheet) {
+                    $dataSheet = $spreadsheet->getSheet(1);
+                }
                 $dataSheetTitle = $dataSheet->getTitle();
                 
                 // 1. Add Dropdown للعميل (عمود C)

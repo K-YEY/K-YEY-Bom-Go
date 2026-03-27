@@ -1,18 +1,6 @@
 <script setup lang="ts">
 import { avatarText } from '@core/utils/formatters'
-import avatar1 from '@images/avatars/avatar-1.png'
-import avatar10 from '@images/avatars/avatar-10.png'
-import avatar2 from '@images/avatars/avatar-2.png'
-import avatar3 from '@images/avatars/avatar-3.png'
-import avatar4 from '@images/avatars/avatar-4.png'
-import avatar5 from '@images/avatars/avatar-5.png'
-import avatar6 from '@images/avatars/avatar-6.png'
-import avatar7 from '@images/avatars/avatar-7.png'
-import avatar8 from '@images/avatars/avatar-8.png'
-import avatar9 from '@images/avatars/avatar-9.png'
 import girlUsingMobile from '@images/pages/girl-using-mobile.png'
-
-const avatars = [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6, avatar7, avatar8, avatar9, avatar10]
 
 const resolveUserRoleVariant = (role: string) => {
   const roleLowerCase = role.toLowerCase()

@@ -8,7 +8,7 @@
   @php
     $site_name = \App\Models\Setting::getValue('site_name', 'Shipping Platform');
   @endphp
-  <title>{{ $site_name }}ss</title>
+  <title>{{ $site_name }}</title>
   <link rel="stylesheet" type="text/css" href="{{ asset('loader.css') }}" />
   @vite(['resources/ts/main.ts'])
 </head>

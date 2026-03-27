@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useApi } from '@/composables/useApi';
+import { useNotificationStore } from '@/stores/useNotificationStore';
 
 
 interface Props {
@@ -22,6 +23,10 @@ const statusData = ref({
 const isLoading = ref(false)
 const reasonsLoading = ref(false)
 const reasonsData = ref<any>(null)
+const notificationStatus = useNotificationStore()
+const notify = (msg: string, color: string = 'success') => {
+  notificationStatus.notify(msg, color)
+}
 const allReasons = computed(() => Array.isArray(reasonsData.value) ? reasonsData.value : (reasonsData.value?.data || []))
 
 const fetchReasons = async () => {
@@ -48,10 +53,14 @@ const filteredReasons = computed(() => {
 })
 
 const onSubmit = async () => {
-  const validOrders = props.selectedOrders.filter(o => !['DELIVERED', 'UNDELIVERED', 'CANCELLED'].includes(o.status))
+  const validOrders = props.selectedOrders.filter(o => {
+    const isLocked = o.is_shipper_collected || o.is_client_settled || o.is_shipper_returned || o.is_client_returned
+    const isFinal = ['DELIVERED', 'UNDELIVERED', 'CANCELLED'].includes(o.status)
+    return !isLocked && !isFinal
+  })
   
   if (!validOrders.length) {
-    alert('لا يوجد أوردرات قابلة للتعديل (تم استثناء الأوردرات المسلمة أو المرتجعة بالفعل)')
+    notify('لا يوجد أوردرات قابلة للتعديل (تم استثناء الأوردرات المسلمة أو المرتجعة أو التي تم تحصيلها بالفعل)', 'warning')
     return
   }
 
@@ -69,8 +78,13 @@ const onSubmit = async () => {
     if (!error.value) {
       emit('statusUpdated')
       emit('update:isDialogVisible', false)
+    } else {
+      notify('خطأ أثناء التحديث: ' + (error.value?.message || 'يرجى المحاولة مرة أخرى'), 'error')
     }
-  } catch (e) { console.error(e) }
+  } catch (e) { 
+    console.error(e)
+    notify('حدث خطأ غير متوقع', 'error')
+  }
   isLoading.value = false
 }
 </script>

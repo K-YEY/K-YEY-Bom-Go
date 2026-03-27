@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useApi } from '@/composables/useApi';
+import { useNotificationStore } from '@/stores/useNotificationStore';
 import { createUrl } from '@core/composable/createUrl';
 import { useI18n } from 'vue-i18n';
 
@@ -175,6 +176,11 @@ const orders = ref<any[]>([])
 const totalOrders = ref(0)
 const isLoading = ref(false)
 
+const notificationStatus = useNotificationStore()
+const notify = (msg: string, color: string = 'success') => {
+  notificationStatus.notify(msg, color)
+}
+
 const totals = ref({
   total_amount: 0,
   total_cod: 0,
@@ -247,18 +253,18 @@ const handleImport = async (event: Event) => {
   try {
     const { data, error } = await useApi('/orders/import').post(formData).json()
     if (!error.value) {
-      alert(`Import Successful! ${data.value.success_count} orders created.`)
+      notify(`Import Successful! ${data.value.success_count} orders created.`, 'success')
       if (data.value.errors?.length) {
          console.warn('Import Errors:', data.value.errors)
-         alert('Some rows had errors. Check console for details.')
+         notify('Some rows had errors. Check console for details.', 'warning')
       }
       fetchOrders()
     } else {
-      alert('Import failed: ' + (error.value?.message || 'Check file format'))
+      notify('Import failed: ' + (error.value?.message || 'Check file format'), 'error')
     }
   } catch (e) {
     console.error(e)
-    alert('Network error during import')
+    notify('Network error during import', 'error')
   }
   // Clear input
   target.value = ''
@@ -436,8 +442,10 @@ const resetFilters = () => {
 
 const applyTodayFilter = () => {
   resetFilters()
-  // Filter for orders that are 'HOLD' (Pending Assignment/Work)
-  selectedStatus.value = 'HOLD'
+  
+  // Per user request: Today's orders should show both HOLD and OUT_FOR_DELIVERY
+  // We use statusFilter (which supports arrays) instead of selectedStatus (which is a single string)
+  statusFilter.value = ['HOLD', 'OUT_FOR_DELIVERY']
   page.value = 1
 }
 
@@ -577,6 +585,45 @@ const handleNewOrder = () => {
   isAddEditOrderModalVisible.value = true
 }
 
+const copyOrderToClipboard = (item: any) => {
+  const text = `
+كود: #${item.code}
+المرسل إليه: ${item.receiver_name}
+موبايل: ${item.phone} ${item.phone_2 ? '/ ' + item.phone_2 : ''}
+العنوان: ${item.governorate?.name} - ${item.city?.name} - ${item.address}
+الإجمالي: ${item.total_amount} ج.م
+  `.trim()
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('تم نسخ بيانات الأوردر')
+    })
+  } else {
+    const textArea = document.createElement("textarea")
+    textArea.value = text
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    alert('تم نسخ بيانات الأوردر')
+  }
+}
+
+const sendToWhatsApp = (item: any) => {
+  const phone = item.phone.replace(/\D/g, '')
+  const text = `
+كود: #${item.code}
+المرسل إليه: ${item.receiver_name}
+موبايل: ${item.phone} ${item.phone_2 ? '/ ' + item.phone_2 : ''}
+العنوان: ${item.governorate?.name} - ${item.city?.name} - ${item.address}
+الإجمالي: ${item.total_amount} ج.م
+  `.trim()
+  
+  const waPhone = phone.startsWith('0') ? '2' + phone : phone
+  const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`
+  window.open(url, '_blank')
+}
+
 // 👉 Initial fetch
 searchShippers()
 searchClients()
@@ -708,7 +755,7 @@ searchClients()
       <VDivider />
 
       <VDataTableServer
-        v-model:selected="selectedOrders"
+        v-model="selectedOrders"
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
         :loading="isLoading"
@@ -726,69 +773,69 @@ searchClients()
         <template #header.code="{ column }">
           <div class="header-filter">
             <span class="header-title">{{ column.title }}</span>
-            <VTextField v-model="filters.code" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+            <VTextField v-model="filters.code" density="compact" hide-details variant="outlined" placeholder="بحث..." class="filter-input-outlined" />
           </div>
         </template>
         <template #header.shipper_date="{ column }">
           <div class="header-filter">
             <span class="header-title">{{ column.title }}</span>
-            <VTextField v-model="filters.shipper_date" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+            <VTextField v-model="filters.shipper_date" density="compact" hide-details variant="outlined" placeholder="التاريخ" class="filter-input-outlined" />
           </div>
         </template>
         <template #header.receiver_name="{ column }">
           <div class="header-filter">
             <span class="header-title">{{ column.title }}</span>
-            <VTextField v-model="filters.receiver_name" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+            <VTextField v-model="filters.receiver_name" density="compact" hide-details variant="outlined" placeholder="المرسل إليه" class="filter-input-outlined" />
           </div>
         </template>
         <template #header.area="{ column }">
           <div class="header-filter">
             <span class="header-title">{{ column.title }}</span>
-            <VTextField v-model="filters.address" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+            <VTextField v-model="filters.address" density="compact" hide-details variant="outlined" placeholder="المنطقة" class="filter-input-outlined" />
           </div>
         </template>
         <template #header.order_note="{ column }">
           <div class="header-filter">
             <span class="header-title">{{ column.title }}</span>
-            <VTextField v-model="filters.order_note" density="compact" hide-details variant="plain" placeholder="..." class="filter-input" />
+            <VTextField v-model="filters.order_note" density="compact" hide-details variant="outlined" placeholder="ملاحظات" class="filter-input-outlined" />
           </div>
         </template>
 
         <!-- Small Boolean Header Filters -->
         <template #header.shipper_collection="{ column }">
           <div class="header-filter"><span class="header-title">تحصيل</span>
-            <VSelect v-model="filters.is_shipper_collected" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+            <VSelect v-model="filters.is_shipper_collected" :items="booleanOptions" density="compact" hide-details variant="outlined" class="filter-select-outlined" />
           </div>
         </template>
         <template #header.shipper_return="{ column }">
           <div class="header-filter"><span class="header-title">مرتجع</span>
-            <VSelect v-model="filters.is_shipper_returned" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+            <VSelect v-model="filters.is_shipper_returned" :items="booleanOptions" density="compact" hide-details variant="outlined" class="filter-select-outlined" />
           </div>
         </template>
         <template #header.has_return="{ column }">
           <div class="header-filter"><span class="header-title">فيه م</span>
-            <VSelect v-model="filters.has_return" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+            <VSelect v-model="filters.has_return" :items="booleanOptions" density="compact" hide-details variant="outlined" class="filter-select-outlined" />
           </div>
         </template>
         <template #header.client_settlement="{ column }">
           <div class="header-filter"><span class="header-title">تسوية</span>
-            <VSelect v-model="filters.is_client_settled" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+            <VSelect v-model="filters.is_client_settled" :items="booleanOptions" density="compact" hide-details variant="outlined" class="filter-select-outlined" />
           </div>
         </template>
         <template #header.client_return="{ column }">
           <div class="header-filter"><span class="header-title">م. عميل</span>
-            <VSelect v-model="filters.is_client_returned" :items="booleanOptions" density="compact" hide-details variant="plain" class="filter-select" />
+            <VSelect v-model="filters.is_client_returned" :items="booleanOptions" density="compact" hide-details variant="outlined" class="filter-select-outlined" />
           </div>
         </template>
 
         <template #header.shipper="{ column }">
           <div class="header-filter"><span class="header-title">{{ column.title }}</span>
-            <VAutocomplete v-model="selectedShipper" :items="shippers" item-title="name" item-value="id" clearable density="compact" hide-details variant="plain" class="filter-select" placeholder="Search..." @update:search="searchShippers" />
+            <VAutocomplete v-model="selectedShipper" :items="shippers" item-title="name" item-value="id" clearable density="compact" hide-details variant="outlined" class="filter-select-outlined" placeholder="المندوب" @update:search="searchShippers" />
           </div>
         </template>
         <template #header.client="{ column }">
           <div class="header-filter"><span class="header-title">{{ column.title }}</span>
-            <VAutocomplete v-model="selectedClient" :items="clients" item-title="name" item-value="id" clearable density="compact" hide-details variant="plain" class="filter-select" placeholder="Search..." @update:search="searchClients" />
+            <VAutocomplete v-model="selectedClient" :items="clients" item-title="name" item-value="id" clearable density="compact" hide-details variant="outlined" class="filter-select-outlined" placeholder="العميل" @update:search="searchClients" />
           </div>
         </template>
 
@@ -810,9 +857,11 @@ searchClients()
           </div>
         </template>
         <template #item.receiver_name="{ item }: { item: any }">
-          <div class="d-flex flex-column text-xs">
-            <span class="font-weight-medium text-wrap" style="max-inline-size: 140px;">{{ item.receiver_name }}</span>
-            <span class="text-disabled">{{ item.phone }} / {{ item.phone_2 }}</span>
+          <div class="d-flex flex-column align-center text-center justify-center" style="min-inline-size: 160px; padding-block: 4px;">
+            <span class="font-weight-bold text-sm text-high-emphasis text-wrap mb-1">{{ item.receiver_name }}</span>
+            <div class="d-flex align-center gap-1">
+              <span class="text-xs text-secondary">{{ item.phone }} <template v-if="item.phone_2">/ {{ item.phone_2 }}</template></span>
+            </div>
           </div>
         </template>
         <template #item.area="{ item }: { item: any }">
@@ -917,6 +966,17 @@ searchClients()
                       title="Delete"
                       color="error"
                       @click="deleteOrder(item.id)"
+                    />
+                    <VListItem
+                      prepend-icon="tabler-copy"
+                      title="Copy Details"
+                      @click="copyOrderToClipboard(item)"
+                    />
+                    <VListItem
+                      prepend-icon="tabler-brand-whatsapp"
+                      title="Send WhatsApp"
+                      color="success"
+                      @click="sendToWhatsApp(item)"
                     />
                     <VDivider />
                     <VListItem
@@ -1064,21 +1124,41 @@ searchClients()
   vertical-align: top !important;
   white-space: nowrap;
 }
-.header-filter { display: flex; flex-direction: column; gap: 2px; margin-block-start: 2px; }
+.header-filter { display: flex; flex-direction: column; gap: 4px; margin-block-start: 4px; min-inline-size: 80px; }
 
 .header-title {
   display: block;
-  color: rgba(var(--v-theme-on-surface), 0.7);
-  font-size: 0.65rem;
+  color: rgba(var(--v-theme-on-surface), 0.9);
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   margin-block-end: 2px;
-  text-transform: uppercase;
+  text-align: center;
 }
-.filter-input :deep(.v-field__input) { color: var(--v-theme-primary); font-size: 0.7rem !important; min-block-size: 18px !important; padding-block: 2px !important; padding-inline: 0 !important; }
-.filter-select :deep(.v-field__input) { padding: 0 !important; color: var(--v-theme-primary); font-size: 0.65rem !important; min-block-size: 18px !important; }
-.filter-table :deep(td) { padding: 8px !important; font-size: 0.72rem !important; }
-.text-xs { font-size: 0.7rem !important; line-height: 1.2; }
+.filter-input-outlined :deep(.v-field__input) { 
+  background-color: rgb(var(--v-theme-surface));
+  color: var(--v-theme-primary) !important; 
+  font-size: 0.75rem !important; 
+  min-block-size: 28px !important; 
+  padding-block: 4px !important; 
+}
+.filter-input-outlined :deep(.v-field__outline) {
+  --v-field-border-opacity: 0.15;
+}
+.filter-select-outlined :deep(.v-field__input) { 
+  background-color: rgb(var(--v-theme-surface));
+  padding-inline: 8px !important; 
+  color: var(--v-theme-primary); 
+  font-size: 0.75rem !important; 
+  min-block-size: 28px !important; 
+}
+.filter-select-outlined :deep(.v-field__outline) {
+  --v-field-border-opacity: 0.15;
+}
+
+.filter-table :deep(td) { padding: 12px 8px !important; font-size: 0.8rem !important; }
+.text-xs { font-size: 0.75rem !important; line-height: 1.2; }
+.text-sm { font-size: 0.875rem !important; }
 
 .custom-table-center-border th,
 .custom-table-center-border td {

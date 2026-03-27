@@ -537,4 +537,62 @@ class ClientReturnController extends Controller
             'data' => $this->filterVisibleColumns($request, $clientReturn->fresh(['client:id,name', 'orders.client:id,name']))
         ]);
     }
+    public function bulkScan(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'client-return.create');
+
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['exists:orders,id'],
+            'return_date' => ['nullable', 'date'],
+        ]);
+
+        $orderIds = $data['order_ids'];
+        $returnDate = $data['return_date'] ?? now()->toDateString();
+        $creatorId = $request->user()->id;
+
+        // Fetch eligible orders
+        $orders = Order::query()
+            ->whereIn('id', $orderIds)
+            ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
+            // Client return needs has_return=true AND already returned by shipper
+            ->where('has_return', true)
+            ->where('is_shipper_returned', true)
+            ->where('is_in_client_return', false)
+            ->where('is_client_returned', false)
+            ->get();
+
+        if ($orders->isEmpty()) {
+            return response()->json(['message' => 'No eligible orders found for client return.'], 422);
+        }
+
+        $processedIds = [];
+        DB::transaction(function () use ($orders, $returnDate, $creatorId, &$processedIds) {
+            // Group by client
+            foreach ($orders->groupBy('client_user_id') as $clientId => $clientOrders) {
+                if (!$clientId) continue;
+
+                $return = ClientReturn::create([
+                    'client_user_id' => $clientId,
+                    'return_date' => $returnDate,
+                    'number_of_orders' => $clientOrders->count(),
+                    'status' => 'COMPLETED',
+                    'approval_status' => 'APPROVED',
+                    'created_by' => $creatorId,
+                    'approved_by' => $creatorId,
+                    'approved_at' => now(),
+                ]);
+
+                $this->attachOrdersToReturn($return, $clientOrders);
+                $this->syncReturnOrdersState($return, $clientOrders->pluck('id')->all());
+                
+                $processedIds = array_merge($processedIds, $clientOrders->pluck('id')->all());
+            }
+        });
+
+        return response()->json([
+            'message' => 'Processed ' . count($processedIds) . ' orders into client returns.',
+            'processed_ids' => $processedIds
+        ]);
+    }
 }
