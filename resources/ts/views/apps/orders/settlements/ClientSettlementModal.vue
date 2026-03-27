@@ -27,11 +27,20 @@ const clients = computed(() => {
   const data = Array.isArray(raw)
     ? raw
     : (raw && Array.isArray(raw.data) ? raw.data : [])
-  return data.map((c: any) => ({
-    ...c,
-    name: c.user?.name || 'Unknown',
-    user_id: c.user_id || c.id,
-  }))
+  
+  // Deduplicate by user_id
+  const unique = new Map()
+  data.forEach((c: any) => {
+    const id = c.user_id || c.id
+    if (!unique.has(id)) {
+      unique.set(id, {
+        ...c,
+        name: c.user?.name || 'Unknown',
+        user_id: id,
+      })
+    }
+  })
+  return Array.from(unique.values())
 })
 
 // 👉 Eligible Orders
@@ -83,7 +92,7 @@ const netAmount = computed(() => {
 })
 
 const headers = [
-  { title: 'Order ID', key: 'id' },
+  { title: 'Code', key: 'code' },
   { title: 'Receiver', key: 'receiver_name' },
   { title: 'Amount', key: 'total_amount' },
   { title: 'Fee', key: 'shipping_fee' },

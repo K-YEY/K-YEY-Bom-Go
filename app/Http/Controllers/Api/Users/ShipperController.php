@@ -15,7 +15,12 @@ class ShipperController extends Controller
         $this->authorizePermission($request, 'shipper.page');
         $this->authorizePermission($request, 'shipper.view');
 
-        $query = Shipper::query()->with(['user:id,name,username,phone']);
+
+        $query = Shipper::query()
+            ->select('shippers.*')
+            ->join('users', 'users.id', '=', 'shippers.user_id')
+            ->with(['user:id,name,username,phone'])
+            ->groupBy('shippers.id', 'shippers.user_id');
 
         if ($request->filled('q')) {
             $search = (string) $request->get('q');

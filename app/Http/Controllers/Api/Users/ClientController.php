@@ -31,7 +31,12 @@ class ClientController extends Controller
         $this->authorizePermission($request, 'client.page');
         $this->authorizePermission($request, 'client.view');
 
-        $query = Client::query()->with(['user:id,name,username,phone', 'plan', 'shippingContent']);
+
+        $query = Client::query()
+            ->select('clients.*')
+            ->join('users', 'users.id', '=', 'clients.user_id')
+            ->with(['user:id,name,username,phone', 'plan', 'shippingContent'])
+            ->groupBy('clients.id', 'clients.user_id');
 
         if ($request->filled('q')) {
             $search = (string) $request->get('q');

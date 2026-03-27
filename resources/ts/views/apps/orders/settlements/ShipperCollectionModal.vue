@@ -28,11 +28,20 @@ const shippers = computed(() => {
   const data = Array.isArray(raw)
     ? raw
     : (raw && Array.isArray(raw.data) ? raw.data : [])
-  return data.map((s: any) => ({
-    ...s,
-    name: s.user?.name || 'Unknown',
-    user_id: s.user_id || s.id // Ensure we have the user_id for selection
-  }))
+  
+  // Deduplicate by user_id
+  const unique = new Map()
+  data.forEach((s: any) => {
+    const id = s.user_id || s.id
+    if (!unique.has(id)) {
+      unique.set(id, {
+        ...s,
+        name: s.user?.name || 'Unknown',
+        user_id: id
+      })
+    }
+  })
+  return Array.from(unique.values())
 })
 
 // 👉 Eligible Orders
@@ -90,8 +99,9 @@ const netAmount = computed(() => {
 })
 
 const headers = [
-  { title: 'Order ID', key: 'id' },
-  { title: 'Client', key: 'client_name' },
+  { title: 'Code', key: 'code' },
+  { title: 'Receiver', key: 'receiver_name' },
+  { title: 'Phone', key: 'phone' },
   { title: 'Amount', key: 'total_amount' },
   { title: 'Fees', key: 'commission_amount' },
   { title: 'Net', key: 'collection_amount' },
@@ -166,7 +176,6 @@ const onSubmit = async () => {
               :items="shippers"
               item-title="name"
               item-value="user_id"
-              clearable
             />
           </VCol>
           <VCol cols="12" md="6">
@@ -189,7 +198,7 @@ const onSubmit = async () => {
 
         <AppTextField
           v-model="search"
-          placeholder="Search Order ID, Client, etc."
+          placeholder="Search Order ID, Receiver, etc."
           class="mb-4"
           prepend-inner-icon="tabler-search"
           clearable

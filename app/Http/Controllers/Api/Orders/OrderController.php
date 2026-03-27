@@ -699,29 +699,35 @@ class OrderController extends Controller
             'latest_status_note' => $latestNote,
         ];
 
+        if ($isClear) {
+            $payload['total_amount'] = 0;
+            $payload['shipping_fee'] = 0;
+            $payload['commission_amount'] = 0;
+            $payload['company_amount'] = 0;
+            $payload['cod_amount'] = 0;
+        }
+
         if (array_key_exists('has_return', $data)) {
-            $payload['has_return'] = $data['has_return'];
-            if ($data['has_return']) {
+            $payload['has_return'] = (bool)$data['has_return'];
+            if ($payload['has_return']) {
                 $payload['has_return_at'] = now();
+            } else {
+                $payload['has_return_at'] = null;
             }
         }
 
-        if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
-            throw ValidationException::withMessages([
-                'total_amount' => ['total_amount can only be edited when one of the selected reasons allows amount edit.'],
-            ]);
-        }
+        if (!$isReturn && !$isClear) {
+            if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
+                throw ValidationException::withMessages([
+                    'total_amount' => ['total_amount can only be edited when one of the selected reasons allows amount edit.'],
+                ]);
+            }
 
-        if ($allowsEditAmount && array_key_exists('total_amount', $data)) {
-            $payload['total_amount'] = $data['total_amount'];
-            // Financials need to be recalculated based on new total if edited
-            $payload = $this->applyAutomaticFinancials($payload, $order);
-        }
-
-        if ($isReturn) {
-            $payload = [
-                // ...existing code for return case...
-            ];
+            if ($allowsEditAmount && array_key_exists('total_amount', $data)) {
+                $payload['total_amount'] = $data['total_amount'];
+                // Financials need to be recalculated based on new total if edited
+                $payload = $this->applyAutomaticFinancials($payload, $order);
+            }
         }
 
         $this->authorizeEditableColumns($request, array_keys($payload));

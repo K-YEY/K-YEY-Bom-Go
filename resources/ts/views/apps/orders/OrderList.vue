@@ -30,7 +30,7 @@ const pageMetadata = ref<any>({})
 const searchQuery = ref('')
 const searchQueryDebounced = ref('')
 const selectedStatus = ref<string | null>(props.status || null)
-const itemsPerPage = ref(50)
+const itemsPerPage = ref(25)
 const page = ref(1)
 
 // Detailed Filters
@@ -85,19 +85,19 @@ const bulkPrintLabels = () => {
 
 // 👉 Headers
 const headers = [
-  { title: t('CODE'), key: 'code', width: '120px' },
+  { title: t('CODE'), key: 'code', width: '160px' },
   { title: t('DATE ENTRY'), key: 'created_at', width: '100px' },
   { title: t('SHIPPER DATE'), key: 'shipper_date', width: '100px' },
-  { title: t('RECEIVER'), key: 'receiver_name', width: '180px' },
-  { title: t('AREA'), key: 'area', width: '200px' },
+  { title: t('RECEIVER'), key: 'receiver_name', width: '200px' },
+  { title: t('AREA'), key: 'area', width: '220px' },
   { title: t('TOTAL'), key: 'total_amount', width: '80px' },
   { title: t('SHIPPING'), key: 'shipping_fee', width: '80px' },
   { title: t('COMMISSION'), key: 'commission_amount', width: '80px' },
   { title: t('NET'), key: 'company_amount', width: '80px' },
   { title: t('COD'), key: 'cod_amount', width: '80px' },
-  { title: t('STATUS'), key: 'status', width: '110px' },
-  { title: t('STATUS NOTE'), key: 'latest_status_note', width: '180px' },
-  { title: t('ORDER NOTE'), key: 'order_note', width: '180px' },
+  { title: t('STATUS'), key: 'status', width: '140px' },
+  { title: t('STATUS NOTE'), key: 'latest_status_note', width: '250px' },
+  { title: t('ORDER NOTE'), key: 'order_note', width: '200px' },
   { title: t('ت. كابتن'), key: 'shipper_collection', sortable: false, width: '60px' },
   { title: t('م. كابتن'), key: 'shipper_return', sortable: false, width: '60px' },
   { title: t('مرتجع'), key: 'has_return', sortable: false, width: '60px' },
@@ -904,9 +904,9 @@ searchClients()
 
         <!-- 👉 Item Slots -->
         <template #item.code="{ item }: { item: any }">
-          <div class="d-flex flex-column text-xs">
-            <span class="text-primary font-weight-bold">#{{ item.code }}</span>
-            <span v-if="item.external_code" class="text-disabled text-truncate" style="max-inline-size: 80px;">{{ item.external_code }}</span>
+          <div class="d-flex flex-column text-xs py-1">
+            <span class="text-primary font-weight-bold" style="white-space: nowrap;">#{{ item.code }}</span>
+            <span v-if="item.external_code" class="text-disabled" style="white-space: nowrap;">{{ item.external_code }}</span>
           </div>
         </template>
         <template #item.shipper_date="{ item }: { item: any }">
@@ -949,9 +949,19 @@ searchClients()
         </template>
         <template #item.order_note="{ item }: { item: any }"><span class="text-xs text-wrap" style=" display: block;max-inline-size: 150px;">{{ item.order_note || '—' }}</span></template>
         <template #item.latest_status_note="{ item }: { item: any }">
-          <VChip v-if="item.latest_status_note" size="x-small" color="secondary" variant="tonal" class="text-xs" style="block-size: auto; min-block-size: 20px;">
-            <span class="text-truncate" style="max-inline-size: 130px;">{{ item.latest_status_note }}</span>
-          </VChip>
+          <div v-if="item.latest_status_note" class="d-flex flex-wrap gap-1 py-1" style="max-inline-size: 250px;">
+            <VChip
+              v-for="(note, index) in item.latest_status_note.split(',')"
+              :key="index"
+              size="x-small"
+              variant="tonal"
+              :color="['secondary', 'primary', 'info'][index % 3]"
+              class="text-xs"
+              style="height: auto; min-height: 20px; white-space: normal; padding: 4px 8px;"
+            >
+              {{ note.trim() }}
+            </VChip>
+          </div>
           <span v-else class="text-disabled">—</span>
         </template>
 

@@ -37,6 +37,16 @@ const fetchReasons = async () => {
 watch(() => props.isDialogVisible, (newVal) => {
   if (newVal) {
     fetchReasons()
+    if (props.order) {
+      statusData.value = {
+        status: props.order.status,
+        refused_reason_ids: [],
+        refused_reason_id_to_add: null,
+        customReason: '',
+        total_amount: props.order.total_amount,
+        has_return: props.order.has_return || false,
+      }
+    }
   }
 })
 
