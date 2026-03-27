@@ -119,11 +119,12 @@ const selectedShipper = ref<number | null>(null)
 const isActionProcessing = ref(false)
 
 // 👉 Shippers for dropdown
-const { data: shippersData } = await useApi<any>('/shippers').get().json()
+const { data: shippersData } = await useApi<any>('/shippers?per_page=-1').get().json()
 const shippers = computed(() => {
-  const data = Array.isArray(shippersData.value) ? shippersData.value : []
-  return data.map((s: any) => ({
-    name: s.user?.name || 'Unknown',
+  const result = (shippersData.value && Array.isArray(shippersData.value.data)) ? shippersData.value.data : []
+  
+  return result.map((s: any) => ({
+    name: s.user?.name || s.user?.username || 'المندوب كود #' + (s.user_id || s.id),
     user_id: s.user_id,
   }))
 })
@@ -167,9 +168,12 @@ const applyActionToAll = async () => {
       if (!error.value) {
         alert('Shipper updated successfully for all orders')
         clearAll()
+      } else {
+        alert('حدث خطأ أثناء تحديث المندوب')
       }
     }
   } catch (e) {
+    alert('Exception occurred: ' + e)
     console.error(e)
   } finally {
     isActionProcessing.value = false
@@ -308,7 +312,7 @@ const handleGlobalClick = () => {
                 v-if="actionType !== 'view'"
                 color="primary" 
                 :loading="isActionProcessing"
-                :disabled="!scannedOrders.length"
+                :disabled="!scannedOrders.length || (actionType === 'status' && !selectedStatus) || (actionType === 'shipper' && !selectedShipper)"
                 @click="applyActionToAll"
               >
                 Apply to All Scanned

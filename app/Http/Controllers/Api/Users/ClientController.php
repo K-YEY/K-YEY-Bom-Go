@@ -48,10 +48,13 @@ class ClientController extends Controller
                 $query->whereHas('orders', function ($q) {
                     $q->whereIn('status', \App\Http\Controllers\Api\Orders\ClientSettlementController::ELIGIBLE_ORDER_STATUSES)
                       ->where('is_in_client_settlement', false)
-                      ->where('is_client_settled', false);
-                    
-                    // Note: Ideally we should check the individual client setting for 'require_shipper_collection_first' 
-                    // but for a general 'has anything at all' check, we can just check those statuses.
+                      ->where('is_client_settled', false)
+                      ->where(function ($sub) {
+                          $sub->where('is_shipper_collected', true)
+                              ->orWhereHas('client', function ($cq) {
+                                  $cq->where('can_settle_before_shipper_collected', true);
+                              });
+                      });
                 });
             } elseif ($type === 'return') {
                 $query->whereHas('orders', function ($q) {
@@ -63,14 +66,18 @@ class ClientController extends Controller
             }
         }
 
-        $clients = $query->orderByDesc('id')
-            ->paginate($request->get('per_page', 20));
+        $perPage = $request->get('per_page', 20);
+        $clients = $perPage == -1 
+            ? $query->orderByDesc('id')->get()
+            : $query->orderByDesc('id')->paginate($perPage);
 
-        $data = $clients->getCollection()->map(fn (Client $client): array => $this->filterVisibleColumns($request, $client))->values();
+        $data = $perPage == -1
+            ? $clients->map(fn (Client $client): array => $this->filterVisibleColumns($request, $client))
+            : collect($clients->items())->map(fn (Client $client): array => $this->filterVisibleColumns($request, $client));
 
         return response()->json([
             'data' => $data,
-            'total' => $clients->total(),
+            'total' => $perPage == -1 ? $clients->count() : $clients->total(),
         ]);
     }
 

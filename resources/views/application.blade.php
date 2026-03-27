@@ -5,7 +5,10 @@
   <link rel="icon" href="{{ asset('favicon.ico') }}" />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vuexy - Vuejs Admin Dashboard Template</title>
+  @php
+    $site_name = \App\Models\Setting::getValue('site_name', 'Shipping Platform');
+  @endphp
+  <title>{{ $site_name }}</title>
   <link rel="stylesheet" type="text/css" href="{{ asset('loader.css') }}" />
   @vite(['resources/ts/main.ts'])
 </head>

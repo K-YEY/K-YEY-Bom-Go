@@ -2,7 +2,6 @@
 import Footer from '@/views/front-pages/front-page-footer.vue'
 import Navbar from '@/views/front-pages/front-page-navbar.vue'
 import Banner from '@/views/front-pages/landing-page/banner.vue'
-import ContactUs from '@/views/front-pages/landing-page/contact-us.vue'
 import CustomersReview from '@/views/front-pages/landing-page/customers-review.vue'
 import FaqSection from '@/views/front-pages/landing-page/faq-section.vue'
 import Features from '@/views/front-pages/landing-page/features.vue'
@@ -15,6 +14,7 @@ definePage({
   meta: {
     layout: 'blank',
     unauthenticatedOnly: false,
+    public: true,
   },
 })
 </script>
@@ -30,7 +30,6 @@ definePage({
     <PricingPlans />
     <FaqSection />
     <Banner />
-    <ContactUs />
     <Footer />
   </div>
 </template>

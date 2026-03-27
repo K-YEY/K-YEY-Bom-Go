@@ -174,7 +174,7 @@ const updateStatus = async (id: number, status: string) => {
 };
 
 // 👉 Clients for filter
-const { data: clientsData } = await useApi<any>("/clients").get().json();
+const { data: clientsData } = await useApi<any>("/clients?eligible_for=settlement&per_page=-1").get().json();
 const clients = computed(() => {
   let raw = clientsData.value;
   const data = Array.isArray(raw)

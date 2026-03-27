@@ -1,6 +1,7 @@
 import { defineThemeConfig } from '@core'
 import { Skins } from '@core/enums'
 import { breakpointsVuetifyV3 } from '@vueuse/core'
+import { reactive } from 'vue'
 import { VIcon } from 'vuetify/components/VIcon'
 
 // ❗ Logo SVG must be imported with ?raw suffix
@@ -8,7 +9,7 @@ import logo from '@images/logo.svg?raw'
 
 import { AppContentLayoutNav, ContentWidth, FooterType, NavbarType } from '@layouts/enums'
 
-export const { themeConfig, layoutConfig } = defineThemeConfig({
+const { themeConfig: _tc, layoutConfig: _lc } = defineThemeConfig({
   app: {
     title: 'shipya',
     logo: h('div', { innerHTML: logo, style: 'line-height:0; color: rgb(var(--v-global-theme-primary))' }),
@@ -65,3 +66,6 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
     sectionTitlePlaceholder: { icon: 'tabler-minus' },
   },
 })
+
+export const themeConfig = reactive(_tc)
+export const layoutConfig = reactive(_lc)

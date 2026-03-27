@@ -1,18 +1,15 @@
 <script setup lang="ts">
+import joinArrow from '@images/front-pages/icons/Join-community-arrow.png'
+import heroDashboardShippingImg from '@images/front-pages/landing-page/hero-dashboard-shipping.png'
+import heroElementsShippingImg from '@images/front-pages/landing-page/hero-elements-shipping.png'
 import { useMouse } from '@vueuse/core'
 import { useTheme } from 'vuetify'
-import { useGenerateImageVariant } from '@/@core/composable/useGenerateImageVariant'
-import joinArrow from '@images/front-pages/icons/Join-community-arrow.png'
-import heroDashboardImgDark from '@images/front-pages/landing-page/hero-dashboard-dark.png'
-import heroDashboardImgLight from '@images/front-pages/landing-page/hero-dashboard-light.png'
-
-import heroElementsImgDark from '@images/front-pages/landing-page/hero-elements-dark.png'
-import heroElementsImgLight from '@images/front-pages/landing-page/hero-elements-light.png'
 
 const theme = useTheme()
 
-const heroElementsImg = useGenerateImageVariant(heroElementsImgLight, heroElementsImgDark)
-const heroDashboardImg = useGenerateImageVariant(heroDashboardImgLight, heroDashboardImgDark)
+// Use the same for both for now, or generating another variant
+const heroElementsImg = computed(() => heroElementsShippingImg)
+const heroDashboardImg = computed(() => heroDashboardShippingImg)
 
 const { x, y } = useMouse({ touch: false })
 
@@ -41,15 +38,15 @@ const translateMouse = computed(() => {
         <VContainer>
           <div class="hero-text-box text-center px-6">
             <h1 class="hero-title mb-4">
-              One dashboard to manage all your business
+              منصة واحدة لإدارة كل شحناتك في أسرع وقت
             </h1>
             <h6 class="mb-6 text-h6">
-              Production-ready & easy to use Admin Template
-              for Reliability and Customizability.
+              أقوى نظام إدارة لوجستيات في مصر، مصمم للسهولة والسرعة والاعتمادية.
+              نحن نوفر لك حلولاً كاملة لنمو أعمالك.
             </h6>
             <div class="position-relative">
               <h6 class="position-absolute hero-btn-item d-md-flex d-none text-h6 text-medium-emphasis">
-                Join Community
+                انضم إلينا الآن
                 <VImg
                   :src="joinArrow"
                   class="flip-in-rtl"
@@ -60,10 +57,10 @@ const translateMouse = computed(() => {
 
               <VBtn
                 :size="$vuetify.display.smAndUp ? 'large' : 'default' "
-                :to="{ name: 'front-pages-landing-page', hash: `#pricing-plan` }"
+                :to="{ name: 'pages-authentication-login-v1' }"
                 :active="false"
               >
-                Get early Access
+                ابدأ مجاناً
               </VBtn>
             </div>
           </div>
@@ -76,7 +73,7 @@ const translateMouse = computed(() => {
         <div class="blank-section" />
         <div class="hero-animation-img position-absolute">
           <RouterLink
-            :to="{ name: 'dashboards-ecommerce' }"
+            :to="{ name: 'dashboards-orders' }"
             target="_blank"
           >
             <div

@@ -39,12 +39,12 @@ watch(() => display, () => {
 
         <div class="d-flex flex-column gap-y-4">
           <RouterLink
-            v-for="(item, index) in ['Home', 'Features', 'Team', 'FAQ', 'Contact us']"
+            v-for="(item, index) in [{t: 'الرئيسية', h: 'home'}, {t: 'المميزات', h: 'features'}, {t: 'فريقنا', h: 'team'}, {t: 'الأسئلة الشائعة', h: 'faq-section'}]"
             :key="index"
-            :to="{ name: 'front-pages-landing-page', hash: `#${item.toLowerCase().replace(' ', '-')}` }"
+            :to="{ name: 'root', hash: `#${item.h}` }"
             class="nav-link font-weight-medium"
           >
-            {{ item }}
+            {{ item.t }}
           </RouterLink>
 
           <VBtn
@@ -54,7 +54,7 @@ watch(() => display, () => {
             :to="{ name: 'pages-authentication-login-v1' }"
             class="mt-4"
           >
-            Login / Register
+            تسجيل الدخول / حساب جديد
           </VBtn>
         </div>
       </div>
@@ -93,7 +93,7 @@ watch(() => display, () => {
         <!-- Title and Landing page sections -->
         <div class="d-flex align-center">
           <RouterLink
-            :to="{ name: 'front-pages-landing-page' }"
+            :to="{ name: 'root' }"
             class="d-flex align-center gap-x-2 me-6"
           >
             <VAvatar v-if="site.logo" :image="site.logo" size="28" />
@@ -106,12 +106,12 @@ watch(() => display, () => {
           <!-- landing page sections -->
           <div class="text-base align-center d-none d-md-flex">
             <RouterLink
-              v-for="(item, index) in ['Home', 'Features', 'Team', 'FAQ', 'Contact us']"
+              v-for="(item, index) in [{t: 'الرئيسية', h: 'home'}, {t: 'المميزات', h: 'features'}, {t: 'فريقنا', h: 'team'}, {t: 'الأسئلة الشائعة', h: 'faq-section'}]"
               :key="index"
-              :to="{ name: 'front-pages-landing-page', hash: `#${item.toLowerCase().replace(' ', '-')}` }"
+              :to="{ name: 'root', hash: `#${item.h}` }"
               class="nav-link font-weight-medium py-2 px-2 px-lg-4"
             >
-              {{ item }}
+              {{ item.t }}
             </RouterLink>
           </div>
         </div>
@@ -126,7 +126,7 @@ watch(() => display, () => {
             color="primary"
             :to="{ name: 'pages-authentication-login-v1' }"
           >
-            Get Started
+            ابدأ الآن
           </VBtn>
         </div>
       </VAppBar>

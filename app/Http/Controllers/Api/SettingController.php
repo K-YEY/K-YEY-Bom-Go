@@ -26,6 +26,20 @@ class SettingController extends Controller
         return response()->json($grouped);
     }
 
+    public function publicConfig(): JsonResponse
+    {
+        $settings = Setting::query()
+            ->whereIn('group', ['site_identity', 'site_logos'])
+            ->get(['group', 'key', 'value']);
+
+        $grouped = $settings
+            ->groupBy('group')
+            ->map(fn ($items): array => $items->pluck('value', 'key')->all())
+            ->all();
+
+        return response()->json($grouped);
+    }
+
     public function update(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'setting.page');

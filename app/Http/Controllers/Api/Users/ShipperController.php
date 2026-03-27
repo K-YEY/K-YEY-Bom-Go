@@ -49,14 +49,18 @@ class ShipperController extends Controller
             }
         }
 
-        $shippers = $query->orderByDesc('id')
-            ->paginate($request->get('per_page', 20));
+        $perPage = $request->get('per_page', 20);
+        $shippers = $perPage == -1 
+            ? $query->orderByDesc('id')->get()
+            : $query->orderByDesc('id')->paginate($perPage);
 
-        $data = $shippers->getCollection()->map(fn (Shipper $shipper): array => $this->filterVisibleColumns($request, $shipper))->values();
+        $data = $perPage == -1
+            ? $shippers->map(fn (Shipper $shipper): array => $this->filterVisibleColumns($request, $shipper))
+            : collect($shippers->items())->map(fn (Shipper $shipper): array => $this->filterVisibleColumns($request, $shipper));
 
         return response()->json([
             'data' => $data,
-            'total' => $shippers->total(),
+            'total' => $perPage == -1 ? $shippers->count() : $shippers->total(),
         ]);
     }
 
