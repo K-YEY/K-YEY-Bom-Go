@@ -77,6 +77,9 @@ Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class
     Route::get('orders/init', [OrderController::class, 'init']);
     Route::patch('orders/bulk-change-status', [OrderController::class, 'bulkChangeStatus']);
     Route::patch('orders/bulk-change-shipper', [OrderController::class, 'bulkChangeShipper']);
+    Route::delete('orders/bulk-delete', [OrderController::class, 'bulkDestroy']);
+    Route::patch('orders/bulk-restore', [OrderController::class, 'bulkRestore']);
+    Route::delete('orders/bulk-force-delete', [OrderController::class, 'bulkForceDelete']);
     Route::patch('orders/{order}/change-status', [OrderController::class, 'changeStatus']);
     Route::patch('orders/{order}/change-shipper', [OrderController::class, 'changeShipper']);
     Route::patch('orders/{order}/change-note', [OrderController::class, 'changeNote']);

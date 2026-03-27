@@ -814,6 +814,89 @@ class OrderController extends Controller
         ]);
     }
 
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.delete');
+
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['required', 'integer', 'exists:orders,id'],
+        ]);
+
+        $orders = Order::query()->whereIn('id', $data['order_ids'])->get();
+
+        $deletedCount = DB::transaction(function () use ($orders): int {
+            $count = 0;
+            foreach ($orders as $order) {
+                if (! $order instanceof Order) {
+                    continue;
+                }
+
+                $this->authorizeNotShipperCollected($order);
+                $order->delete();
+                $count++;
+            }
+
+            return $count;
+        });
+
+        return response()->json([
+            'message' => "Order(s) deleted successfully. Total: {$deletedCount}",
+        ]);
+    }
+
+    public function bulkRestore(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.delete');
+
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['required', 'integer'],
+        ]);
+
+        $orders = Order::onlyTrashed()->whereIn('id', $data['order_ids'])->get();
+
+        $restoredCount = DB::transaction(function () use ($orders): int {
+            $count = 0;
+            foreach ($orders as $order) {
+                $order->restore();
+                $count++;
+            }
+
+            return $count;
+        });
+
+        return response()->json([
+            'message' => "Order(s) restored successfully. Total: {$restoredCount}",
+        ]);
+    }
+
+    public function bulkForceDelete(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.delete');
+
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['required', 'integer'],
+        ]);
+
+        $orders = Order::onlyTrashed()->whereIn('id', $data['order_ids'])->get();
+
+        $deletedCount = DB::transaction(function () use ($orders): int {
+            $count = 0;
+            foreach ($orders as $order) {
+                $order->forceDelete();
+                $count++;
+            }
+
+            return $count;
+        });
+
+        return response()->json([
+            'message' => "Order(s) permanently deleted. Total: {$deletedCount}",
+        ]);
+    }
+
     public function destroy(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.delete');

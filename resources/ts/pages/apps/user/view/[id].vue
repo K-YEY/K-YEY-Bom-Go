@@ -7,7 +7,7 @@ import UserTabTimeline from '@/views/apps/user/view/UserTabTimeline.vue'
 
 const route = useRoute('apps-user-view-id')
 
-const userTab = ref(null)
+const userTab = ref(0)
 
 const tabs = [
   { icon: 'tabler-users', title: 'Account' },
@@ -60,7 +60,7 @@ const { data: userData, execute: fetchUserData } = await useApi<any>(`/users/${r
         :touch="false"
       >
         <VWindowItem>
-          <UserTabAccount :user-data="userData" />
+          <UserTabAccount :user-data="userData" @more="userTab = 1" />
         </VWindowItem>
 
         <VWindowItem>

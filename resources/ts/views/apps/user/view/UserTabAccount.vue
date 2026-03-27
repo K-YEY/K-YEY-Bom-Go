@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import UserInvoiceTable from './UserInvoiceTable.vue';
+import UserInvoiceTable from './UserInvoiceTable.vue'
 
 interface Props {
   userData: {
@@ -10,6 +10,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits(['more'])
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleString()
@@ -30,14 +31,14 @@ const formatDate = (date: string) => {
             density="compact"
           >
             <VTimelineItem
-              v-for="session in props.userData.login_sessions"
+              v-for="session in props.userData.login_sessions?.slice(0, 3)"
               :key="session.id"
               :dot-color="session.is_active ? 'success' : 'secondary'"
               size="x-small"
             >
               <div class="d-flex justify-space-between align-center gap-2 flex-wrap mb-2">
                 <span class="app-timeline-title">
-                  Login from {{ session.browser }} ({{ session.platform }})
+                  Login from {{ session.browser || 'Unknown' }} ({{ session.platform || 'Unknown' }})
                 </span>
                 <span class="app-timeline-meta">{{ formatDate(session.login_at) }}</span>
               </div>
@@ -65,6 +66,16 @@ const formatDate = (date: string) => {
               <div class="app-timeline-title">No recent login sessions found</div>
             </VTimelineItem>
           </VTimeline>
+
+          <VBtn
+            v-if="props.userData.login_sessions?.length > 3"
+            variant="tonal"
+            size="small"
+            class="mt-6"
+            @click="emit('more')"
+          >
+            عرض كل النشاطات والسجلات
+          </VBtn>
         </VCardText>
       </VCard>
     </VCol>

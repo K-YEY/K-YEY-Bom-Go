@@ -490,6 +490,57 @@ const forceDeleteOrder = async (id: number) => {
   }
 }
 
+const bulkDeleteOrders = async () => {
+  if (!selectedOrders.value.length) return
+  if (!confirm(`Are you sure you want to delete ${selectedOrders.value.length} selected orders?`)) return
+
+  const ids = selectedOrders.value.map(item => typeof item === 'object' ? item.id : item)
+  
+  const { error } = await useApi('/orders/bulk-delete').delete({
+    order_ids: ids
+  })
+
+  if (!error.value) {
+    selectedOrders.value = []
+    fetchOrders()
+    notify('Bulk delete completed successfully')
+  }
+}
+
+const bulkRestoreOrders = async () => {
+  if (!selectedOrders.value.length) return
+  if (!confirm(`Are you sure you want to restore ${selectedOrders.value.length} selected orders?`)) return
+
+  const ids = selectedOrders.value.map(item => typeof item === 'object' ? item.id : item)
+  
+  const { error } = await useApi('/orders/bulk-restore').patch({
+    order_ids: ids
+  })
+
+  if (!error.value) {
+    selectedOrders.value = []
+    fetchOrders()
+    notify('Bulk restore completed successfully')
+  }
+}
+
+const bulkForceDeleteOrders = async () => {
+  if (!selectedOrders.value.length) return
+  if (!confirm(`Are you sure you want to PERMANENTLY delete ${selectedOrders.value.length} selected orders?`)) return
+
+  const ids = selectedOrders.value.map(item => typeof item === 'object' ? item.id : item)
+  
+  const { error } = await useApi('/orders/bulk-force-delete').delete({
+    order_ids: ids
+  })
+
+  if (!error.value) {
+    selectedOrders.value = []
+    fetchOrders()
+    notify('Bulk permanent delete completed successfully')
+  }
+}
+
 // 👉 Order History Logic
 const isHistoryVisible = ref(false)
 const historyLogs = ref<any[]>([])
@@ -684,10 +735,17 @@ searchClients()
             {{ t('Elements Selected') }}
           </div>
           <VDivider vertical class="mx-2" />
-          <VBtn v-if="can('order.change-shipper' as any, 'all' as any)" size="small" color="primary" variant="elevated" prepend-icon="tabler-truck" @click="openBulkShipperModal">{{ t('Change Shipper') }}</VBtn>
-          <VBtn v-if="can('order.view' as any, 'all' as any)" size="small" color="info" variant="elevated" prepend-icon="tabler-file-invoice" @click="bulkPrintLabels">{{ t('Print Labels') }}</VBtn>
-          <VBtn v-if="can('order.export' as any, 'all' as any)" size="small" color="secondary" variant="elevated" prepend-icon="tabler-file-spreadsheet" @click="exportOrders">{{ t('Export Excel') }}</VBtn>
-          <VBtn v-if="can('order.change-status' as any, 'all' as any)" size="small" color="success" variant="elevated" prepend-icon="tabler-settings" @click="openBulkStatusModal">{{ t('Change Status') }}</VBtn>
+          <template v-if="props.trashed === 'only'">
+            <VBtn v-if="can('order.delete' as any, 'all' as any)" size="small" color="primary" variant="elevated" prepend-icon="tabler-refresh" @click="bulkRestoreOrders">{{ t('Bulk Restore') }}</VBtn>
+            <VBtn v-if="can('order.delete' as any, 'all' as any)" size="small" color="error" variant="elevated" prepend-icon="tabler-trash-x" @click="bulkForceDeleteOrders">{{ t('Bulk Permanent Delete') }}</VBtn>
+          </template>
+          <template v-else>
+            <VBtn v-if="can('order.change-shipper' as any, 'all' as any)" size="small" color="primary" variant="elevated" prepend-icon="tabler-truck" @click="openBulkShipperModal">{{ t('Change Shipper') }}</VBtn>
+            <VBtn v-if="can('order.view' as any, 'all' as any)" size="small" color="info" variant="elevated" prepend-icon="tabler-file-invoice" @click="bulkPrintLabels">{{ t('Print Labels') }}</VBtn>
+            <VBtn v-if="can('order.export' as any, 'all' as any)" size="small" color="secondary" variant="elevated" prepend-icon="tabler-file-spreadsheet" @click="exportOrders">{{ t('Export Excel') }}</VBtn>
+            <VBtn v-if="can('order.change-status' as any, 'all' as any)" size="small" color="success" variant="elevated" prepend-icon="tabler-settings" @click="openBulkStatusModal">{{ t('Change Status') }}</VBtn>
+            <VBtn v-if="can('order.delete' as any, 'all' as any)" size="small" color="error" variant="elevated" prepend-icon="tabler-trash" @click="bulkDeleteOrders">{{ t('Bulk Delete') }}</VBtn>
+          </template>
           <VSpacer />
           <VBtn icon size="x-small" variant="text" color="secondary" @click="selectedOrders = []"><VIcon icon="tabler-x" /></VBtn>
         </div>
