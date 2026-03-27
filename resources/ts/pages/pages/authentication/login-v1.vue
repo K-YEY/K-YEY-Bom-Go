@@ -54,7 +54,16 @@ const buildAbilityRulesFromAcl = (acl: any) => {
   if (!grantedPermissions.length)
     return [{ action: 'manage', subject: 'all' }]
 
-  return grantedPermissions.map((permission: string) => ({ action: 'manage', subject: permission }))
+  // Generate both formats for compatibility:
+  // { action: 'manage', subject: permission } -> Used by Sidebar
+  // { action: permission, subject: 'all' } -> Used by many page components
+  const rules: any[] = []
+  grantedPermissions.forEach((permission: string) => {
+    rules.push({ action: 'manage', subject: permission })
+    rules.push({ action: permission, subject: 'all' })
+  })
+  
+  return rules
 }
 
 const login = async () => {
