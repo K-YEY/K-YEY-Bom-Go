@@ -97,7 +97,11 @@ const login = async () => {
     let userAbilityRules: Array<{ action: string; subject: string }> = []
 
     try {
-      const acl = await $api<AclMatrixResponse>('/acl')
+      const acl = await $api<AclMatrixResponse>('/acl', {
+        headers: {
+          Authorization: `Bearer ${res.access_token}`,
+        },
+      })
       userAbilityRules = buildAbilityRulesFromAcl(acl)
     }
     catch (e) {

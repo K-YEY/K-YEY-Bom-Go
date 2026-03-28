@@ -23,8 +23,6 @@ class AclMatrixController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user, 401, 'Unauthenticated');
-
         return response()->json([
             'pages' => [
                 ...$this->permissionState($user, array_column(ExpensePermissionMap::PAGE_PERMISSIONS, 'name')),
