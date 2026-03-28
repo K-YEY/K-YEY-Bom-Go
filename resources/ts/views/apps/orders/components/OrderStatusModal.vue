@@ -42,7 +42,7 @@ watch(() => props.isDialogVisible, (newVal) => {
         status: props.order.status,
         refused_reason_ids: props.order.refused_reasons?.map((r: any) => r.id) || [],
         refused_reason_id_to_add: null,
-        customReason: '',
+        customReason: '', 
         total_amount: props.order.total_amount,
         has_return: props.order.has_return || false,
       }
@@ -65,7 +65,7 @@ watch(() => props.order, (newVal) => {
   if (newVal) {
     statusData.value = {
       status: newVal.status,
-      refused_reason_ids: [],
+      refused_reason_ids: newVal.refused_reasons?.map((r: any) => r.id) || [],
       refused_reason_id_to_add: null,
       customReason: '',
       total_amount: newVal.total_amount,
