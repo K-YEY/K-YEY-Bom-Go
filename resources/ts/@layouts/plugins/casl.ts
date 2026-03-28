@@ -46,7 +46,9 @@ export const canViewNavMenuGroup = (item: NavGroup) => {
 
 export const canNavigate = (to: RouteLocationNormalized) => {
   const currentUser = useCookie<Record<string, any> | null>('userData').value
-  if (currentUser?.id === 1)
+  const hasSuperAdminRole = currentUser?.roles?.some?.((r: any) => r.name === 'super-admin')
+
+  if (currentUser?.id === 1 || hasSuperAdminRole)
     return true
 
   const ability = useAbility()

@@ -27,29 +27,20 @@ class AclMatrixController extends Controller
 
         return response()->json([
             'pages' => [
-                'expense.page' => $user->can('expense.page'),
-                'expense-category.page' => $user->can('expense-category.page'),
-                'user.page' => $user->can('user.page'),
-                'client.page' => $user->can('client.page'),
-                'shipper.page' => $user->can('shipper.page'),
-                'user.profile.page' => $user->can('user.profile.page'),
-                'content.page' => $user->can('content.page'),
-                'setting.page' => $user->can('setting.page'),
-                'governorate.page' => $user->can('governorate.page'),
-                'plan.page' => $user->can('plan.page'),
-                'material.page' => $user->can('material.page'),
-                'material-request.page' => $user->can('material-request.page'),
-                'material-request-item.page' => $user->can('material-request-item.page'),
-                'pickup-request.page' => $user->can('pickup-request.page'),
-                'visit.page' => $user->can('visit.page'),
-                'refused-reason.page' => $user->can('refused-reason.page'),
-                'order.page' => $user->can('order.page'),
-                'shipper-collection.page' => $user->can('shipper-collection.page'),
-                'shipper-return.page' => $user->can('shipper-return.page'),
-                'client-settlement.page' => $user->can('client-settlement.page'),
-                'client-return.page' => $user->can('client-return.page'),
-                'activity-log.page' => $user->can('activity-log.page'),
-                'order.dashboard.page' => $user->can('order.dashboard.page'),
+                ...$this->permissionState($user, array_column(ExpensePermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(AccountPermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(ContentPermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(SettingPermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(AreaPlanPermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(OperationsPermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(RefusedReasonPermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(OrdersPermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::SHIPPER_COLLECTION_PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::SHIPPER_RETURN_PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::CLIENT_SETTLEMENT_PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(CollectionsReturnsSettlementsPermissionMap::CLIENT_RETURN_PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(ActivityLogPermissionMap::PAGE_PERMISSIONS, 'name')),
+                ...$this->permissionState($user, array_column(DashboardPermissionMap::PAGE_PERMISSIONS, 'name')),
             ],
             'actions' => [
                 ...$this->permissionState($user, array_column(ExpensePermissionMap::ACTION_PERMISSIONS, 'name')),
@@ -165,6 +156,10 @@ class AclMatrixController extends Controller
 
     private function getFlatPermissionList(\App\Models\User $user): array
     {
+        if ($user->id === 1 || $user->hasRole('super-admin')) {
+            return \App\Models\Permission::pluck('name')->toArray();
+        }
+
         return $user->getAllPermissions()->pluck('name')->toArray();
     }
 

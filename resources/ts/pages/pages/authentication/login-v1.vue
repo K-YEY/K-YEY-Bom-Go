@@ -108,8 +108,38 @@ const login = async () => {
     useLocalStorage('userAbilityRules', []).value = userAbilityRules as any
     ability.update(userAbilityRules as any)
 
-    await nextTick(() => {
-      router.replace(route.query.to ? String(route.query.to) : '/dashboards/orders')
+    await nextTick(async () => {
+      let targetRoute: any = route.query.to ? String(route.query.to) : { name: 'dashboards-orders' }
+
+      // If heading to default dashboard but it's forbidden, let's find the first authorized page
+      if ((targetRoute === '/dashboards/orders' || targetRoute.name === 'dashboards-orders') && !ability.can('manage', 'order.dashboard.page' as any)) {
+        const { default: navItems } = await import('@/navigation/vertical')
+        let firstAuthorizedTarget: string | null = null
+
+        for (const item of navItems) {
+          if ('children' in item && item.children) {
+            for (const child of item.children) {
+              if ('to' in child && child.to && 'action' in child && 'subject' in child && ability.can(child.action as string, child.subject as string)) {
+                firstAuthorizedTarget = typeof child.to === 'string' ? child.to : (child.to as any).name
+                break
+              }
+            }
+          } else if ('to' in item && item.to && 'action' in item && 'subject' in item && ability.can(item.action as string, item.subject as string)) {
+            firstAuthorizedTarget = typeof item.to === 'string' ? item.to : (item.to as any).name
+            break
+          }
+          if (firstAuthorizedTarget) break
+        }
+
+        if (firstAuthorizedTarget) {
+          targetRoute = { name: firstAuthorizedTarget }
+        } else {
+          // Fallback if the user has absolutely NO accessible menu items
+          targetRoute = { name: 'not-authorized' }
+        }
+      }
+
+      router.replace(targetRoute)
     })
   }
   catch (err) {
