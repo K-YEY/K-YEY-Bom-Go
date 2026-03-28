@@ -198,9 +198,13 @@ const applyActionToAll = async () => {
     } else if (actionType.value === 'shipper') {
       if (!selectedShipper.value) return
       
+      const shipperId = typeof selectedShipper.value === 'object' 
+        ? (selectedShipper.value as any).id || (selectedShipper.value as any).user_id
+        : selectedShipper.value
+
       const { error } = await useApi('/orders/bulk-change-shipper').patch({
         order_ids: orderIds,
-        shipper_user_id: selectedShipper.value,
+        shipper_user_id: shipperId ? Number(shipperId) : null,
       }).json()
 
       if (!error.value) {

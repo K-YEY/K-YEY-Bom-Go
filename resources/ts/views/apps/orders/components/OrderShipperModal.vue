@@ -47,9 +47,13 @@ const onSubmit = async () => {
   errorMessages.value = []
   
   try {
+    const shipperId = formData.value.shipper_user_id && typeof formData.value.shipper_user_id === 'object' 
+      ? (formData.value.shipper_user_id as any).id || (formData.value.shipper_user_id as any).user_id
+      : formData.value.shipper_user_id
+
     const fetchObj = useApi<any>(`/orders/${props.order.id}/change-shipper`).patch({
-      shipper_user_id: formData.value.shipper_user_id,
-      shipper_date: formData.value.shipper_date,
+      shipper_user_id: shipperId ? Number(shipperId) : null,
+      shipper_date: formData.value.shipper_date || null,
       commission_amount: formData.value.commission_amount,
     }).json()
 
@@ -106,7 +110,7 @@ const onSubmit = async () => {
               placeholder="Choose a shipper"
               :items="props.shippers"
               item-title="name"
-              item-value="user_id"
+              item-value="id"
               clearable
             />
           </VCol>

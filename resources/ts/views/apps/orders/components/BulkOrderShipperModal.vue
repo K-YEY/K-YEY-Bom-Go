@@ -44,10 +44,14 @@ const onSubmit = async () => {
   }
 
   isLoading.value = true
+  const shipperId = selectedShipperId.value && typeof selectedShipperId.value === 'object' 
+    ? (selectedShipperId.value as any).id || (selectedShipperId.value as any).user_id
+    : selectedShipperId.value
+
   const payload = {
     order_ids: validOrders.map(o => o.id),
-    shipper_user_id: selectedShipperId.value,
-    shipper_date: shipperDate.value,
+    shipper_user_id: shipperId ? Number(shipperId) : null,
+    shipper_date: shipperDate.value || null,
     commission_amount: commissionAmount.value,
   }
 

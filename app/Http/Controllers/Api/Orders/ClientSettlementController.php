@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Orders;
 
 use App\Exports\CollectedClientsExport;
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\ClientSettlement;
 use App\Models\ClientSettlementOrder;
 use App\Models\Order;

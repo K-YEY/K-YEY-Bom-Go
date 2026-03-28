@@ -23,6 +23,7 @@ const columnPermissions: Record<string, string> = {
   collection_date: "shipper-collection.column.collection_date.view",
   number_of_orders: "shipper-collection.column.number_of_orders.view",
   total_amount: "shipper-collection.column.total_amount.view",
+  shipper_fees: "shipper-collection.column.shipper_fees.view",
   net_amount: "shipper-collection.column.net_amount.view",
   status: "shipper-collection.column.status.view",
 };
@@ -620,10 +621,11 @@ const exportCollections = async () => {
               <tr>
                 <th>Order ID</th>
                 <th>Code</th>
-                <th>EX-CODE</th>
+                <th>Receiver</th>
                 <th>Client</th>
                 <th>Amount</th>
-                <th>Commission</th>
+                <th>Shipping Fee</th>
+                <th>Shipper Comm.</th>
                 <th>Net</th>
                 <th>Actions</th>
               </tr>
@@ -631,10 +633,21 @@ const exportCollections = async () => {
             <tbody>
               <tr v-for="order in selectedCollection?.orders" :key="order.id">
                 <td>#{{ order.id }}</td>
-                <td>{{ order.code }}</td>
-                <td>{{ order.external_code || "-" }}</td>
+                <td>
+                  <div>{{ order.code || "-" }}</div>
+                  <div class="text-caption text-disabled">
+                    {{ order.external_code || "" }}
+                  </div>
+                </td>
+                <td>
+                  <div>{{ order.receiver_name || "-" }}</div>
+                  <div class="text-caption text-disabled">
+                    {{ order.phone || "" }}
+                  </div>
+                </td>
                 <td>{{ order.client?.name || "-" }}</td>
                 <td>{{ order.pivot?.order_amount }} EGP</td>
+                <td>{{ order.shipping_fee }} EGP</td>
                 <td class="text-error">{{ order.pivot?.shipper_fee }} EGP</td>
                 <td class="text-success font-weight-bold">
                   {{ order.pivot?.net_amount }} EGP

@@ -624,7 +624,8 @@ const exportSettlements = async () => {
                 <th>Code</th>
                 <th>Receiver</th>
                 <th>Amount</th>
-                <th>Fee</th>
+                <th>Shipping Fee</th>
+                <th>Shipper Comm.</th>
                 <th>COD</th>
                 <th>Actions</th>
               </tr>
@@ -646,6 +647,7 @@ const exportSettlements = async () => {
                 </td>
                 <td>{{ order.pivot?.order_amount }} EGP</td>
                 <td class="text-error">{{ order.pivot?.fee }} EGP</td>
+                <td class="text-warning">{{ order.commission_amount || 0 }} EGP</td>
                 <td class="text-success font-weight-bold">
                   {{ order.pivot?.net_amount }} EGP
                 </td>
