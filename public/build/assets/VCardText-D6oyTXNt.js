@@ -1,1 +1,0 @@
-import{av as s,a6 as r,b as o,I as n,x as c,a8 as m,aF as l,a9 as p}from"./main-CrIvoIYL.js";const d=m({opacity:[Number,String],...p(),...l()},"VCardText"),x=s()({name:"VCardText",props:d(),setup(a,e){let{slots:t}=e;return r(()=>o(a.tag,{class:c(["v-card-text",a.class]),style:n([{"--v-card-text-opacity":a.opacity},a.style])},t)),{}}});export{x as V};
