@@ -759,6 +759,33 @@ class OrderController extends Controller
         ]);
     }
 
+    public function changeShipper(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-shipper');
+        $this->authorizeNotShipperCollected($order);
+        $this->authorizeShipperChangeAllowed($order);
+        $this->authorizeFinalStatusUpdate($request, $order);
+
+        $data = $request->validate([
+            'shipper_user_id' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $payload = [
+            'shipper_user_id' => $data['shipper_user_id'] ?? null,
+        ];
+
+        $payload = $this->resolveDefaultShipper($payload, $order);
+        $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
+        $payload = $this->applyAutomaticFinancials($payload, $order);
+
+        $order->update($payload);
+
+        return response()->json([
+            'message' => 'Shipper updated successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
     public function changeNote(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.change-note');
