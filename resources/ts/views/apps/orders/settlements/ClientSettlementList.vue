@@ -73,21 +73,31 @@ watch(visibleHeaderKeys, (newVal) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(newVal));
 });
 
+// Debounced Search Logic
+const searchQueryDebounced = ref("");
+let searchTimer: ReturnType<typeof setTimeout>;
+watch(searchQuery, (val) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    searchQueryDebounced.value = val || "";
+  }, 400);
+});
+
 // 👉 Fetching Settlements
 const {
   data: settlementsData,
   execute: fetchSettlements,
   isFetching,
-} = await useApi<any>(
+} = useApi<any>(
   createUrl("/client-settlements", {
     query: {
       status: selectedStatus,
       approval_status: selectedApprovalStatus,
       client_user_id: selectedClient,
-      search: searchQuery,
+      search: searchQueryDebounced,
     },
   }),
-);
+).get().json();
 
 const settlements = computed(() => settlementsData.value?.data || []);
 const totalSettlements = computed(() => settlementsData.value?.meta?.total || 0);

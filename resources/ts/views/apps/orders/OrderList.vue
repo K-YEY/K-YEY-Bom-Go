@@ -639,6 +639,7 @@ const handleNewOrder = () => {
 const copyOrderToClipboard = (item: any) => {
   const text = `
 كود: #${item.code}
+الكود الخارجي: ${item.external_code || '-'}
 المرسل إليه: ${item.receiver_name}
 موبايل: ${item.phone} ${item.phone_2 ? '/ ' + item.phone_2 : ''}
 العنوان: ${item.governorate?.name} - ${item.city?.name} - ${item.address}
@@ -664,6 +665,7 @@ const sendToWhatsApp = (item: any) => {
   const phone = item.phone.replace(/\D/g, '')
   const text = `
 كود: #${item.code}
+الكود الخارجي: ${item.external_code || '-'}
 المرسل إليه: ${item.receiver_name}
 موبايل: ${item.phone} ${item.phone_2 ? '/ ' + item.phone_2 : ''}
 العنوان: ${item.governorate?.name} - ${item.city?.name} - ${item.address}

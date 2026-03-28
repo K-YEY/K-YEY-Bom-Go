@@ -4,6 +4,13 @@ import UserTabAccount from '@/views/apps/user/view/UserTabAccount.vue'
 import UserTabSecurity from '@/views/apps/user/view/UserTabSecurity.vue'
 import UserTabTimeline from '@/views/apps/user/view/UserTabTimeline.vue'
 
+definePage({
+  meta: {
+    action: 'manage',
+    subject: 'user.page',
+  },
+})
+
 
 const route = useRoute('apps-user-view-id')
 

@@ -52,7 +52,7 @@ const buildAbilityRulesFromAcl = (acl: any) => {
     .map(([permission]) => permission)
 
   if (!grantedPermissions.length)
-    return [{ action: 'manage', subject: 'all' }]
+    return []
 
   // Generate both formats for compatibility:
   // { action: 'manage', subject: permission } -> Used by Sidebar
@@ -94,14 +94,15 @@ const login = async () => {
     useCookie('accessToken').value = res.access_token
     useCookie<any>('userData').value = res.user
 
-    let userAbilityRules: Array<{ action: string; subject: string }> = [{ action: 'manage', subject: 'all' }]
+    let userAbilityRules: Array<{ action: string; subject: string }> = []
 
     try {
       const acl = await $api<AclMatrixResponse>('/acl')
       userAbilityRules = buildAbilityRulesFromAcl(acl)
     }
-    catch {
-      // Keep fallback manage-all when ACL endpoint is unavailable right after login.
+    catch (e) {
+      console.error('Failed to fetch ACL', e)
+      userAbilityRules = [] // No permissions on failure
     }
 
     useLocalStorage('userAbilityRules', []).value = userAbilityRules as any

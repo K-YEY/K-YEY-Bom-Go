@@ -3,6 +3,13 @@ const settingsData = ref<any>({})
 const activeTab = ref('site_identity')
 const plansList = ref<any[]>([])
 
+definePage({
+  meta: {
+    action: 'manage',
+    subject: 'setting.page',
+  },
+})
+
 const fetchSettings = async () => {
   const response = await $api('/settings')
   settingsData.value = response

@@ -10,6 +10,13 @@ const searchQuery = ref('')
 const selectedRole = ref()
 const selectedStatus = ref()
 
+definePage({
+  meta: {
+    action: 'manage',
+    subject: 'user.page',
+  },
+})
+
 // Data table options
 const itemsPerPage = ref(10)
 const page = ref(1)

@@ -32,6 +32,8 @@ class ClientSettlementController extends Controller
             'statuses' => ['nullable', 'array'],
             'statuses.*' => [Rule::in(['PENDING', 'COMPLETED', 'CANCELLED'])],
             'client_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
+            'search' => ['nullable', 'string', 'max:255'],
         ]);
 
         $statuses = [];
@@ -56,8 +58,17 @@ class ClientSettlementController extends Controller
                 fn (Builder $query): Builder => $query->whereIn('status', $statuses)
             )
             ->when(
+                $validated['approval_status'] ?? null,
+                fn (Builder $query, $approvalStatus): Builder => $query->where('approval_status', $approvalStatus)
+            )
+            ->when(
                 $validated['client_user_id'] ?? null,
                 fn (Builder $query, $clientUserId): Builder => $query->where('client_user_id', $clientUserId)
+            )
+            ->when(
+                $validated['search'] ?? null,
+                fn (Builder $query, $search): Builder => $query->whereHas('client', fn($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhere('id', 'like', "%{$search}%")
             )
             ->orderByDesc('id')
             ->paginate($request->input('per_page', 100))
