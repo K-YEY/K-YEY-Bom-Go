@@ -8,8 +8,17 @@ use Illuminate\Http\Request;
 
 class PermissionController
 {
+    private function authorizePermission(Request $request, string $permission): void
+    {
+        $user = $request->user();
+        abort_unless($user, 401, 'Unauthenticated');
+        abort_unless($user->can($permission), 403, 'Unauthorized: missing permission ' . $permission);
+    }
+
     public function index(Request $request): JsonResponse
     {
+        $this->authorizePermission($request, 'role.view');
+
         $permissions = Permission::query()
             ->when($request->filled('group'), fn ($query) => $query->where('group', $request->string('group')->toString()))
             ->when($request->filled('type'), fn ($query) => $query->where('type', $request->string('type')->toString()))
@@ -27,8 +36,10 @@ class PermissionController
         ]);
     }
 
-    public function show(Permission $permission): JsonResponse
+    public function show(Request $request, Permission $permission): JsonResponse
     {
+        $this->authorizePermission($request, 'role.view');
+
         $permission->load('roles:id,name,label,is_active');
 
         return response()->json([

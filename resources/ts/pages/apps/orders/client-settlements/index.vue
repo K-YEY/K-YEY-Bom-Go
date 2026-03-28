@@ -11,3 +11,9 @@ import ClientSettlementList from '@/views/apps/orders/settlements/ClientSettleme
   </VRow>
 </template>
 
+<route lang="yaml">
+meta:
+  action: manage
+  subject: client-settlement.page
+</route>
+

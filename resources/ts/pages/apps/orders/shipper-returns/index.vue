@@ -11,3 +11,9 @@ import ShipperReturnList from '@/views/apps/orders/returns/ShipperReturnList.vue
   </VRow>
 </template>
 
+<route lang="yaml">
+meta:
+  action: manage
+  subject: shipper-return.page
+</route>
+

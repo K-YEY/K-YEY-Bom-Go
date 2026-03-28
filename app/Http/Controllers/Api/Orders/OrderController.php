@@ -376,7 +376,9 @@ class OrderController extends Controller
         $data = $request->validate([
             'order_ids' => ['required', 'array', 'min:1'],
             'order_ids.*' => ['required', 'integer', 'exists:orders,id'],
-            'shipper_user_id' => ['nullable', 'exists:users,id'],
+            'shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'commission_amount' => ['nullable', 'numeric', 'min:0'],
+            'shipper_date' => ['nullable', 'date'],
         ]);
 
         $orders = Order::query()->whereIn('id', $data['order_ids'])->get();
@@ -398,7 +400,18 @@ class OrderController extends Controller
                 ];
 
                 $payload = $this->resolveDefaultShipper($payload, $order);
-                $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
+                
+                if (array_key_exists('shipper_date', $data) && $data['shipper_date']) {
+                    $payload['shipper_date'] = $data['shipper_date'];
+                } else {
+                    $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
+                }
+                
+                if (array_key_exists('commission_amount', $data) && $data['commission_amount'] !== null && $data['commission_amount'] !== '') {
+                    $payload['commission_amount'] = $data['commission_amount'];
+                    $payload['company_amount'] = ($order->total_amount ?? 0) - $payload['commission_amount'];
+                }
+
                 $payload = $this->applyAutomaticFinancials($payload, $order);
 
                 $order->update($payload);
@@ -767,7 +780,9 @@ class OrderController extends Controller
         $this->authorizeFinalStatusUpdate($request, $order);
 
         $data = $request->validate([
-            'shipper_user_id' => ['nullable', 'exists:users,id'],
+            'shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'commission_amount' => ['nullable', 'numeric', 'min:0'],
+            'shipper_date' => ['nullable', 'date'],
         ]);
 
         $payload = [
@@ -775,7 +790,18 @@ class OrderController extends Controller
         ];
 
         $payload = $this->resolveDefaultShipper($payload, $order);
-        $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
+        
+        if (array_key_exists('shipper_date', $data) && $data['shipper_date']) {
+            $payload['shipper_date'] = $data['shipper_date'];
+        } else {
+            $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
+        }
+
+        if (array_key_exists('commission_amount', $data) && $data['commission_amount'] !== null && $data['commission_amount'] !== '') {
+            $payload['commission_amount'] = $data['commission_amount'];
+            $payload['company_amount'] = ($order->total_amount ?? 0) - $payload['commission_amount'];
+        }
+
         $payload = $this->applyAutomaticFinancials($payload, $order);
 
         $order->update($payload);

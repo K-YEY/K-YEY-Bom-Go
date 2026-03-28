@@ -195,6 +195,7 @@ const searchShippers = async (val: string = '') => {
     const data = (res.value?.data || res.value || [])
     shippers.value = data.map((s: any) => ({
       id: s.user_id,
+      user_id: s.user_id,
       name: s.user?.name || 'Unknown',
       commission_rate: s.commission_rate
     }))

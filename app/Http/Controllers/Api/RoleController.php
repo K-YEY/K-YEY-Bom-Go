@@ -12,8 +12,17 @@ use Spatie\Permission\PermissionRegistrar;
 
 class RoleController
 {
-    public function index(): JsonResponse
+    private function authorizePermission(Request $request, string $permission): void
     {
+        $user = $request->user();
+        abort_unless($user, 401, 'Unauthenticated');
+        abort_unless($user->can($permission), 403, 'Unauthorized: missing permission ' . $permission);
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'role.view');
+
         $roles = Role::query()
             ->with(['permissions:id,name,group,label,type'])
             ->with(['users' => function($query) {
@@ -30,6 +39,8 @@ class RoleController
 
     public function store(Request $request): JsonResponse
     {
+        $this->authorizePermission($request, 'role.create');
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
             'label' => ['nullable', 'string', 'max:255'],
@@ -65,8 +76,10 @@ class RoleController
         ], 201);
     }
 
-    public function show(Role $role): JsonResponse
+    public function show(Request $request, Role $role): JsonResponse
     {
+        $this->authorizePermission($request, 'role.view');
+
         $role->load(['permissions:id,name,group,label,type'])->loadCount(['permissions', 'users']);
 
         return response()->json([
@@ -76,6 +89,8 @@ class RoleController
 
     public function update(Request $request, Role $role): JsonResponse
     {
+        $this->authorizePermission($request, 'role.update');
+
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('roles', 'name')->ignore($role->id)],
             'label' => ['nullable', 'string', 'max:255'],
@@ -113,8 +128,10 @@ class RoleController
         ]);
     }
 
-    public function destroy(Role $role): JsonResponse
+    public function destroy(Request $request, Role $role): JsonResponse
     {
+        $this->authorizePermission($request, 'role.delete');
+
         $role->loadCount('users');
 
         if ($role->users_count > 0) {

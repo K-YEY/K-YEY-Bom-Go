@@ -11,3 +11,9 @@ import ShipperCollectionList from '@/views/apps/orders/settlements/ShipperCollec
   </VRow>
 </template>
 
+<route lang="yaml">
+meta:
+  action: manage
+  subject: shipper-collection.page
+</route>
+

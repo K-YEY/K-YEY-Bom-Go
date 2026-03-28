@@ -11,3 +11,9 @@ import ClientReturnList from '@/views/apps/orders/returns/ClientReturnList.vue';
   </VRow>
 </template>
 
+<route lang="yaml">
+meta:
+  action: manage
+  subject: client-return.page
+</route>
+
