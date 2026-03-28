@@ -158,6 +158,7 @@ class ShipperCollectionController extends Controller
                 'total_amount',
                 'commission_amount',
                 'company_amount',
+                'shipping_fee',
                 'status',
                 'shipper_user_id',
                 'client_user_id',
@@ -172,12 +173,6 @@ class ShipperCollectionController extends Controller
             ->whereNotNull('shipper_user_id')
             ->where('is_in_shipper_collection', false)
             ->where('is_shipper_collected', false)
-            ->where(function (Builder $query): void {
-                $query
-                    ->where('total_amount', '>', 0)
-                    ->orWhere('company_amount', '>', 0)
-                    ->orWhere('shipping_fee', '>', 0);
-            })
             ->when(
                 $validated['shipper_user_id'] ?? null,
                 fn (Builder $query, int|string $shipperUserId): Builder => $query->where('shipper_user_id', $shipperUserId)
@@ -223,6 +218,7 @@ class ShipperCollectionController extends Controller
         $orders = $this->resolveEligibleCollectionOrders($data['shipper_user_id'], $orderIds);
 
         $totalAmount = $orders->sum('total_amount');
+        $totalShippingFees = $orders->sum('shipping_fee');
         $netAmount = $orders->sum(fn (Order $o) => $this->resolveCollectionAmount($o));
 
         $creatorId = $request->user()->id;
@@ -233,7 +229,7 @@ class ShipperCollectionController extends Controller
             'collection_date' => $data['collection_date'],
             'total_amount' => $totalAmount,
             'number_of_orders' => $orders->count(),
-            'shipper_fees' => 0,
+            'shipper_fees' => $totalShippingFees ?? 0,
             'net_amount' => max($netAmount, 0),
             'status' => 'PENDING',
             'approval_status' => $canApproveOnCreate ? 'APPROVED' : 'PENDING',
@@ -497,6 +493,7 @@ class ShipperCollectionController extends Controller
             'phone_2' => $order->phone_2,
             'address' => $order->address,
             'total_amount' => $order->total_amount,
+            'shipping_fee' => $order->shipping_fee,
             'commission_amount' => $order->commission_amount,
             'company_amount' => $order->company_amount,
             'collection_amount' => $this->resolveCollectionAmount($order),
@@ -529,12 +526,6 @@ class ShipperCollectionController extends Controller
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('is_in_shipper_collection', false)
             ->where('is_shipper_collected', false)
-            ->where(function (Builder $query): void {
-                $query
-                    ->where('total_amount', '>', 0)
-                    ->orWhere('company_amount', '>', 0)
-                    ->orWhere('shipping_fee', '>', 0);
-            })
             ->get();
 
         if ($orders->count() !== count($orderIds)) {

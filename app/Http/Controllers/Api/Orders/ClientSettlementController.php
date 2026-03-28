@@ -35,6 +35,9 @@ class ClientSettlementController extends Controller
             'client_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
             'search' => ['nullable', 'string', 'max:255'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
         ]);
 
         $statuses = [];
@@ -67,9 +70,22 @@ class ClientSettlementController extends Controller
                 fn (Builder $query, $clientUserId): Builder => $query->where('client_user_id', $clientUserId)
             )
             ->when(
-                $validated['search'] ?? null,
-                fn (Builder $query, $search): Builder => $query->whereHas('client', fn($q) => $q->where('name', 'like', "%{$search}%"))
-                    ->orWhere('id', 'like', "%{$search}%")
+                $validated['start_date'] ?? null,
+                fn (Builder $query, $date): Builder => $query->whereDate('settlement_date', '>=', $date)
+            )
+            ->when(
+                $validated['end_date'] ?? null,
+                fn (Builder $query, $date): Builder => $query->whereDate('settlement_date', '<=', $date)
+            )
+            ->when(
+                $validated['q'] ?? $validated['search'] ?? null,
+                function (Builder $query, $search): Builder {
+                    return $query->where(function (Builder $q) use ($search): void {
+                        $q->where('id', 'like', "%{$search}%")
+                            ->orWhereHas('client', fn($sq) => $sq->where('name', 'like', "%{$search}%"))
+                            ->orWhereHas('orders', fn($sq) => $sq->where('code', 'like', "%{$search}%")->orWhere('external_code', 'like', "%{$search}%"));
+                    });
+                }
             )
             ->orderByDesc('id')
             ->paginate($request->input('per_page', 100))
@@ -141,6 +157,13 @@ class ClientSettlementController extends Controller
             'client_user_id' => ['nullable', 'exists:users,id'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'respect_shipper_collection_requirement' => ['nullable', 'boolean'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'search' => ['nullable', 'array'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+            'governorate_id' => ['nullable', 'integer', 'exists:governorates,id'],
+            'city_id' => ['nullable', 'integer', 'exists:cities,id'],
+            'status' => ['nullable', Rule::in(self::ELIGIBLE_ORDER_STATUSES)],
         ]);
 
         $clientUserId = $validated['client_user_id'] ?? null;
@@ -187,6 +210,37 @@ class ClientSettlementController extends Controller
                 $requireShipperCollectionFirst,
                 fn (Builder $query): Builder => $query->where('is_shipper_collected', true)
             )
+            ->when(
+                $validated['status'] ?? null,
+                fn (Builder $query, $status): Builder => $query->where('status', $status)
+            )
+            ->when(
+                $validated['governorate_id'] ?? null,
+                fn (Builder $query, $govId): Builder => $query->where('governorate_id', $govId)
+            )
+            ->when(
+                $validated['city_id'] ?? null,
+                fn (Builder $query, $cityId): Builder => $query->where('city_id', $cityId)
+            )
+            ->when(
+                $validated['start_date'] ?? null,
+                fn (Builder $query, $date): Builder => $query->whereDate('updated_at', '>=', $date)
+            )
+            ->when(
+                $validated['end_date'] ?? null,
+                fn (Builder $query, $date): Builder => $query->whereDate('updated_at', '<=', $date)
+            )
+            ->when(
+                $validated['q'] ?? null,
+                function (Builder $query, $q): Builder {
+                    return $query->where(function (Builder $builder) use ($q): void {
+                        $builder->where('code', 'like', "%{$q}%")
+                            ->orWhere('external_code', 'like', "%{$q}%")
+                            ->orWhere('receiver_name', 'like', "%{$q}%")
+                            ->orWhere('phone', 'like', "%{$q}%");
+                    });
+                }
+            )
             ->orderByDesc('id')
             ->paginate($perPage)
             ->appends($request->query());
@@ -226,29 +280,45 @@ class ClientSettlementController extends Controller
         $orderIds = array_values(array_unique($data['order_ids'] ?? []));
         unset($data['order_ids']);
 
-        $creatorId = $request->user()->id;
-        $canApproveOnCreate = $request->user()?->can('client-settlement.approve') ?? false;
+        $settlementFees = (float) ($data['fees'] ?? 0);
 
-        $data['created_by'] = $creatorId;
-        $data['approval_status'] = $canApproveOnCreate ? 'APPROVED' : 'PENDING';
-        $data['approved_by'] = $canApproveOnCreate ? $creatorId : null;
-        $data['approved_at'] = $canApproveOnCreate ? now() : null;
-        $data['rejected_by'] = null;
-        $data['rejected_at'] = null;
-        $data['approval_note'] = null;
+        $settlement = DB::transaction(function () use ($data, $orderIds, $settlementFees, $request): ClientSettlement {
+            $creatorId = $request->user()->id;
+            $canApproveOnCreate = $request->user()?->can('client-settlement.approve') ?? false;
 
-        $settlement = DB::transaction(function () use ($data, $orderIds): ClientSettlement {
-            $settlement = ClientSettlement::query()->create($data);
+            $orders = $this->resolveEligibleSettlementOrders((int) $data['client_user_id'], $orderIds);
 
-            if ($orderIds !== []) {
-                $orders = $this->resolveEligibleSettlementOrders($data['client_user_id'], $orderIds);
+            // Calculation
+            $totalAmount = $orders->sum('total_amount');
+            $orderShippingFees = $orders->sum('shipping_fee');
+            $codAmountTotal = $orders->sum('cod_amount');
 
-                $this->attachOrdersToSettlement($settlement, $orders);
-                $this->syncSettlementOrdersState($settlement, $orders->pluck('id')->all());
-            }
+            $actualTotalFees = $orderShippingFees + $settlementFees;
+            $netAmount = round($codAmountTotal - $settlementFees, 2);
+
+            $settlementData = [
+                'client_user_id' => $data['client_user_id'],
+                'settlement_date' => $data['settlement_date'],
+                'total_amount' => $totalAmount,
+                'number_of_orders' => $orders->count(),
+                'fees' => $actualTotalFees,
+                'net_amount' => $netAmount,
+                'status' => 'PENDING',
+                'approval_status' => $canApproveOnCreate ? 'APPROVED' : 'PENDING',
+                'created_by' => $creatorId,
+                'approved_by' => $canApproveOnCreate ? $creatorId : null,
+                'approved_at' => $canApproveOnCreate ? now() : null,
+            ];
+
+            $settlement = ClientSettlement::query()->create($settlementData);
+
+            $this->attachOrdersToSettlement($settlement, $orders);
+            $this->syncSettlementOrdersState($settlement);
 
             return $settlement;
         });
+
+        $settlement->load(['client:id,name'])->loadCount('orders');
 
         return response()->json([
             'message' => 'Client settlement created successfully.',

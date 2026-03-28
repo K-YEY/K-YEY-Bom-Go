@@ -47,17 +47,32 @@ class ClientController extends Controller
         if ($request->filled('eligible_for')) {
             $type = $request->get('eligible_for');
             if ($type === 'settlement') {
-                $query->whereHas('orders', function ($q) {
-                    $q->whereIn('status', \App\Http\Controllers\Api\Orders\ClientSettlementController::ELIGIBLE_ORDER_STATUSES)
+                $requireShipperCollectionFirst = true; // Default behavior
+                $settingValue = \App\Models\Setting::query()->where('key', 'require_shipper_collection_first')->value('value');
+                if ($settingValue !== null) {
+                    $normalized = strtolower(trim((string) $settingValue));
+                    $requireShipperCollectionFirst = in_array($normalized, ['1', 'true', 'yes', 'on'], true) || $settingValue === true;
+                }
+
+                $eligibleStatuses = \App\Http\Controllers\Api\Orders\ClientSettlementController::ELIGIBLE_ORDER_STATUSES;
+
+                $query->whereHas('orders', function ($q) use ($eligibleStatuses) {
+                    $q->whereIn('status', $eligibleStatuses)
                       ->where('is_in_client_settlement', false)
-                      ->where('is_client_settled', false)
-                      ->where(function ($sub) {
-                          $sub->where('is_shipper_collected', true)
-                              ->orWhereHas('client', function ($cq) {
-                                  $cq->where('can_settle_before_shipper_collected', true);
-                              });
-                      });
+                      ->where('is_client_settled', false);
                 });
+
+                if ($requireShipperCollectionFirst) {
+                    $query->where(function ($q) use ($eligibleStatuses) {
+                        $q->where('can_settle_before_shipper_collected', true)
+                          ->orWhereHas('orders', function ($sq) use ($eligibleStatuses) {
+                              $sq->whereIn('status', $eligibleStatuses)
+                                ->where('is_in_client_settlement', false)
+                                ->where('is_client_settled', false)
+                                ->where('is_shipper_collected', true);
+                          });
+                    });
+                }
             } elseif ($type === 'return') {
                 $query->whereHas('orders', function ($q) {
                     $q->whereIn('status', \App\Http\Controllers\Api\Orders\ClientReturnController::ELIGIBLE_ORDER_STATUSES)
