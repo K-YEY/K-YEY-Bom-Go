@@ -2,16 +2,19 @@
 import UpdateUserRoleDialog from '@/components/dialogs/UpdateUserRoleDialog.vue'
 import AddNewUserDrawer from '@/views/apps/user/list/AddNewUserDrawer.vue'
 import EditUserDrawer from '@/views/apps/user/list/EditUserDrawer.vue'
+import type { UserProperties } from '@/views/apps/user/types'
 import { createUrl } from '@core/composable/createUrl'
 import { avatarText } from '@core/utils/formatters'
-import type { UserProperties } from '@db/apps/users/types'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // Headers
 const headers = [
-  { title: 'User', key: 'user' },
-  { title: 'Role', key: 'role' },
-  { title: 'Status', key: 'status' },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: t('User'), key: 'user' },
+  { title: t('Role'), key: 'role' },
+  { title: t('Status'), key: 'status' },
+  { title: t('Actions'), key: 'actions', sortable: false },
 ]
 
 // 👉 Store
@@ -179,7 +182,7 @@ const deleteUser = async (id: number) => {
     <VCard>
       <VCardText class="d-flex flex-wrap gap-4">
         <div class="d-flex gap-2 align-center">
-          <p class="text-body-1 mb-0">Show</p>
+          <p class="text-body-1 mb-0">{{ t('Showing') }}</p>
           <AppSelect
             :model-value="itemsPerPage"
             :items="[
@@ -187,7 +190,7 @@ const deleteUser = async (id: number) => {
               { value: 25, title: '25' },
               { value: 50, title: '50' },
               { value: 100, title: '100' },
-              { value: -1, title: 'All' },
+              { value: -1, title: t('All') },
             ]"
             style="inline-size: 5.5rem;"
             @update:model-value="itemsPerPage = parseInt($event, 10)"
@@ -199,12 +202,12 @@ const deleteUser = async (id: number) => {
         <div class="d-flex align-center flex-wrap gap-4">
           <AppTextField
             v-model="searchQuery"
-            placeholder="Search User"
+            :placeholder="t('Search User')"
             style="inline-size: 15.625rem;"
           />
           <AppSelect
             v-model="selectedRole"
-            placeholder="Select Role"
+            :placeholder="t('Select Role')"
             :items="roles"
             clearable
             clear-icon="tabler-x"
@@ -212,7 +215,7 @@ const deleteUser = async (id: number) => {
           />
            <AppSelect
               v-model:model-value="selectedStatus"
-              placeholder="Select Status"
+              :placeholder="t('Select Status')"
               :items="status"
               clearable
               clear-icon="tabler-x"

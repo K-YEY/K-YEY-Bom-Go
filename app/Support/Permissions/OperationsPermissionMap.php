@@ -5,38 +5,84 @@ namespace App\Support\Permissions;
 class OperationsPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'material.page', 'group' => 'materials', 'label' => 'Access Material page', 'type' => 'page'],
-        ['name' => 'material-request.page', 'group' => 'material-requests', 'label' => 'Access Material Request page', 'type' => 'page'],
-        ['name' => 'material-request-item.page', 'group' => 'material-request-items', 'label' => 'Access Material Request Item page', 'type' => 'page'],
-        ['name' => 'pickup-request.page', 'group' => 'pickup-requests', 'label' => 'Access Pickup Request page', 'type' => 'page'],
-        ['name' => 'visit.page', 'group' => 'visits', 'label' => 'Access Visit page', 'type' => 'page'],
+        ['name' => 'material.page', 'group' => 'materials', 'label' => 'دخول صفحة الخامات', 'type' => 'page'],
+        ['name' => 'material-request.page', 'group' => 'material-requests', 'label' => 'دخول صفحة طلبات الخامات', 'type' => 'page'],
+        ['name' => 'material-request-item.page', 'group' => 'material-request-items', 'label' => 'دخول صفحة بنود طلبات الخامات', 'type' => 'page'],
+        ['name' => 'pickup-request.page', 'group' => 'pickup-requests', 'label' => 'دخول صفحة طلبات البيك أب', 'type' => 'page'],
+        ['name' => 'visit.page', 'group' => 'visits', 'label' => 'دخول صفحة الزيارات', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'material.view', 'group' => 'materials', 'label' => 'View materials', 'type' => 'action'],
-        ['name' => 'material.create', 'group' => 'materials', 'label' => 'Create material', 'type' => 'button'],
-        ['name' => 'material.update', 'group' => 'materials', 'label' => 'Update material', 'type' => 'button'],
-        ['name' => 'material.delete', 'group' => 'materials', 'label' => 'Delete material', 'type' => 'button'],
+        ['name' => 'material.view', 'group' => 'materials', 'label' => 'عرض الخامات', 'type' => 'action'],
+        ['name' => 'material.create', 'group' => 'materials', 'label' => 'إضافة خامة جديدة', 'type' => 'button'],
+        ['name' => 'material.update', 'group' => 'materials', 'label' => 'تعديل خامة', 'type' => 'button'],
+        ['name' => 'material.delete', 'group' => 'materials', 'label' => 'حذف خامة', 'type' => 'button'],
 
-        ['name' => 'material-request.view', 'group' => 'material-requests', 'label' => 'View material requests', 'type' => 'action'],
-        ['name' => 'material-request.create', 'group' => 'material-requests', 'label' => 'Create material request', 'type' => 'button'],
-        ['name' => 'material-request.update', 'group' => 'material-requests', 'label' => 'Update material request', 'type' => 'button'],
-        ['name' => 'material-request.delete', 'group' => 'material-requests', 'label' => 'Delete material request', 'type' => 'button'],
+        ['name' => 'material-request.view', 'group' => 'material-requests', 'label' => 'عرض طلبات الخامات', 'type' => 'action'],
+        ['name' => 'material-request.create', 'group' => 'material-requests', 'label' => 'إنشاء طلب خامات', 'type' => 'button'],
+        ['name' => 'material-request.update', 'group' => 'material-requests', 'label' => 'تعديل طلب خامات', 'type' => 'button'],
+        ['name' => 'material-request.delete', 'group' => 'material-requests', 'label' => 'حذف طلب خامات', 'type' => 'button'],
 
-        ['name' => 'material-request-item.view', 'group' => 'material-request-items', 'label' => 'View material request items', 'type' => 'action'],
-        ['name' => 'material-request-item.create', 'group' => 'material-request-items', 'label' => 'Create material request item', 'type' => 'button'],
-        ['name' => 'material-request-item.update', 'group' => 'material-request-items', 'label' => 'Update material request item', 'type' => 'button'],
-        ['name' => 'material-request-item.delete', 'group' => 'material-request-items', 'label' => 'Delete material request item', 'type' => 'button'],
+        ['name' => 'material-request-item.view', 'group' => 'material-request-items', 'label' => 'عرض بنود طلبات الخامات', 'type' => 'action'],
+        ['name' => 'material-request-item.create', 'group' => 'material-request-items', 'label' => 'إضافة بند لطلب خامات', 'type' => 'button'],
+        ['name' => 'material-request-item.update', 'group' => 'material-request-items', 'label' => 'تعديل بند طلب خامات', 'type' => 'button'],
+        ['name' => 'material-request-item.delete', 'group' => 'material-request-items', 'label' => 'حذف بند طلب خامات', 'type' => 'button'],
 
-        ['name' => 'pickup-request.view', 'group' => 'pickup-requests', 'label' => 'View pickup requests', 'type' => 'action'],
-        ['name' => 'pickup-request.create', 'group' => 'pickup-requests', 'label' => 'Create pickup request', 'type' => 'button'],
-        ['name' => 'pickup-request.update', 'group' => 'pickup-requests', 'label' => 'Update pickup request', 'type' => 'button'],
-        ['name' => 'pickup-request.delete', 'group' => 'pickup-requests', 'label' => 'Delete pickup request', 'type' => 'button'],
+        ['name' => 'pickup-request.view', 'group' => 'pickup-requests', 'label' => 'عرض طلبات البيك أب', 'type' => 'action'],
+        ['name' => 'pickup-request.create', 'group' => 'pickup-requests', 'label' => 'إنشاء طلب بيك أب', 'type' => 'button'],
+        ['name' => 'pickup-request.update', 'group' => 'pickup-requests', 'label' => 'تعديل طلب بيك أب', 'type' => 'button'],
+        ['name' => 'pickup-request.delete', 'group' => 'pickup-requests', 'label' => 'حذف طلب بيك أب', 'type' => 'button'],
 
-        ['name' => 'visit.view', 'group' => 'visits', 'label' => 'View visits', 'type' => 'action'],
-        ['name' => 'visit.create', 'group' => 'visits', 'label' => 'Create visit', 'type' => 'button'],
-        ['name' => 'visit.update', 'group' => 'visits', 'label' => 'Update visit', 'type' => 'button'],
-        ['name' => 'visit.delete', 'group' => 'visits', 'label' => 'Delete visit', 'type' => 'button'],
+        ['name' => 'visit.view', 'group' => 'visits', 'label' => 'عرض الزيارات', 'type' => 'action'],
+        ['name' => 'visit.create', 'group' => 'visits', 'label' => 'إضافة زيارة جديدة', 'type' => 'button'],
+        ['name' => 'visit.update', 'group' => 'visits', 'label' => 'تعديل زيارة', 'type' => 'button'],
+        ['name' => 'visit.delete', 'group' => 'visits', 'label' => 'حذف زيارة', 'type' => 'button'],
+    ];
+
+    private const ENTITY_NAMES_AR = [
+        'material' => 'الخامات',
+        'material request' => 'طلب الخامات',
+        'material request item' => 'بند طلب الخامات',
+        'pickup request' => 'طلب بيك أب',
+        'visit' => 'الزيارة',
+    ];
+
+    private const COLUMN_NAMES_AR = [
+        'id' => 'المعرف',
+        'name' => 'الاسم',
+        'code' => 'الكود',
+        'cost_price' => 'سعر التكلفة',
+        'sale_price' => 'سعر البيع',
+        'stock' => 'المخزون',
+        'is_active' => 'نشط',
+        'notes' => 'ملاحظات',
+        'client_id' => 'العميل',
+        'shipper_id' => 'المندوب',
+        'delivery_type' => 'نوع التوصيل',
+        'combined_visit' => 'زيارة مدمجة',
+        'materials_total' => 'إجمالي الخامات',
+        'shipping_cost' => 'تكلفة الشحن',
+        'status' => 'الحالة',
+        'approval_status' => 'حالة الموافقة',
+        'created_by' => 'أنشئ بواسطة',
+        'approved_by' => 'وافق عليه',
+        'approved_at' => 'تاريخ الموافقة',
+        'rejected_by' => 'رفضه',
+        'rejected_at' => 'تاريخ الرفض',
+        'approval_note' => 'ملاحظة الموافقة',
+        'items' => 'البنود',
+        'material_request_id' => 'رقم طلب الخامات',
+        'material_id' => 'الخامة',
+        'quantity' => 'الكمية',
+        'price' => 'السعر',
+        'total' => 'الإجمالي',
+        'pickup_date' => 'تاريخ البيك أب',
+        'combined_with_material' => 'مدمج مع خامات',
+        'pickup_cost' => 'تكلفة البيك أب',
+        'pickup_request_id' => 'رقم طلب البيك أب',
+        'visit_cost' => 'تكلفة الزيارة',
+        'created_at' => 'تاريخ الإنشاء',
+        'updated_at' => 'تاريخ التحديث',
     ];
 
     public const MATERIAL_VIEW_COLUMNS = [
@@ -209,7 +255,7 @@ class OperationsPermissionMap
                 $permissions[] = [
                     'name' => $permission,
                     'group' => $set['group'],
-                    'label' => "View {$set['entity']} {$column} column",
+                    'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في ' . (self::ENTITY_NAMES_AR[$set['entity']] ?? $set['entity']),
                     'type' => 'column',
                 ];
             }
@@ -218,7 +264,7 @@ class OperationsPermissionMap
                 $permissions[] = [
                     'name' => $permission,
                     'group' => $set['group'],
-                    'label' => "Edit {$set['entity']} {$column} column",
+                    'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في ' . (self::ENTITY_NAMES_AR[$set['entity']] ?? $set['entity']),
                     'type' => 'column',
                 ];
             }

@@ -5,11 +5,11 @@ namespace App\Support\Permissions;
 class SettingPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'setting.page', 'group' => 'setting', 'label' => 'Access Settings page', 'type' => 'page'],
+        ['name' => 'setting.page', 'group' => 'setting', 'label' => 'دخول صفحة الإعدادات', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'setting.bypass-working-hours', 'group' => 'setting', 'label' => 'Bypass working hours restrictions', 'type' => 'button'],
+        ['name' => 'setting.bypass-working-hours', 'group' => 'setting', 'label' => 'تجاوز قيود ساعات العمل', 'type' => 'button'],
     ];
 
     /**

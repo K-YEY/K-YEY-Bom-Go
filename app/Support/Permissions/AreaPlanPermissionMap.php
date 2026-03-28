@@ -5,20 +5,37 @@ namespace App\Support\Permissions;
 class AreaPlanPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'area.page', 'group' => 'areas', 'label' => 'Access Area page', 'type' => 'page'],
-        ['name' => 'plan.page', 'group' => 'plans', 'label' => 'Access Plan page', 'type' => 'page'],
+        ['name' => 'area.page', 'group' => 'areas', 'label' => 'دخول صفحة المناطق (المحافظات والمدن)', 'type' => 'page'],
+        ['name' => 'plan.page', 'group' => 'plans', 'label' => 'دخول صفحة خطط الأسعار', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'area.view', 'group' => 'areas', 'label' => 'View areas', 'type' => 'action'],
-        ['name' => 'area.create', 'group' => 'areas', 'label' => 'Create area', 'type' => 'button'],
-        ['name' => 'area.update', 'group' => 'areas', 'label' => 'Update area', 'type' => 'button'],
-        ['name' => 'area.delete', 'group' => 'areas', 'label' => 'Delete area', 'type' => 'button'],
+        ['name' => 'area.view', 'group' => 'areas', 'label' => 'عرض المناطق', 'type' => 'action'],
+        ['name' => 'area.create', 'group' => 'areas', 'label' => 'إضافة منطقة جديدة', 'type' => 'button'],
+        ['name' => 'area.update', 'group' => 'areas', 'label' => 'تعديل منطقة', 'type' => 'button'],
+        ['name' => 'area.delete', 'group' => 'areas', 'label' => 'حذف منطقة', 'type' => 'button'],
 
-        ['name' => 'plan.view', 'group' => 'plans', 'label' => 'View plans', 'type' => 'action'],
-        ['name' => 'plan.create', 'group' => 'plans', 'label' => 'Create plan', 'type' => 'button'],
-        ['name' => 'plan.update', 'group' => 'plans', 'label' => 'Update plan', 'type' => 'button'],
-        ['name' => 'plan.delete', 'group' => 'plans', 'label' => 'Delete plan', 'type' => 'button'],
+        ['name' => 'plan.view', 'group' => 'plans', 'label' => 'عرض خطط الأسعار', 'type' => 'action'],
+        ['name' => 'plan.create', 'group' => 'plans', 'label' => 'إضافة خطة أسعار جديدة', 'type' => 'button'],
+        ['name' => 'plan.update', 'group' => 'plans', 'label' => 'تعديل خطة أسعار', 'type' => 'button'],
+        ['name' => 'plan.delete', 'group' => 'plans', 'label' => 'حذف خطة أسعار', 'type' => 'button'],
+    ];
+
+    private const COLUMN_NAMES_AR = [
+        'id' => 'المعرف',
+        'name' => 'الاسم',
+        'follow_up_hours' => 'ساعات المتابعة',
+        'default_shipper_user_id' => 'المندوب الافتراضي',
+        'defaultShipper' => 'المندوب الافتراضي',
+        'cities' => 'المدن',
+        'governorate_id' => 'رقم المحافظة',
+        'governorate' => 'المحافظة',
+        'order_count' => 'عدد الأوردات',
+        'prices' => 'الأسعار',
+        'plan_id' => 'رقم الخطة',
+        'price' => 'السعر',
+        'created_at' => 'تاريخ الإنشاء',
+        'updated_at' => 'تاريخ التحديث',
     ];
 
     public const GOVERNORATE_VIEW_COLUMNS = [
@@ -99,7 +116,7 @@ class AreaPlanPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'areas',
-                'label' => "View area {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في المحافظة',
                 'type' => 'column',
             ];
         }
@@ -108,7 +125,7 @@ class AreaPlanPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'areas',
-                'label' => "Edit area {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في المحافظة',
                 'type' => 'column',
             ];
         }
@@ -121,7 +138,7 @@ class AreaPlanPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'areas',
-                'label' => "View city {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في المدينة',
                 'type' => 'column',
             ];
         }
@@ -130,7 +147,7 @@ class AreaPlanPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'areas',
-                'label' => "Edit city {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في المدينة',
                 'type' => 'column',
             ];
         }
@@ -143,7 +160,7 @@ class AreaPlanPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'plans',
-                'label' => "View plan {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في الخطة',
                 'type' => 'column',
             ];
         }
@@ -152,7 +169,7 @@ class AreaPlanPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'plans',
-                'label' => "Edit plan {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في الخطة',
                 'type' => 'column',
             ];
         }
@@ -165,7 +182,7 @@ class AreaPlanPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'plan-prices',
-                'label' => "View plan price {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في سعر الخطة',
                 'type' => 'column',
             ];
         }
@@ -174,7 +191,7 @@ class AreaPlanPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'plan-prices',
-                'label' => "Edit plan price {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في سعر الخطة',
                 'type' => 'column',
             ];
         }

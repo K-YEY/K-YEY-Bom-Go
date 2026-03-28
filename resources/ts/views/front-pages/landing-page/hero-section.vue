@@ -1,27 +1,50 @@
 <script setup lang="ts">
-import heroDashboardShippingImg from '@images/front-pages/landing-page/hero-dashboard-shipping.png'
-import heroElementsShippingImg from '@images/front-pages/landing-page/hero-elements-shipping.png'
-import { useMouse } from '@vueuse/core'
+import { useApi } from '@/composables/useApi'
+import heroForkliftImg from '@images/front-pages/landing-page/hero-forklift.png'
 import { useTheme } from 'vuetify'
 
 const theme = useTheme()
 
-// Use the same for both for now, or generating another variant
-const heroElementsImg = computed(() => heroElementsShippingImg)
-const heroDashboardImg = computed(() => heroDashboardShippingImg)
+const activeTab = ref('trace')
+const trackingID = ref('')
+const trackingResult = ref<any>(null)
+const isTracking = ref(false)
+const trackingError = ref('')
 
-const { x, y } = useMouse({ touch: false })
-
-const translateMouse = computed(() => {
-  if (typeof window !== 'undefined') {
-    const rotateX = ref((window.innerHeight - (1 * y.value)) / 100)
-
-    return { transform: `perspective(1200px) rotateX(${rotateX.value < -40 ? -20 : rotateX.value}deg) rotateY(${(window.innerWidth - (2 * x.value)) / 100}deg) scale3d(1,1,1)` }
+const trackNow = async () => {
+  if (!trackingID.value) return
+  
+  isTracking.value = true
+  trackingError.value = ''
+  trackingResult.value = null
+  
+  try {
+    const { data, error } = await useApi(`/orders/track/${trackingID.value}`).get().json()
+    if (error.value) {
+      trackingError.value = 'الشحنة غير موجودة أو كود غير صحيح'
+    } else {
+      trackingResult.value = data.value
+    }
+  } catch (e) {
+    trackingError.value = 'حدث خطأ أثناء التتبع'
+  } finally {
+    isTracking.value = false
   }
+}
 
-  // Provide a default return value when `window` is undefined
-  return { transform: 'perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)' }
-})
+const services = [
+  { title: 'خدمات المستودعات', icon: 'tabler-home', color: 'orange' },
+  { title: 'الشحن البحري', icon: 'tabler-waves-ocean', color: 'blue' },
+  { title: 'الشحن الجوي', icon: 'tabler-plane-tilt', color: 'red' },
+  { title: 'الشحن البري', icon: 'tabler-truck', color: 'orange-darken-3' },
+]
+
+const statusColors: any = {
+  OUT_FOR_DELIVERY: 'primary',
+  DELIVERED: 'success',
+  HOLD: 'warning',
+  UNDELIVERED: 'error',
+}
 </script>
 
 <template>
@@ -30,261 +53,194 @@ const translateMouse = computed(() => {
     :style="{ background: 'rgb(var(--v-theme-surface))' }"
   >
     <div id="landingHero">
-      <div
+      <div 
         class="landing-hero"
-        :class="theme.current.value.dark ? 'landing-hero-dark-bg' : 'landing-hero-light-bg'"
+        :style="{ background: theme.current.value.dark ? '#25293C' : '#FFF9F5' }"
       >
         <VContainer>
-          <div class="hero-text-box text-center px-6">
-            <h1 class="hero-title mb-4">
-              منصة واحدة لإدارة كل شحناتك في أسرع وقت
-            </h1>
-            <h6 class="mb-6 text-h6">
-              أقوى نظام إدارة لوجستيات في مصر، مصمم للسهولة والسرعة والاعتمادية.
-              نحن نوفر لك حلولاً كاملة لنمو أعمالك.
-            </h6>
-            <div class="position-relative">
-              <VBtn
-                :size="$vuetify.display.smAndUp ? 'large' : 'default' "
-                :to="{ name: 'pages-authentication-login-v1' }"
-                :active="false"
-              >
-                ابدأ رحلتك معنا
-              </VBtn>
-            </div>
-          </div>
+          <VRow align="center">
+            <!-- Left Side: Hero Text and Tracker -->
+            <VCol cols="12" md="6" class="px-6">
+              <h1 class="hero-title mb-2 text-start">
+                دقة الخدمات اللوجستية:
+              </h1>
+              <h2 class="text-h3 font-weight-black mb-6" style="color: #2F2B3D;">
+                حيث تلتقي الكفاءة بالخبرة
+              </h2>
+              <p class="mb-8 text-body-1 text-disabled" style="max-inline-size: 500px">
+                من التخليص الجمركي إلى تسليم الميل الأخير، نحن نهتم بكل التفاصيل لضمان وصول شحناتك في أمان تام وبأعلى سرعة.
+              </p>
+
+              <!-- Tracking Box -->
+              <VCard elevation="12" class="tracker-card rounded-xl">
+                <div class="d-flex border-bottom">
+                  <div 
+                    class="tab-item py-4 px-6 cursor-pointer flex-fill text-center font-weight-bold"
+                    :class="activeTab === 'trace' ? 'active-tab' : ''"
+                    @click="activeTab = 'trace'"
+                  >
+                    <VIcon icon="tabler-map-pin" class="me-2" :color="activeTab === 'trace' ? '#FF5C00' : ''" />
+                    تتبع الشحنة
+                  </div>
+                  <div 
+                    class="tab-item py-4 px-6 cursor-pointer flex-fill text-center font-weight-bold"
+                    :class="activeTab === 'rates' ? 'active-tab' : ''"
+                    :style="activeTab === 'rates' ? {} : { backgroundColor: '#0077B6', color: 'white', borderTopRightRadius: '12px' }"
+                    @click="activeTab = 'rates'"
+                  >
+                    <VIcon icon="tabler-currency-dollar" class="me-2" :color="activeTab === 'rates' ? '#0077B6' : 'white'" />
+                    أسعار الشحن
+                  </div>
+                </div>
+                
+                <VCardText class="pa-6">
+                  <div v-if="activeTab === 'trace'">
+                    <label class="text-caption font-weight-bold mb-2 d-inline-block">رقم التتبع (Tracking ID)</label>
+                    <VTextField
+                      v-model="trackingID"
+                      placeholder="أدخل رقم الشحنة هنا..."
+                      variant="outlined"
+                      bg-color="grey-lighten-4"
+                      hide-details
+                      class="mb-4"
+                      @keyup.enter="trackNow"
+                    />
+                    <VBtn 
+                      block 
+                      color="#FF5C00" 
+                      size="large" 
+                      class="text-white font-weight-bold"
+                      :loading="isTracking"
+                      @click="trackNow"
+                    >
+                      تتبع الآن
+                    </VBtn>
+
+                    <!-- Tracking Result -->
+                    <div v-if="trackingResult" class="mt-6 pa-4 rounded-lg bg-orange-lighten-5 border border-orange-lighten-3">
+                      <div class="d-flex justify-space-between align-center mb-4">
+                        <span class="font-weight-bold text-h6">#{{ trackingResult.code }}</span>
+                        <VChip :color="statusColors[trackingResult.status] || 'secondary'" size="small">
+                          {{ trackingResult.status === 'OUT_FOR_DELIVERY' ? 'خرج للتوصيل' : 
+                             trackingResult.status === 'DELIVERED' ? 'تم التسليم' :
+                             trackingResult.status === 'HOLD' ? 'قيد الانتظار' :
+                             trackingResult.status === 'UNDELIVERED' ? 'فشل التوصيل' : trackingResult.status }}
+                        </VChip>
+                      </div>
+                      <div class="text-body-2 mb-1">المرسل إليه: {{ trackingResult.receiver_name }}</div>
+                      <div class="text-body-2 mb-4">الموقع: {{ trackingResult.governorate }} - {{ trackingResult.city }}</div>
+                      
+                      <div class="text-caption font-weight-bold mb-2">تاريخ الشحنة:</div>
+                      <div class="timeline ps-2 border-start border-primary border-opacity-25">
+                        <div v-for="(log, i) in trackingResult.history.slice(0, 3)" :key="i" class="mb-2 position-relative">
+                          <div class="dot position-absolute bg-primary rounded-circle" style="inline-size: 8px; block-size: 8px; inset-inline-start: -12.5px; inset-block-start: 6px;" />
+                          <div class="text-caption font-weight-bold">{{ log.activity }}</div>
+                          <div class="text-xs text-disabled">{{ log.created_at }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-if="trackingError" class="mt-4 text-error text-center text-caption font-weight-bold">
+                       {{ trackingError }}
+                    </div>
+                  </div>
+                  <div v-else class="text-center py-6">
+                    قم بتسجيل الدخول لمشاهدة خطط الأسعار المتاحة لعملاء النظام.
+                    <VBtn class="mt-4" variant="tonal" :to="{ name: 'pages-authentication-login-v1' }">تسجيل الدخول</VBtn>
+                  </div>
+                </VCardText>
+              </VCard>
+            </VCol>
+
+            <!-- Right Side: Forklift Image -->
+            <VCol cols="12" md="6" class="text-center position-relative">
+               <img
+                  :src="heroForkliftImg"
+                  alt="Logistic Forklift"
+                  class="hero-main-img"
+                  style="inline-size: 100%; max-inline-size: 600px"
+                >
+            </VCol>
+          </VRow>
         </VContainer>
       </div>
     </div>
 
-    <VContainer>
-      <div class="position-relative">
-        <div class="blank-section" />
-        <div class="hero-animation-img position-absolute">
-          <RouterLink
-            :to="{ name: 'dashboards-orders' }"
-            target="_blank"
-          >
-            <div
-              class="hero-dashboard-img position-relative"
-              :style="translateMouse"
-              data-allow-mismatch
-            >
-              <img
-                :src="heroDashboardImg"
-                alt="Hero Dashboard"
-                class="animation-img"
-              >
-              <img
-                :src="heroElementsImg"
-                alt="hero elements"
-                class="hero-elements-img animation-img position-absolute"
-                style="transform: translateZ(1rem);"
-              >
-            </div>
-          </RouterLink>
-        </div>
-      </div>
+    <!-- Services Section (Logistics Crafted to Perfection) -->
+    <VContainer class="services-container py-12">
+      <h3 class="text-h5 font-weight-bold mb-10 text-center text-md-start">الخدمات اللوجستية المتقنة</h3>
+      <VRow>
+        <VCol v-for="service in services" :key="service.title" cols="12" sm="6" md="3">
+          <VCard variant="flat" class="service-card py-6 text-center border">
+            <VAvatar size="48" :color="service.color" variant="tonal" class="mb-4">
+              <VIcon :icon="service.icon" size="28" />
+            </VAvatar>
+            <div class="font-weight-bold text-subtitle-1">{{ service.title }}</div>
+          </VCard>
+        </VCol>
+      </VRow>
     </VContainer>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .landing-hero {
-  border-radius: 0 0 50px 50px;
-  padding-block: 9.75rem 22rem;
-}
-
-.hero-animation-img {
-  inline-size: 90%;
-  inset-block-start: -25rem;
-  inset-inline-start: 4.425rem;
-  margin-inline: auto;
-}
-
-section {
-  display: block;
-}
-
-.blank-section {
-  background-color: rgba(var(--v-theme-surface));
-  min-block-size: 25rem;
-}
-
-@media (min-width: 1280px) and (max-width: 1440px) {
-  .blank-section {
-    min-block-size: 18rem;
-  }
-
-  .landing-hero {
-    padding-block-end: 22rem;
-  }
-
-  .hero-animation-img {
-    inset-block-start: -25rem;
-  }
-}
-
-@media (min-width: 900px) and (max-width: 1279px) {
-  .blank-section {
-    min-block-size: 13rem;
-  }
-
-  .landing-hero {
-    padding-block-end: 14rem;
-  }
-
-  .hero-animation-img {
-    inset-block-start: -17rem;
-    inset-inline-start: 2.75rem;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 899px) {
-  .blank-section {
-    min-block-size: 12rem;
-  }
-
-  .landing-hero {
-    padding-block-end: 12rem;
-  }
-
-  .hero-animation-img {
-    inset-block-start: -15rem;
-    inset-inline-start: 2.5rem;
-  }
-}
-
-@media (min-width: 600px) and (max-width: 767px) {
-  .blank-section {
-    min-block-size: 12rem;
-  }
-
-  .landing-hero {
-    padding-block-end: 8rem;
-  }
-
-  .hero-animation-img {
-    inset-block-start: -11rem;
-    inset-inline-start: 2rem;
-  }
-}
-
-@media (min-width: 425px) and (max-width: 600px) {
-  .blank-section {
-    min-block-size: 8rem;
-  }
-
-  .landing-hero {
-    padding-block-end: 8rem;
-  }
-
-  .hero-animation-img {
-    inset-block-start: -9rem;
-    inset-inline-start: 1.7rem;
-  }
-}
-
-@media (min-width: 300px) and (max-width: 424px) {
-  .blank-section {
-    min-block-size: 4rem;
-  }
-
-  .landing-hero {
-    padding-block-end: 6rem;
-  }
-
-  .hero-animation-img {
-    inset-block-start: -7rem;
-    inset-inline-start: 1.25rem;
-  }
-}
-
-.landing-hero::before {
-  position: absolute;
-  background-repeat: no-repeat;
-  inset-block: 0;
-  opacity: 0.5;
-}
-
-.landing-hero-dark-bg {
-  background-color: #25293c;
-  background-image: url("@images/front-pages/backgrounds/hero-bg.png");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-
-.landing-hero-light-bg {
-  background: url("@images/front-pages/backgrounds/hero-bg.png") center no-repeat, linear-gradient(138.18deg, #eae8fd 0%, #fce5e6 94.44%);
-  background-size: cover;
-}
-
-@media (min-width: 650px) {
-  .hero-text-box {
-    inline-size: 38rem;
-    margin-block-end: 1rem;
-    margin-inline: auto;
-  }
-}
-
-@media (max-width: 599px) {
-  .hero-title {
-    font-size: 1.5rem !important;
-    line-height: 2.375rem !important;
-  }
+  padding-block: 5rem 10rem;
+  overflow: hidden;
 }
 
 .hero-title {
-  animation: shine 2s ease-in-out infinite alternate;
-  background: linear-gradient(135deg, #28c76f 0%, #5a4aff 47.92%, #ff3739 100%);
-  //  stylelint-disable-next-line property-no-vendor-prefix
-  -webkit-background-clip: text;
-  background-clip: text;
-  background-size: 200% auto;
-  font-size: 42px;
-  font-weight: 800;
-  line-height: 48px;
-  -webkit-text-fill-color: rgba(0, 0, 0, 0%);
+  color: #FF5C00;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
-@keyframes shine {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  80% {
-    background-position: 50% 90%;
-  }
-
-  100% {
-    background-position: 91% 100%;
-  }
-}
-
-.hero-dashboard-img {
-  margin-block: 0;
-  margin-inline: auto;
-  transform-style: preserve-3d;
-  transition: all 0.35s;
-
-  img {
-    inline-size: 100%;
+.tracker-card {
+  max-inline-size: 450px;
+  background-color: white;
+  
+  .tab-item {
+    transition: all 0.2s ease-in-out;
+    border-top-left-radius: 12px;
+    
+    &.active-tab {
+      background-color: white;
+      color: #FF5C00 !important;
+    }
+    
+    &:not(.active-tab) {
+      background-color: #F4F4F4;
+      color: #888;
+    }
   }
 }
 
-.hero-elements-img {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
+.service-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: white;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  }
 }
 
-.feature-cards {
-  margin-block-start: 6.25rem;
+@media (max-width: 959px) {
+  .landing-hero {
+    padding-block: 3rem 5rem;
+  }
+  
+  .tracker-card {
+    max-inline-size: 100%;
+    margin-block-end: 2rem;
+  }
 }
 
-.hero-btn-item {
-  inset-block-start: 80%;
-  inset-inline-start: 5%;
+.timeline {
+  .dot {
+    z-index: 1;
+  }
 }
 </style>

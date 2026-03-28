@@ -5,14 +5,21 @@ namespace App\Support\Permissions;
 class ContentPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'content.page', 'group' => 'content', 'label' => 'Access Content page', 'type' => 'page'],
+        ['name' => 'content.page', 'group' => 'content', 'label' => 'دخول صفحة المحتوى (نصوص الشحن)', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'content.view', 'group' => 'content', 'label' => 'View content rows', 'type' => 'action'],
-        ['name' => 'content.create', 'group' => 'content', 'label' => 'Create content', 'type' => 'button'],
-        ['name' => 'content.update', 'group' => 'content', 'label' => 'Update content', 'type' => 'button'],
-        ['name' => 'content.delete', 'group' => 'content', 'label' => 'Delete content', 'type' => 'button'],
+        ['name' => 'content.view', 'group' => 'content', 'label' => 'عرض سطور المحتوى', 'type' => 'action'],
+        ['name' => 'content.create', 'group' => 'content', 'label' => 'إضافة محتوى جديد', 'type' => 'button'],
+        ['name' => 'content.update', 'group' => 'content', 'label' => 'تعديل محتوى', 'type' => 'button'],
+        ['name' => 'content.delete', 'group' => 'content', 'label' => 'حذف محتوى', 'type' => 'button'],
+    ];
+
+    private const COLUMN_NAMES_AR = [
+        'id' => 'المعرف',
+        'name' => 'الاسم',
+        'created_at' => 'تاريخ الإنشاء',
+        'updated_at' => 'تاريخ التحديث',
     ];
 
     public const CONTENT_VIEW_COLUMNS = [
@@ -44,7 +51,7 @@ class ContentPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'content',
-                'label' => "View content {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' للمحتوى',
                 'type' => 'column',
             ];
         }
@@ -53,7 +60,7 @@ class ContentPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'content',
-                'label' => "Edit content {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' للمحتوى',
                 'type' => 'column',
             ];
         }

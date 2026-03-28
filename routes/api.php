@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\Route;
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/landing-page', [LandingPageController::class, 'index']);
+Route::get('/orders/track/{code}', [LandingPageController::class, 'trackOrder']);
 Route::get('/app-config', [SettingController::class, 'publicConfig']);
 
 // Protected routes (require auth:sanctum)

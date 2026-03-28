@@ -5,25 +5,57 @@ namespace App\Support\Permissions;
 class AccountPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'user.page', 'group' => 'users', 'label' => 'Access User page', 'type' => 'page'],
-        ['name' => 'client.page', 'group' => 'clients', 'label' => 'Access Client page', 'type' => 'page'],
-        ['name' => 'shipper.page', 'group' => 'shippers', 'label' => 'Access Shipper page', 'type' => 'page'],
-        ['name' => 'user.profile.page', 'group' => 'users', 'label' => 'Access My Profile page', 'type' => 'page'],
+        ['name' => 'user.page', 'group' => 'users', 'label' => 'دخول صفحة المستخدمين', 'type' => 'page'],
+        ['name' => 'client.page', 'group' => 'clients', 'label' => 'دخول صفحة العملاء', 'type' => 'page'],
+        ['name' => 'shipper.page', 'group' => 'shippers', 'label' => 'دخول صفحة المناديب', 'type' => 'page'],
+        ['name' => 'user.profile.page', 'group' => 'users', 'label' => 'دخول صفحة الملف الشخصي', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'user.view', 'group' => 'users', 'label' => 'View users', 'type' => 'action'],
-        ['name' => 'user.create', 'group' => 'users', 'label' => 'Create user', 'type' => 'button'],
-        ['name' => 'user.update', 'group' => 'users', 'label' => 'Update user', 'type' => 'button'],
-        ['name' => 'user.delete', 'group' => 'users', 'label' => 'Delete user', 'type' => 'button'],
-        ['name' => 'user.button.type.user', 'group' => 'users', 'label' => 'Set account type to user', 'type' => 'button'],
-        ['name' => 'user.button.type.client', 'group' => 'users', 'label' => 'Set account type to client', 'type' => 'button'],
-        ['name' => 'user.button.type.shipper', 'group' => 'users', 'label' => 'Set account type to shipper', 'type' => 'button'],
+        ['name' => 'user.view', 'group' => 'users', 'label' => 'عرض المستخدمين', 'type' => 'action'],
+        ['name' => 'user.create', 'group' => 'users', 'label' => 'إضافة مستخدم جديد', 'type' => 'button'],
+        ['name' => 'user.update', 'group' => 'users', 'label' => 'تعديل مستخدم', 'type' => 'button'],
+        ['name' => 'user.delete', 'group' => 'users', 'label' => 'حذف مستخدم', 'type' => 'button'],
+        ['name' => 'user.button.type.user', 'group' => 'users', 'label' => 'تحويل الحساب إلى مستخدم نظام', 'type' => 'button'],
+        ['name' => 'user.button.type.client', 'group' => 'users', 'label' => 'تحويل الحساب إلى عميل', 'type' => 'button'],
+        ['name' => 'user.button.type.shipper', 'group' => 'users', 'label' => 'تحويل الحساب إلى مندوب', 'type' => 'button'],
 
-        ['name' => 'client.view', 'group' => 'clients', 'label' => 'View clients', 'type' => 'action'],
-        ['name' => 'shipper.view', 'group' => 'shippers', 'label' => 'View shippers', 'type' => 'action'],
-        ['name' => 'user.profile.view', 'group' => 'users', 'label' => 'View my profile', 'type' => 'action'],
-        ['name' => 'user.profile.update', 'group' => 'users', 'label' => 'Update my profile', 'type' => 'button'],
+        ['name' => 'client.view', 'group' => 'clients', 'label' => 'عرض العملاء', 'type' => 'action'],
+        ['name' => 'shipper.view', 'group' => 'shippers', 'label' => 'عرض المناديب', 'type' => 'action'],
+        ['name' => 'user.profile.view', 'group' => 'users', 'label' => 'عرض ملفي الشخصي', 'type' => 'action'],
+        ['name' => 'user.profile.update', 'group' => 'users', 'label' => 'تعديل ملفي الشخصي', 'type' => 'button'],
+
+        ['name' => 'role.view', 'group' => 'roles', 'label' => 'عرض الأدوار (الصلاحيات)', 'type' => 'action'],
+        ['name' => 'role.create', 'group' => 'roles', 'label' => 'إضافة دور جديد', 'type' => 'button'],
+        ['name' => 'role.update', 'group' => 'roles', 'label' => 'تعديل دور', 'type' => 'button'],
+        ['name' => 'role.delete', 'group' => 'roles', 'label' => 'حذف دور', 'type' => 'button'],
+        ['name' => 'user.update-role', 'group' => 'users', 'label' => 'تعديل صلاحيات المستخدم (الأدوار)', 'type' => 'button'],
+    ];
+
+    private const COLUMN_NAMES_AR = [
+        'id' => 'المعرف',
+        'name' => 'الاسم',
+        'username' => 'اسم المستخدم',
+        'phone' => 'الهاتف',
+        'avatar' => 'الصورة الشخصية',
+        'roles' => 'الأدوار (الصلاحيات)',
+        'account_type' => 'نوع الحساب',
+        'shipper' => 'بيانات المندوب',
+        'client' => 'بيانات العميل',
+        'is_blocked' => 'محظور',
+        'login_sessions' => 'جلسات تسجيل الدخول',
+        'password' => 'كلمة المرور',
+        'commission_rate' => 'نسبة العمولة',
+        'address' => 'العنوان',
+        'plan_id' => 'خطة الأسعار',
+        'plan' => 'خطة الأسعار',
+        'shipping_content_id' => 'محتوى الشحنة',
+        'shippingContent' => 'محتوى الشحنة',
+        'can_settle_before_shipper_collected' => 'تسوية قبل التحصيل من المندوب',
+        'user_id' => 'رقم المستخدم',
+        'user' => 'المستخدم',
+        'created_at' => 'تاريخ الإنشاء',
+        'updated_at' => 'تاريخ التحديث',
     ];
 
     public const PROFILE_VIEW_COLUMNS = [
@@ -126,7 +158,7 @@ class AccountPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'users',
-                'label' => "View user {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' للمستخدم',
                 'type' => 'column',
             ];
         }
@@ -135,7 +167,7 @@ class AccountPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'users',
-                'label' => "Edit user {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' للمستخدم',
                 'type' => 'column',
             ];
         }
@@ -148,7 +180,7 @@ class AccountPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'users',
-                'label' => "View my profile {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في الملف الشخصي',
                 'type' => 'column',
             ];
         }
@@ -157,7 +189,7 @@ class AccountPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'users',
-                'label' => "Edit my profile {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في الملف الشخصي',
                 'type' => 'column',
             ];
         }
@@ -170,7 +202,7 @@ class AccountPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'clients',
-                'label' => "View client {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' للعميل',
                 'type' => 'column',
             ];
         }
@@ -183,7 +215,7 @@ class AccountPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'shippers',
-                'label' => "View shipper {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' للمندوب',
                 'type' => 'column',
             ];
         }

@@ -5,11 +5,25 @@ namespace App\Support\Permissions;
 class ActivityLogPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'activity-log.page', 'group' => 'activity-logs', 'label' => 'Access Activity Log page', 'type' => 'page'],
+        ['name' => 'activity-log.page', 'group' => 'activity-logs', 'label' => 'دخول صفحة سجل العمليات (اللوجز)', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'activity-log.view', 'group' => 'activity-logs', 'label' => 'View activity logs', 'type' => 'action'],
+        ['name' => 'activity-log.view', 'group' => 'activity-logs', 'label' => 'عرض سجل العمليات', 'type' => 'action'],
+    ];
+
+    private const COLUMN_NAMES_AR = [
+        'id' => 'المعرف',
+        'user_id' => 'رقم المستخدم',
+        'user' => 'المستخدم',
+        'login_session' => 'جلسة تسجيل الدخول',
+        'activity' => 'النشاط',
+        'description' => 'الوصف/بينات التعديل',
+        'type' => 'النوع',
+        'old_values' => 'القيم السابقة',
+        'new_values' => 'القيم الجديدة',
+        'created_at' => 'تاريخ الحركة',
+        'updated_at' => 'تاريخ التحديث',
     ];
 
     public const VIEW_COLUMNS = [
@@ -43,7 +57,7 @@ class ActivityLogPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'activity-logs',
-                'label' => "View activity log {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في سجل العمليات',
                 'type' => 'column',
             ];
         }
@@ -52,7 +66,7 @@ class ActivityLogPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'activity-logs',
-                'label' => "Edit activity log {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في سجل العمليات',
                 'type' => 'column',
             ];
         }

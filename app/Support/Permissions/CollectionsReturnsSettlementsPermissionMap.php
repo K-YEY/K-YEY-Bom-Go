@@ -6,18 +6,18 @@ class CollectionsReturnsSettlementsPermissionMap
 {
     // =========== Shipper Collections ===========
     public const SHIPPER_COLLECTION_PAGE_PERMISSIONS = [
-        ['name' => 'shipper-collection.page', 'group' => 'shipper-collections', 'label' => 'Access Shipper Collection page', 'type' => 'page'],
+        ['name' => 'shipper-collection.page', 'group' => 'shipper-collections', 'label' => 'دخول صفحة تحصيل المناديب', 'type' => 'page'],
     ];
 
     public const SHIPPER_COLLECTION_ACTION_PERMISSIONS = [
-        ['name' => 'shipper-collection.view', 'group' => 'shipper-collections', 'label' => 'View shipper collections', 'type' => 'action'],
-        ['name' => 'shipper-collection.create', 'group' => 'shipper-collections', 'label' => 'Create shipper collection', 'type' => 'button'],
-        ['name' => 'shipper-collection.update', 'group' => 'shipper-collections', 'label' => 'Update shipper collection', 'type' => 'button'],
-        ['name' => 'shipper-collection.delete', 'group' => 'shipper-collections', 'label' => 'Delete shipper collection', 'type' => 'button'],
-        ['name' => 'shipper-collection.unlock', 'group' => 'shipper-collections', 'label' => 'Unlock shipper collection', 'type' => 'button'],
-        ['name' => 'shipper-collection.approve', 'group' => 'shipper-collections', 'label' => 'Approve shipper collection', 'type' => 'button'],
-        ['name' => 'shipper-collection.reject', 'group' => 'shipper-collections', 'label' => 'Reject shipper collection', 'type' => 'button'],
-        ['name' => 'shipper-collection.export', 'group' => 'shipper-collections', 'label' => 'Export shipper collection', 'type' => 'button'],
+        ['name' => 'shipper-collection.view', 'group' => 'shipper-collections', 'label' => 'عرض تحصيلات المناديب', 'type' => 'action'],
+        ['name' => 'shipper-collection.create', 'group' => 'shipper-collections', 'label' => 'إنشاء تحصيل مندوب جديد', 'type' => 'button'],
+        ['name' => 'shipper-collection.update', 'group' => 'shipper-collections', 'label' => 'تعديل تحصيل مندوب', 'type' => 'button'],
+        ['name' => 'shipper-collection.delete', 'group' => 'shipper-collections', 'label' => 'حذف تحصيل مندوب', 'type' => 'button'],
+        ['name' => 'shipper-collection.unlock', 'group' => 'shipper-collections', 'label' => 'إلغاء قفل التحصيل', 'type' => 'button'],
+        ['name' => 'shipper-collection.approve', 'group' => 'shipper-collections', 'label' => 'الموافقة على التحصيل', 'type' => 'button'],
+        ['name' => 'shipper-collection.reject', 'group' => 'shipper-collections', 'label' => 'رفض التحصيل', 'type' => 'button'],
+        ['name' => 'shipper-collection.export', 'group' => 'shipper-collections', 'label' => 'تصدير التحصيلات (إكسيل)', 'type' => 'button'],
     ];
 
     public const SHIPPER_COLLECTION_VIEW_COLUMNS = [
@@ -45,18 +45,18 @@ class CollectionsReturnsSettlementsPermissionMap
 
     // =========== Shipper Returns ===========
     public const SHIPPER_RETURN_PAGE_PERMISSIONS = [
-        ['name' => 'shipper-return.page', 'group' => 'shipper-returns', 'label' => 'Access Shipper Return page', 'type' => 'page'],
+        ['name' => 'shipper-return.page', 'group' => 'shipper-returns', 'label' => 'دخول صفحة مرتجعات المناديب', 'type' => 'page'],
     ];
 
     public const SHIPPER_RETURN_ACTION_PERMISSIONS = [
-        ['name' => 'shipper-return.view', 'group' => 'shipper-returns', 'label' => 'View shipper returns', 'type' => 'action'],
-        ['name' => 'shipper-return.create', 'group' => 'shipper-returns', 'label' => 'Create shipper return', 'type' => 'button'],
-        ['name' => 'shipper-return.update', 'group' => 'shipper-returns', 'label' => 'Update shipper return', 'type' => 'button'],
-        ['name' => 'shipper-return.delete', 'group' => 'shipper-returns', 'label' => 'Delete shipper return', 'type' => 'button'],
-        ['name' => 'shipper-return.unlock', 'group' => 'shipper-returns', 'label' => 'Unlock shipper return', 'type' => 'button'],
-        ['name' => 'shipper-return.approve', 'group' => 'shipper-returns', 'label' => 'Approve shipper return', 'type' => 'button'],
-        ['name' => 'shipper-return.reject', 'group' => 'shipper-returns', 'label' => 'Reject shipper return', 'type' => 'button'],
-        ['name' => 'shipper-return.export', 'group' => 'shipper-returns', 'label' => 'Export shipper return', 'type' => 'button'],
+        ['name' => 'shipper-return.view', 'group' => 'shipper-returns', 'label' => 'عرض مرتجعات المناديب', 'type' => 'action'],
+        ['name' => 'shipper-return.create', 'group' => 'shipper-returns', 'label' => 'إنشاء مرتجع مندوب جديد', 'type' => 'button'],
+        ['name' => 'shipper-return.update', 'group' => 'shipper-returns', 'label' => 'تعديل مرتجع مندوب', 'type' => 'button'],
+        ['name' => 'shipper-return.delete', 'group' => 'shipper-returns', 'label' => 'حذف مرتجع مندوب', 'type' => 'button'],
+        ['name' => 'shipper-return.unlock', 'group' => 'shipper-returns', 'label' => 'إلغاء قفل المرتجع', 'type' => 'button'],
+        ['name' => 'shipper-return.approve', 'group' => 'shipper-returns', 'label' => 'الموافقة على المرتجع', 'type' => 'button'],
+        ['name' => 'shipper-return.reject', 'group' => 'shipper-returns', 'label' => 'رفض المرتجع', 'type' => 'button'],
+        ['name' => 'shipper-return.export', 'group' => 'shipper-returns', 'label' => 'تصدير المرتجعات (إكسيل)', 'type' => 'button'],
     ];
 
     public const SHIPPER_RETURN_VIEW_COLUMNS = [
@@ -81,18 +81,18 @@ class CollectionsReturnsSettlementsPermissionMap
 
     // =========== Client Settlements ===========
     public const CLIENT_SETTLEMENT_PAGE_PERMISSIONS = [
-        ['name' => 'client-settlement.page', 'group' => 'client-settlements', 'label' => 'Access Client Settlement page', 'type' => 'page'],
+        ['name' => 'client-settlement.page', 'group' => 'client-settlements', 'label' => 'دخول صفحة تسويات العملاء', 'type' => 'page'],
     ];
 
     public const CLIENT_SETTLEMENT_ACTION_PERMISSIONS = [
-        ['name' => 'client-settlement.view', 'group' => 'client-settlements', 'label' => 'View client settlements', 'type' => 'action'],
-        ['name' => 'client-settlement.create', 'group' => 'client-settlements', 'label' => 'Create client settlement', 'type' => 'button'],
-        ['name' => 'client-settlement.update', 'group' => 'client-settlements', 'label' => 'Update client settlement', 'type' => 'button'],
-        ['name' => 'client-settlement.delete', 'group' => 'client-settlements', 'label' => 'Delete client settlement', 'type' => 'button'],
-        ['name' => 'client-settlement.unlock', 'group' => 'client-settlements', 'label' => 'Unlock client settlement', 'type' => 'button'],
-        ['name' => 'client-settlement.approve', 'group' => 'client-settlements', 'label' => 'Approve client settlement', 'type' => 'button'],
-        ['name' => 'client-settlement.reject', 'group' => 'client-settlements', 'label' => 'Reject client settlement', 'type' => 'button'],
-        ['name' => 'client-settlement.export', 'group' => 'client-settlements', 'label' => 'Export client settlement', 'type' => 'button'],
+        ['name' => 'client-settlement.view', 'group' => 'client-settlements', 'label' => 'عرض تسويات العملاء', 'type' => 'action'],
+        ['name' => 'client-settlement.create', 'group' => 'client-settlements', 'label' => 'إنشاء تسوية عميل جديدة', 'type' => 'button'],
+        ['name' => 'client-settlement.update', 'group' => 'client-settlements', 'label' => 'تعديل تسوية عميل', 'type' => 'button'],
+        ['name' => 'client-settlement.delete', 'group' => 'client-settlements', 'label' => 'حذف تسوية عميل', 'type' => 'button'],
+        ['name' => 'client-settlement.unlock', 'group' => 'client-settlements', 'label' => 'إلغاء قفل التسوية', 'type' => 'button'],
+        ['name' => 'client-settlement.approve', 'group' => 'client-settlements', 'label' => 'الموافقة على التسوية', 'type' => 'button'],
+        ['name' => 'client-settlement.reject', 'group' => 'client-settlements', 'label' => 'رفض التسوية', 'type' => 'button'],
+        ['name' => 'client-settlement.export', 'group' => 'client-settlements', 'label' => 'تصدير التسويات (إكسيل)', 'type' => 'button'],
     ];
 
     public const CLIENT_SETTLEMENT_VIEW_COLUMNS = [
@@ -119,18 +119,18 @@ class CollectionsReturnsSettlementsPermissionMap
 
     // =========== Client Returns ===========
     public const CLIENT_RETURN_PAGE_PERMISSIONS = [
-        ['name' => 'client-return.page', 'group' => 'client-returns', 'label' => 'Access Client Return page', 'type' => 'page'],
+        ['name' => 'client-return.page', 'group' => 'client-returns', 'label' => 'دخول صفحة مرتجعات العملاء', 'type' => 'page'],
     ];
 
     public const CLIENT_RETURN_ACTION_PERMISSIONS = [
-        ['name' => 'client-return.view', 'group' => 'client-returns', 'label' => 'View client returns', 'type' => 'action'],
-        ['name' => 'client-return.create', 'group' => 'client-returns', 'label' => 'Create client return', 'type' => 'button'],
-        ['name' => 'client-return.update', 'group' => 'client-returns', 'label' => 'Update client return', 'type' => 'button'],
-        ['name' => 'client-return.delete', 'group' => 'client-returns', 'label' => 'Delete client return', 'type' => 'button'],
-        ['name' => 'client-return.unlock', 'group' => 'client-returns', 'label' => 'Unlock client return', 'type' => 'button'],
-        ['name' => 'client-return.approve', 'group' => 'client-returns', 'label' => 'Approve client return', 'type' => 'button'],
-        ['name' => 'client-return.reject', 'group' => 'client-returns', 'label' => 'Reject client return', 'type' => 'button'],
-        ['name' => 'client-return.export', 'group' => 'client-returns', 'label' => 'Export client return', 'type' => 'button'],
+        ['name' => 'client-return.view', 'group' => 'client-returns', 'label' => 'عرض مرتجعات العملاء', 'type' => 'action'],
+        ['name' => 'client-return.create', 'group' => 'client-returns', 'label' => 'إنشاء مرتجع عميل جديد', 'type' => 'button'],
+        ['name' => 'client-return.update', 'group' => 'client-returns', 'label' => 'تعديل مرتجع عميل', 'type' => 'button'],
+        ['name' => 'client-return.delete', 'group' => 'client-returns', 'label' => 'حذف مرتجع عميل', 'type' => 'button'],
+        ['name' => 'client-return.unlock', 'group' => 'client-returns', 'label' => 'إلغاء قفل المرتجع', 'type' => 'button'],
+        ['name' => 'client-return.approve', 'group' => 'client-returns', 'label' => 'الموافقة على المرتجع', 'type' => 'button'],
+        ['name' => 'client-return.reject', 'group' => 'client-returns', 'label' => 'رفض المرتجع', 'type' => 'button'],
+        ['name' => 'client-return.export', 'group' => 'client-returns', 'label' => 'تصدير المرتجعات (إكسيل)', 'type' => 'button'],
     ];
 
     public const CLIENT_RETURN_VIEW_COLUMNS = [
@@ -153,6 +153,26 @@ class CollectionsReturnsSettlementsPermissionMap
         'status' => 'client-return.column.status.edit',
     ];
 
+    private const COLUMN_NAMES_AR = [
+        'id' => 'المعرف',
+        'shipper_user_id' => 'المندوب',
+        'client_user_id' => 'العميل',
+        'collection_date' => 'تاريخ التحصيل',
+        'return_date' => 'تاريخ المرتجع',
+        'settlement_date' => 'تاريخ التسوية',
+        'total_amount' => 'إجمالي المبلغ',
+        'number_of_orders' => 'عدد الأوردات',
+        'fees' => 'رسوم إضافية',
+        'shipper_fees' => 'عمولة المندوب',
+        'net_amount' => 'صافي المبلغ',
+        'status' => 'الحالة',
+        'notes' => 'ملاحظات',
+        'shipper' => 'المندوب',
+        'client' => 'العميل',
+        'created_at' => 'تاريخ الإنشاء',
+        'updated_at' => 'تاريخ التحديث',
+    ];
+
     public static function allPermissionDefinitions(): array
     {
         $permissions = [];
@@ -168,7 +188,7 @@ class CollectionsReturnsSettlementsPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'shipper-collections',
-                'label' => "View shipper collection {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في تحصيل المناديب',
                 'type' => 'column',
             ];
         }
@@ -177,7 +197,7 @@ class CollectionsReturnsSettlementsPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'shipper-collections',
-                'label' => "Edit shipper collection {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في تحصيل المناديب',
                 'type' => 'column',
             ];
         }
@@ -193,7 +213,7 @@ class CollectionsReturnsSettlementsPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'shipper-returns',
-                'label' => "View shipper return {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في مرتجع المناديب',
                 'type' => 'column',
             ];
         }
@@ -202,7 +222,7 @@ class CollectionsReturnsSettlementsPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'shipper-returns',
-                'label' => "Edit shipper return {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في مرتجع المناديب',
                 'type' => 'column',
             ];
         }
@@ -218,7 +238,7 @@ class CollectionsReturnsSettlementsPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'client-settlements',
-                'label' => "View client settlement {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في تسوية العملاء',
                 'type' => 'column',
             ];
         }
@@ -227,7 +247,7 @@ class CollectionsReturnsSettlementsPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'client-settlements',
-                'label' => "Edit client settlement {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في تسوية العملاء',
                 'type' => 'column',
             ];
         }
@@ -243,7 +263,7 @@ class CollectionsReturnsSettlementsPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'client-returns',
-                'label' => "View client return {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في مرتجع العملاء',
                 'type' => 'column',
             ];
         }
@@ -252,7 +272,7 @@ class CollectionsReturnsSettlementsPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'client-returns',
-                'label' => "Edit client return {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في مرتجع العملاء',
                 'type' => 'column',
             ];
         }

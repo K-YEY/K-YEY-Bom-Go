@@ -5,31 +5,76 @@ namespace App\Support\Permissions;
 class OrdersPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'order.page', 'group' => 'orders', 'label' => 'Access Order page', 'type' => 'page'],
-        ['name' => 'order.scan.page', 'group' => 'orders', 'label' => 'Access Order Scan (Barcode) page', 'type' => 'page'],
-        ['name' => 'order.approval.page', 'group' => 'orders', 'label' => 'Access Order Approval requests page', 'type' => 'page'],
-        ['name' => 'order.hold-outfordelivery.page', 'group' => 'orders', 'label' => 'Access HOLD & Out For Delivery page', 'type' => 'page'],
-        ['name' => 'order.uncollectedclient.page', 'group' => 'orders', 'label' => 'Access Uncollected Client page', 'type' => 'page'],
-        ['name' => 'order.uncollectedshipper.page', 'group' => 'orders', 'label' => 'Access Uncollected Shipper page', 'type' => 'page'],
-        ['name' => 'order.unreturnshipper.page', 'group' => 'orders', 'label' => 'Access Unreturn Shipper page', 'type' => 'page'],
-        ['name' => 'order.unreturnclient.page', 'group' => 'orders', 'label' => 'Access Unreturn Client page', 'type' => 'page'],
+        ['name' => 'order.page', 'group' => 'orders', 'label' => 'دخول صفحة الأوردات', 'type' => 'page'],
+        ['name' => 'order.scan.page', 'group' => 'orders', 'label' => 'دخول صفحة المسح (بارود)', 'type' => 'page'],
+        ['name' => 'order.approval.page', 'group' => 'orders', 'label' => 'دخول صفحة طلبات الموافقة', 'type' => 'page'],
+        ['name' => 'order.hold-outfordelivery.page', 'group' => 'orders', 'label' => 'دخول صفحة قيد التسليم والانتظار', 'type' => 'page'],
+        ['name' => 'order.uncollectedclient.page', 'group' => 'orders', 'label' => 'دخول صفحة تحصيل العملاء غير المحصلة', 'type' => 'page'],
+        ['name' => 'order.uncollectedshipper.page', 'group' => 'orders', 'label' => 'دخول صفحة تحصيل المناديب غير المحصلة', 'type' => 'page'],
+        ['name' => 'order.unreturnshipper.page', 'group' => 'orders', 'label' => 'دخول صفحة مرتجع المناديب غير المرتجع', 'type' => 'page'],
+        ['name' => 'order.unreturnclient.page', 'group' => 'orders', 'label' => 'دخول صفحة مرتجع العملاء غير المرتجع', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'order.view', 'group' => 'orders', 'label' => 'View orders', 'type' => 'action'],
-        ['name' => 'order.create', 'group' => 'orders', 'label' => 'Create order', 'type' => 'button'],
-        ['name' => 'order.update', 'group' => 'orders', 'label' => 'Update order', 'type' => 'button'],
-        ['name' => 'order.update-after-final-status', 'group' => 'orders', 'label' => 'Update order after final status', 'type' => 'button'],
-        ['name' => 'order.delete', 'group' => 'orders', 'label' => 'Delete order', 'type' => 'button'],
-        ['name' => 'order.change-status', 'group' => 'orders', 'label' => 'Change order status', 'type' => 'button'],
-        ['name' => 'order.change-shipper', 'group' => 'orders', 'label' => 'Change order shipper', 'type' => 'button'],
-        ['name' => 'order.change-note', 'group' => 'orders', 'label' => 'Change order note', 'type' => 'button'],
-        ['name' => 'order.change-external-code', 'group' => 'orders', 'label' => 'Change order external code', 'type' => 'button'],
-        ['name' => 'order.my-orders', 'group' => 'orders', 'label' => 'View my orders', 'type' => 'button'],
-        ['name' => 'order.approve', 'group' => 'orders', 'label' => 'Approve order', 'type' => 'button'],
-        ['name' => 'order.reject', 'group' => 'orders', 'label' => 'Reject order', 'type' => 'button'],
-        ['name' => 'order.export', 'group' => 'orders', 'label' => 'Export orders', 'type' => 'button'],
-        ['name' => 'order.import', 'group' => 'orders', 'label' => 'Import orders', 'type' => 'button'],
+        ['name' => 'order.view', 'group' => 'orders', 'label' => 'عرض الأوردات', 'type' => 'action'],
+        ['name' => 'order.create', 'group' => 'orders', 'label' => 'إنشاء أوردر جديد', 'type' => 'button'],
+        ['name' => 'order.update', 'group' => 'orders', 'label' => 'تحديث الأوردر', 'type' => 'button'],
+        ['name' => 'order.update-after-final-status', 'group' => 'orders', 'label' => 'تحديث الأوردر بعد الحالة النهائية', 'type' => 'button'],
+        ['name' => 'order.delete', 'group' => 'orders', 'label' => 'حذف الأوردر', 'type' => 'button'],
+        ['name' => 'order.change-status', 'group' => 'orders', 'label' => 'تغيير حالة الأوردر', 'type' => 'button'],
+        ['name' => 'order.change-shipper', 'group' => 'orders', 'label' => 'تغيير المندوب', 'type' => 'button'],
+        ['name' => 'order.change-note', 'group' => 'orders', 'label' => 'تغيير ملاحظة الأوردر', 'type' => 'button'],
+        ['name' => 'order.change-external-code', 'group' => 'orders', 'label' => 'تغيير الكود الخارجي', 'type' => 'button'],
+        ['name' => 'order.my-orders', 'group' => 'orders', 'label' => 'عرض أورداتي', 'type' => 'button'],
+        ['name' => 'order.approve', 'group' => 'orders', 'label' => 'الموافقة على الأوردر', 'type' => 'button'],
+        ['name' => 'order.reject', 'group' => 'orders', 'label' => 'رفض الأوردر', 'type' => 'button'],
+        ['name' => 'order.export', 'group' => 'orders', 'label' => 'تصدير الأوردات (إكسيل)', 'type' => 'button'],
+        ['name' => 'order.import', 'group' => 'orders', 'label' => 'استيراد الأوردات (إكسيل)', 'type' => 'button'],
+    ];
+
+    private const COLUMN_NAMES_AR = [
+        'id' => 'المعرف',
+        'code' => 'كود الأوردر',
+        'external_code' => 'الكود الخارجي',
+        'receiver_name' => 'اسم المستلم',
+        'phone' => 'الهاتف',
+        'phone_2' => 'الهاتف 2',
+        'address' => 'العنوان',
+        'governorate_id' => 'المحافظة',
+        'city_id' => 'المدينة',
+        'total_amount' => 'إجمالي المبلغ',
+        'shipping_fee' => 'مصاريف الشحن',
+        'commission_amount' => 'العمولة',
+        'company_amount' => 'مبلغ الشركة',
+        'cod_amount' => 'مبلغ التحصيل',
+        'status' => 'الحالة',
+        'latest_status_note' => 'ملاحظة الحالة',
+        'shipper_date' => 'تاريخ المندوب',
+        'approval_status' => 'حالة الموافقة',
+        'shipper_user_id' => 'المندوب',
+        'client_user_id' => 'العميل',
+        'allow_open' => 'السماح بالفتح',
+        'registered_at' => 'تاريخ التسجيل',
+        'governorate' => 'المحافظة',
+        'city' => 'المدينة',
+        'shipper' => 'المندوب',
+        'client' => 'العميل',
+        'shippingContent' => 'محتوى الشحنة',
+        'order_note' => 'ملاحظة الأوردر',
+        'is_in_shipper_collection' => 'في تحصيل المندوب',
+        'is_shipper_collected' => 'تم تحصيل المندوب',
+        'shipper_collected_at' => 'تاريخ تحصيل المندوب',
+        'is_in_client_settlement' => 'في تسوية العميل',
+        'is_client_settled' => 'تم تسوية العميل',
+        'client_settled_at' => 'تاريخ تسوية العميل',
+        'is_in_shipper_return' => 'في مرتجع المندوب',
+        'is_shipper_returned' => 'تم رجوع المندوب',
+        'shipper_returned_at' => 'تاريخ رجوع المندوب',
+        'is_in_client_return' => 'في مرتجع العميل',
+        'is_client_returned' => 'تم رجوع العميل',
+        'client_returned_at' => 'تاريخ رجوع العميل',
+        'created_at' => 'تاريخ الإنشاء',
+        'updated_at' => 'تاريخ التحديث',
     ];
 
     public const VIEW_COLUMNS = [
@@ -75,6 +120,7 @@ class OrdersPermissionMap
         'client_returned_at' => 'order.column.client_returned_at.view',
         'created_at' => 'order.column.created_at.view',
         'updated_at' => 'order.column.updated_at.view',
+        'refused_reasons' => null,
     ];
 
     public const EDIT_COLUMNS = [
@@ -107,7 +153,7 @@ class OrdersPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'orders',
-                'label' => "View order {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column),
                 'type' => 'column',
             ];
         }
@@ -116,7 +162,7 @@ class OrdersPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'orders',
-                'label' => "Edit order {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column),
                 'type' => 'column',
             ];
         }

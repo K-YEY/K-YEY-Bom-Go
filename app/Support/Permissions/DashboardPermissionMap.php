@@ -5,8 +5,51 @@ namespace App\Support\Permissions;
 class DashboardPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'order.dashboard.page', 'group' => 'dashboard', 'label' => 'Access order dashboard page', 'type' => 'page'],
-        ['name' => 'order.dashboard.view', 'group' => 'dashboard', 'label' => 'View order dashboard API', 'type' => 'action'],
+        ['name' => 'order.dashboard.page', 'group' => 'dashboard', 'label' => 'دخول صفحة لوحة التحكم (الداشبورد)', 'type' => 'page'],
+        ['name' => 'order.dashboard.view', 'group' => 'dashboard', 'label' => 'عرض بيانات لوحة التحكم', 'type' => 'action'],
+    ];
+
+    private const CARD_NAMES_AR = [
+        'all_order' => 'كل الطلبات',
+        'out_for_delivery' => 'قيد التسليم',
+        'hold' => 'انتظار',
+        'delivered' => 'تم التسليم',
+        'undelivered' => 'لم يتم التسليم',
+        'uncollected_shipper' => 'غير محصل من المندوب',
+        'collected_shipper' => 'تم تحصيل المندوب',
+        'unreturn_shipper' => 'غير مرتجع من المندوب',
+        'return_shipper' => 'تم مرتجع المندوب',
+        'uncollected_client' => 'غير محصل للعميل',
+        'collected_client' => 'تم تحصيل العميل',
+        'return_client' => 'تم مرتجع العميل',
+        'unreturn_client' => 'غير مرتجع للعميل',
+        'out_for_delivery_total' => 'إجمالي مبالغ قيد التسليم',
+        'hold_total' => 'إجمالي مبالغ الانتظار',
+        'delivered_total' => 'إجمالي مبالغ تم التسليم',
+        'undelivered_total' => 'إجمالي مبالغ لم يتم التسليم',
+        'uncollected_shipper_total' => 'إجمالي غير محصل مندوب (مبالغ)',
+        'collected_shipper_total' => 'إجمالي تم تحصيل مندوب (مبالغ)',
+        'unreturn_shipper_total' => 'إجمالي غير مرتجع مندوب (مبالغ)',
+        'return_shipper_total' => 'إجمالي تم مرتجع مندوب (مبالغ)',
+        'uncollected_client_total' => 'إجمالي غير محصل عميل (مبالغ)',
+        'collected_client_total' => 'إجمالي تم تحصيل عميل (مبالغ)',
+        'cash_ready' => 'كاش جاهز',
+        'net' => 'الصافي',
+        'return_client_total' => 'إجمالي تم مرتجع عميل (مبالغ)',
+        'unreturn_client_total' => 'إجمالي غير مرتجع عميل (مبالغ)',
+        'total_fees' => 'إجمالي الرسوم',
+        'total_shipper_fees' => 'إجمالي عمولات المناديب',
+        'total_cop' => 'إجمالي COP',
+        'total_expenses' => 'إجمالي المصاريف',
+        'total_revenue' => 'إجمالي الإيرادات',
+    ];
+
+    private const CHART_NAMES_AR = [
+        'financial' => 'الرسم البياني المالي',
+        'status_donut' => 'توزيع الحالات (دونات)',
+        'count_breakdown' => 'تحليل الأعداد',
+        'collection_rates' => 'معدلات التحصيل',
+        'top_governorates' => 'أفضل المحافظات',
     ];
 
     public const CARD_VIEW_PERMISSIONS = [
@@ -62,7 +105,7 @@ class DashboardPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'dashboard',
-                'label' => "View dashboard card {$cardKey}",
+                'label' => 'عرض بطاقة ' . (self::CARD_NAMES_AR[$cardKey] ?? $cardKey) . ' في الداشبورد',
                 'type' => 'card',
             ];
         }
@@ -71,7 +114,7 @@ class DashboardPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'dashboard',
-                'label' => "View dashboard chart {$chartKey}",
+                'label' => 'عرض رسم بياني ' . (self::CHART_NAMES_AR[$chartKey] ?? $chartKey) . ' في الداشبورد',
                 'type' => 'chart',
             ];
         }

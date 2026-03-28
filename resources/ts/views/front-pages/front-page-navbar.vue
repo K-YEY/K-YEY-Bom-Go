@@ -103,10 +103,9 @@ watch(() => display, () => {
             </h1>
           </RouterLink>
 
-          <!-- landing page sections -->
           <div class="text-base align-center d-none d-md-flex">
             <RouterLink
-              v-for="(item, index) in [{t: 'الرئيسية', h: 'home'}, {t: 'المميزات', h: 'features'}, {t: 'فريقنا', h: 'team'}, {t: 'الأسئلة الشائعة', h: 'faq-section'}]"
+              v-for="(item, index) in [{t: 'الرئيسية', h: 'home'}, {t: 'الخدمات', h: 'features'}, {t: 'من نحن', h: 'team'}, {t: 'الدعم الشائع', h: 'faq-section'}]"
               :key="index"
               :to="{ name: 'root', hash: `#${item.h}` }"
               class="nav-link font-weight-medium py-2 px-2 px-lg-4"
@@ -124,9 +123,10 @@ watch(() => display, () => {
           <VBtn
             variant="elevated"
             color="primary"
+            class="font-weight-bold"
             :to="{ name: 'pages-authentication-login-v1' }"
           >
-            ابدأ الآن
+            دخول / تسجيل
           </VBtn>
         </div>
       </VAppBar>

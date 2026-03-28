@@ -5,14 +5,25 @@ namespace App\Support\Permissions;
 class RefusedReasonPermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'refused-reason.page', 'group' => 'refused-reasons', 'label' => 'Access Refused Reason page', 'type' => 'page'],
+        ['name' => 'refused-reason.page', 'group' => 'refused-reasons', 'label' => 'دخول صفحة أسباب الرفض/الحالات', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'refused-reason.view', 'group' => 'refused-reasons', 'label' => 'View refused reasons', 'type' => 'action'],
-        ['name' => 'refused-reason.create', 'group' => 'refused-reasons', 'label' => 'Create refused reason', 'type' => 'button'],
-        ['name' => 'refused-reason.update', 'group' => 'refused-reasons', 'label' => 'Update refused reason', 'type' => 'button'],
-        ['name' => 'refused-reason.delete', 'group' => 'refused-reasons', 'label' => 'Delete refused reason', 'type' => 'button'],
+        ['name' => 'refused-reason.view', 'group' => 'refused-reasons', 'label' => 'عرض أسباب الرفض', 'type' => 'action'],
+        ['name' => 'refused-reason.create', 'group' => 'refused-reasons', 'label' => 'إضافة سبب جديد', 'type' => 'button'],
+        ['name' => 'refused-reason.update', 'group' => 'refused-reasons', 'label' => 'تعديل سبب', 'type' => 'button'],
+        ['name' => 'refused-reason.delete', 'group' => 'refused-reasons', 'label' => 'حذف سبب', 'type' => 'button'],
+    ];
+
+    private const COLUMN_NAMES_AR = [
+        'id' => 'المعرف',
+        'reason' => 'السبب',
+        'status' => 'الحالة المرتبطة',
+        'is_active' => 'نشط',
+        'is_clear' => 'تصفير المبالغ',
+        'is_edit_amount' => 'يسمح بتعديل المبلغ',
+        'created_at' => 'تاريخ الإنشاء',
+        'updated_at' => 'تاريخ التحديث',
     ];
 
     public const VIEW_COLUMNS = [
@@ -21,7 +32,6 @@ class RefusedReasonPermissionMap
         'status' => 'refused-reason.column.status.view',
         'is_active' => 'refused-reason.column.is_active.view',
         'is_clear' => 'refused-reason.column.is_clear.view',
-        'is_return' => 'refused-reason.column.is_return.view',
         'is_edit_amount' => 'refused-reason.column.is_edit_amount.view',
         'created_at' => 'refused-reason.column.created_at.view',
         'updated_at' => 'refused-reason.column.updated_at.view',
@@ -32,7 +42,6 @@ class RefusedReasonPermissionMap
         'status' => 'refused-reason.column.status.edit',
         'is_active' => 'refused-reason.column.is_active.edit',
         'is_clear' => 'refused-reason.column.is_clear.edit',
-        'is_return' => 'refused-reason.column.is_return.edit',
         'is_edit_amount' => 'refused-reason.column.is_edit_amount.edit',
     ];
 
@@ -54,7 +63,7 @@ class RefusedReasonPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'refused-reasons',
-                'label' => "View refused reason {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في أسباب الرفض',
                 'type' => 'column',
             ];
         }
@@ -63,7 +72,7 @@ class RefusedReasonPermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'refused-reasons',
-                'label' => "Edit refused reason {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في أسباب الرفض',
                 'type' => 'column',
             ];
         }

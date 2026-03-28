@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AddNewUserDrawer from '@/views/apps/user/list/AddNewUserDrawer.vue'
 import EditUserDrawer from '@/views/apps/user/list/EditUserDrawer.vue'
-import type { UserProperties } from '@db/apps/users/types'
+import type { UserProperties } from '@/views/apps/user/types'
 import { createUrl } from '@core/composable/createUrl'
 import { avatarText } from '@core/utils/formatters'
 

@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { useAbility } from '@/plugins/casl/composables/useAbility'
 import { avatarText } from '@core/utils/formatters'
 import girlUsingMobile from '@images/pages/girl-using-mobile.png'
+
+const { can } = useAbility()
 
 const resolveUserRoleVariant = (role: string) => {
   const roleLowerCase = role.toLowerCase()
@@ -135,7 +138,7 @@ const deleteRole = async (id: number) => {
               <h5 class="text-h5">
                 {{ item.label || item.name }}
               </h5>
-              <div class="d-flex align-center">
+              <div v-if="can('role.update' as any, 'all' as any)" class="d-flex align-center">
                 <a
                   href="javascript:void(0)"
                   @click="editPermission(item)"
@@ -146,7 +149,7 @@ const deleteRole = async (id: number) => {
             </div>
             <div class="d-flex align-center gap-2">
         
-              <IconBtn v-if="item.users_count === 0" @click="deleteRole(item.id)">
+              <IconBtn v-if="item.users_count === 0 && can('role.delete' as any, 'all' as any)" @click="deleteRole(item.id)">
                 <VIcon
                   icon="tabler-trash"
                   class="text-error"
@@ -160,6 +163,7 @@ const deleteRole = async (id: number) => {
 
     <!-- 👉 Add New Role -->
     <VCol
+      v-if="can('role.create' as any, 'all' as any)"
       cols="12"
       sm="6"
       lg="4"

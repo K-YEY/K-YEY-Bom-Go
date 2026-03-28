@@ -201,7 +201,7 @@ class OrderController extends Controller
 
         $query = Order::query()
             ->forUserRole()
-            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name', 'refusedReasons'])
             ->orderByDesc('id');
 
         if (isset($validated['trashed'])) {
@@ -429,19 +429,21 @@ class OrderController extends Controller
             'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ]);
 
-        $reasonId = $data['refused_reason_id'] ?? ($data['refused_reason_ids'][0] ?? null);
-        $refusedReason = $this->resolveRefusedReason($data['status'], $reasonId);
-        $allowsEditAmount = $refusedReason?->is_edit_amount === true;
+        $reasonIds = $data['refused_reason_ids'] ?? (isset($data['refused_reason_id']) ? [$data['refused_reason_id']] : []);
+        $refusedReasons = collect($reasonIds)->map(fn($id) => RefusedReason::find($id))->filter();
+        
+        $allowsEditAmount = $refusedReasons->contains('is_edit_amount', true);
+        $isClear = $refusedReasons->contains('is_clear', true);
 
         if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
             throw ValidationException::withMessages([
-                'total_amount' => ['total_amount can only be edited when refused reason allows amount edit.'],
+                'total_amount' => ['total_amount can only be edited when one of the selected reasons allows amount edit.'],
             ]);
         }
 
         $orders = Order::query()->whereIn('id', $data['order_ids'])->get();
 
-        $updated = DB::transaction(function () use ($orders, $data, $refusedReason, $allowsEditAmount): array {
+        $updated = DB::transaction(function () use ($orders, $data, $refusedReasons, $allowsEditAmount, $isClear, $reasonIds): array {
             $result = [];
 
             foreach ($orders as $order) {
@@ -452,28 +454,43 @@ class OrderController extends Controller
                 $this->authorizeNotShipperCollected($order);
                 $this->authorizeFinalStatusUpdate(request(), $order);
 
-                $manualPayload = [
+                // Build note
+                $noteParts = [];
+                foreach ($refusedReasons as $rr) {
+                    $noteParts[] = $rr->reason;
+                }
+                if (isset($data['reason']) && trim($data['reason']) !== '') {
+                    $noteParts[] = $data['reason'];
+                }
+                $latestNote = implode(', ', $noteParts);
+
+                $payload = [
                     'status' => $data['status'],
-                    'latest_status_note' => $this->resolveLatestStatusNote($data['reason'] ?? null, $refusedReason),
+                    'latest_status_note' => $latestNote ?: null,
                 ];
 
-                if ($allowsEditAmount && array_key_exists('total_amount', $data)) {
-                    $manualPayload['total_amount'] = $data['total_amount'];
+                if ($isClear) {
+                    $payload = array_merge($payload, [
+                        'total_amount' => 0,
+                        'shipping_fee' => 0,
+                        'commission_amount' => 0,
+                        'company_amount' => 0,
+                        'cod_amount' => 0,
+                    ]);
                 }
 
-                $this->authorizeEditableColumns(request(), array_keys($manualPayload));
-
-                $payload = $manualPayload;
-
-                if ($refusedReason instanceof RefusedReason) {
-                    $payload = $this->applyRefusedReasonPolicies($payload, $order, $refusedReason);
+                if (!$isClear && $allowsEditAmount && array_key_exists('total_amount', $data)) {
+                    $payload['total_amount'] = $data['total_amount'];
                 }
 
+                $this->authorizeEditableColumns(request(), array_keys($payload));
                 $this->authorizeNoPriceEditOnFinalStatus($order, $payload);
-
+                
                 $payload = $this->applyAutomaticFinancials($payload, $order);
 
                 $order->update($payload);
+                $order->refusedReasons()->sync($reasonIds);
+                
                 $result[] = $order->id;
             }
 
@@ -681,7 +698,6 @@ class OrderController extends Controller
 
         $allowsEditAmount = $refusedReasons->contains('is_edit_amount', true);
         $isClear = $refusedReasons->contains('is_clear', true);
-        $isReturn = $refusedReasons->contains('is_return', true);
 
         // Build note (يسمح بالتكرار)
         $noteParts = [];
@@ -716,7 +732,7 @@ class OrderController extends Controller
             }
         }
 
-        if (!$isReturn && !$isClear) {
+        if (!$isClear) {
             if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
                 throw ValidationException::withMessages([
                     'total_amount' => ['total_amount can only be edited when one of the selected reasons allows amount edit.'],
@@ -733,6 +749,9 @@ class OrderController extends Controller
         $this->authorizeEditableColumns($request, array_keys($payload));
 
         $order->update($payload);
+        
+        // Sync the reasons actually selected (deduplicated)
+        $order->refusedReasons()->sync(array_unique($reasonIds));
 
         return response()->json([
             'message' => 'Order status updated successfully.',
@@ -1018,22 +1037,18 @@ class OrderController extends Controller
     private function applyRefusedReasonPolicies(array $payload, Order $order, RefusedReason $refusedReason): array
     {
         if ((bool) $refusedReason->is_clear) {
-            $payload['latest_status_note'] = $refusedReason->reason;
+            return [
+                ...$payload,
+                'total_amount' => 0,
+                'shipping_fee' => 0,
+                'commission_amount' => 0,
+                'company_amount' => 0,
+                'cod_amount' => 0,
+                'latest_status_note' => $refusedReason->reason,
+            ];
         }
 
-        if (! (bool) $refusedReason->is_return) {
-            return $payload;
-        }
-
-        // Return-like refused reasons close all related financial and workflow states.
-        return [
-            ...$payload,
-            'total_amount' => 0,
-            'shipping_fee' => 0,
-            'commission_amount' => 0,
-            'company_amount' => 0,
-            'cod_amount' => 0,
-        ];
+        return $payload;
     }
 
     private function authorizeEditableColumns(Request $request, array $columns): void

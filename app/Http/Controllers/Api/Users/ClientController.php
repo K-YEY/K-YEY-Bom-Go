@@ -33,10 +33,7 @@ class ClientController extends Controller
 
 
         $query = Client::query()
-            ->select('clients.*')
-            ->join('users', 'users.id', '=', 'clients.user_id')
-            ->with(['user:id,name,username,phone', 'plan', 'shippingContent'])
-            ->groupBy('clients.id', 'clients.user_id');
+            ->with(['user:id,name,username,phone', 'plan', 'shippingContent']);
 
         if ($request->filled('q')) {
             $search = (string) $request->get('q');

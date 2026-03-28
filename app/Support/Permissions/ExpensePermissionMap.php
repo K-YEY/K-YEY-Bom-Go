@@ -5,25 +5,45 @@ namespace App\Support\Permissions;
 class ExpensePermissionMap
 {
     public const PAGE_PERMISSIONS = [
-        ['name' => 'expense.page', 'group' => 'expenses', 'label' => 'Access Expense page', 'type' => 'page'],
-        ['name' => 'expense-category.page', 'group' => 'expense-categories', 'label' => 'Access Expense Category page', 'type' => 'page'],
+        ['name' => 'expense.page', 'group' => 'expenses', 'label' => 'دخول صفحة المصروفات', 'type' => 'page'],
+        ['name' => 'expense-category.page', 'group' => 'expense-categories', 'label' => 'دخول صفحة تصنيفات المصروفات', 'type' => 'page'],
     ];
 
     public const ACTION_PERMISSIONS = [
-        ['name' => 'expense.view', 'group' => 'expenses', 'label' => 'View expenses', 'type' => 'action'],
-        ['name' => 'expense.create', 'group' => 'expenses', 'label' => 'Create expense', 'type' => 'button'],
-        ['name' => 'expense.update', 'group' => 'expenses', 'label' => 'Update expense', 'type' => 'button'],
-        ['name' => 'expense.delete', 'group' => 'expenses', 'label' => 'Delete expense', 'type' => 'button'],
+        ['name' => 'expense.view', 'group' => 'expenses', 'label' => 'عرض المصروفات', 'type' => 'action'],
+        ['name' => 'expense.create', 'group' => 'expenses', 'label' => 'إضافة مصروف جديد', 'type' => 'button'],
+        ['name' => 'expense.update', 'group' => 'expenses', 'label' => 'تعديل مصروف', 'type' => 'button'],
+        ['name' => 'expense.delete', 'group' => 'expenses', 'label' => 'حذف مصروف', 'type' => 'button'],
 
-        ['name' => 'expense.button.approve', 'group' => 'expenses', 'label' => 'Approve expense', 'type' => 'button'],
-        ['name' => 'expense.button.reject', 'group' => 'expenses', 'label' => 'Reject expense', 'type' => 'button'],
-        ['name' => 'expense.button.mark-paid', 'group' => 'expenses', 'label' => 'Mark expense as paid', 'type' => 'button'],
-        ['name' => 'expense.button.cancel', 'group' => 'expenses', 'label' => 'Cancel expense', 'type' => 'button'],
+        ['name' => 'expense.button.approve', 'group' => 'expenses', 'label' => 'الموافقة على المصروف', 'type' => 'button'],
+        ['name' => 'expense.button.reject', 'group' => 'expenses', 'label' => 'رفض المصروف', 'type' => 'button'],
+        ['name' => 'expense.button.mark-paid', 'group' => 'expenses', 'label' => 'تحديد المصروف كمدفوع', 'type' => 'button'],
+        ['name' => 'expense.button.cancel', 'group' => 'expenses', 'label' => 'إلغاء المصروف', 'type' => 'button'],
 
-        ['name' => 'expense-category.view', 'group' => 'expense-categories', 'label' => 'View expense categories', 'type' => 'action'],
-        ['name' => 'expense-category.create', 'group' => 'expense-categories', 'label' => 'Create expense category', 'type' => 'button'],
-        ['name' => 'expense-category.update', 'group' => 'expense-categories', 'label' => 'Update expense category', 'type' => 'button'],
-        ['name' => 'expense-category.delete', 'group' => 'expense-categories', 'label' => 'Delete expense category', 'type' => 'button'],
+        ['name' => 'expense-category.view', 'group' => 'expense-categories', 'label' => 'عرض تصنيفات المصروفات', 'type' => 'action'],
+        ['name' => 'expense-category.create', 'group' => 'expense-categories', 'label' => 'إضافة تصنيف مصروفات جديد', 'type' => 'button'],
+        ['name' => 'expense-category.update', 'group' => 'expense-categories', 'label' => 'تعديل تصنيف مصروفات', 'type' => 'button'],
+        ['name' => 'expense-category.delete', 'group' => 'expense-categories', 'label' => 'حذف تصنيف مصروفات', 'type' => 'button'],
+    ];
+
+    private const COLUMN_NAMES_AR = [
+        'id' => 'المعرف',
+        'code' => 'كود المصروف',
+        'category_id' => 'التصنيف',
+        'amount' => 'المبلغ',
+        'expense_date' => 'تاريخ الصرف',
+        'title' => 'العنوان/البيان',
+        'notes' => 'الملاحظات',
+        'created_by' => 'أنشئ بواسطة',
+        'approved_by' => 'وافق عليه',
+        'status' => 'الحالة',
+        'approved_at' => 'تاريخ الموافقة',
+        'paid_at' => 'تاريخ الدفع',
+        'created_at' => 'تاريخ الإنشاء',
+        'updated_at' => 'تاريخ التحديث',
+        'deleted_at' => 'تاريخ الحذف',
+        'name' => 'اسم التصنيف',
+        'is_active' => 'نشط',
     ];
 
     public const EXPENSE_VIEW_COLUMNS = [
@@ -98,7 +118,7 @@ class ExpensePermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'expenses',
-                'label' => "View expense {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في المصروفات',
                 'type' => 'column',
             ];
         }
@@ -107,7 +127,7 @@ class ExpensePermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'expenses',
-                'label' => "Edit expense {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في المصروفات',
                 'type' => 'column',
             ];
         }
@@ -120,7 +140,7 @@ class ExpensePermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'expense-categories',
-                'label' => "View expense category {$column} column",
+                'label' => 'عرض عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في تصنيف المصروفات',
                 'type' => 'column',
             ];
         }
@@ -129,7 +149,7 @@ class ExpensePermissionMap
             $permissions[] = [
                 'name' => $permission,
                 'group' => 'expense-categories',
-                'label' => "Edit expense category {$column} column",
+                'label' => 'تعديل عمود ' . (self::COLUMN_NAMES_AR[$column] ?? $column) . ' في تصنيف المصروفات',
                 'type' => 'column',
             ];
         }

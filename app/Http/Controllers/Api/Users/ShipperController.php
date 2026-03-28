@@ -17,10 +17,7 @@ class ShipperController extends Controller
 
 
         $query = Shipper::query()
-            ->select('shippers.*')
-            ->join('users', 'users.id', '=', 'shippers.user_id')
-            ->with(['user:id,name,username,phone'])
-            ->groupBy('shippers.id', 'shippers.user_id');
+            ->with(['user:id,name,username,phone']);
 
         if ($request->filled('q')) {
             $search = (string) $request->get('q');

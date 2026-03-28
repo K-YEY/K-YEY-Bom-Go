@@ -5,11 +5,40 @@ namespace App\Http\Controllers\Api\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\Setting;
+use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class LandingPageController extends Controller
 {
+    public function trackOrder(string $code): JsonResponse
+    {
+        $order = Order::where('code', $code)
+            ->orWhere('external_code', $code)
+            ->with(['governorate', 'city', 'history' => function($q) {
+                $q->orderBy('id', 'desc');
+            }])
+            ->first();
+
+        if (!$order) {
+            return response()->json(['message' => 'الشحنة غير موجودة'], 404);
+        }
+
+        return response()->json([
+            'code' => $order->code,
+            'status' => $order->status,
+            'receiver_name' => $order->receiver_name,
+            'governorate' => $order->governorate?->name,
+            'city' => $order->city?->name,
+            'registered_at' => $order->registered_at?->format('Y-m-d H:i'),
+            'history' => $order->history->map(fn($log) => [
+                'activity' => $log->activity,
+                'description' => $log->description,
+                'created_at' => $log->created_at?->format('Y-m-d H:i'),
+            ]),
+        ]);
+    }
+
     public function index(): JsonResponse
     {
         $settings = Setting::all()->pluck('value', 'key');

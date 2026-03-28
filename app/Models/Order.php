@@ -164,5 +164,9 @@ class Order extends Model
 
         return $code;
     }
+    public function refusedReasons()
+    {
+        return $this->belongsToMany(RefusedReason::class, 'order_refused_reason');
+    }
 
 }
