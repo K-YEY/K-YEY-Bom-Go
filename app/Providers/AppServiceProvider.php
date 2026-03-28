@@ -41,7 +41,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::before(static fn (User $user, string $ability): ?bool => $user->id === 1 ? true : null);
+        Gate::before(static function (User $user, string $ability) {
+            return $user->hasRole('super-admin') ? true : null;
+        });
 
         // Register entity observer for activity logging
         Expense::observe(EntityObserver::class);
