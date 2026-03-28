@@ -1368,6 +1368,18 @@ class OrderController extends Controller
 
         $shippingFee = $data['shipping_fee'] ?? $this->resolveShippingFee((int) $clientUserId, (int) $governorateId);
         $commissionAmount = $data['commission_amount'] ?? $this->resolveCommissionAmount($shipperUserId ? (int) $shipperUserId : null);
+
+        // Fallback: If no plan assigned to client, use the representative's commission as the shipping fee
+        if ($shippingFee === null) {
+            if ($shipperUserId !== null) {
+                $shippingFee = $commissionAmount;
+            } else {
+                throw ValidationException::withMessages([
+                    'client_user_id' => ['Selected client has no plan assigned, and no shipper to fallback to for shipping fee calculation.'],
+                ]);
+            }
+        }
+
         $total = round((float) $totalAmount, 2);
 
         $data['total_amount'] = $total;
@@ -1379,16 +1391,14 @@ class OrderController extends Controller
         return $data;
     }
 
-    private function resolveShippingFee(int $clientUserId, int $governorateId): float
+    private function resolveShippingFee(int $clientUserId, int $governorateId): ?float
     {
         $planId = Client::query()
             ->where('user_id', $clientUserId)
             ->value('plan_id');
 
         if (! $planId) {
-            throw ValidationException::withMessages([
-                'client_user_id' => ['Selected client has no plan assigned.'],
-            ]);
+            return null;
         }
 
         $shippingFee = PlanPrice::query()
