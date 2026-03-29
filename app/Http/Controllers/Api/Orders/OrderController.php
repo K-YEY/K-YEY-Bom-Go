@@ -54,203 +54,6 @@ class OrderController extends Controller
         return response()->json($result);
     }
 
-    public function import(Request $request): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.create');
-        $this->checkWorkingHours('orders');
-
-        $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,csv,xls'],
-        ]);
-
-        $import = new OrdersImport($request->user()->id);
-        Excel::import($import, $request->file('file'));
-
-        $results = $import->getResults();
-
-        return response()->json([
-            'message' => 'Import completed.',
-            'success_count' => $results['success_count'],
-            'errors' => $results['errors'],
-        ]);
-    }
-
-    public function downloadTemplate()
-    {
-        return Excel::download(new OrdersTemplateExport, 'orders_template.xlsx');
-    }
-
-    public function init(Request $request): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.page');
-        $this->authorizePermission($request, 'order.view');
-
-        // Initial metadata (Small lists)
-        $metadata = [
-            'governorates' => Governorate::query()->select('id', 'name')->with('cities:id,governorate_id,name')->get(),
-            'shippers' => Shipper::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($s) {
-                return [
-                    'id' => $s->user_id,
-                    'name' => $s->user?->name ?? 'Unknown',
-                    'commission_rate' => $s->commission_rate,
-                ];
-            }),
-            'clients' => Client::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($c) {
-                return [
-                    'id' => $c->user_id,
-                    'name' => $c->user?->name ?? 'Unknown',
-                    'plan_id' => $c->plan_id,
-                    'shipping_content_id' => $c->shipping_content_id,
-                    'shipping_fee' => $c->shipping_fee,
-                ];
-            }),
-            'contents' => \App\Models\Content::query()->select('id', 'name')->get(),
-            'plans' => \App\Models\Plan::query()->with('prices')->get(),
-            'refused_reasons' => RefusedReason::query()->where('is_active', true)->get(),
-            'statuses' => self::STATUS_LABELS,
-            'working_hours' => \App\Models\Setting::query()->where('group', 'working_hours')->pluck('value', 'key')->all(),
-        ];
-
-        // First page of orders
-        $orders = $this->getOrdersWithTotals($request);
-
-        return response()->json([
-            'metadata' => $metadata,
-            'orders' => $orders,
-        ]);
-    }
-
-    public function export(Request $request)
-    {
-        $this->authorizePermission($request, 'order.export');
-
-        $ids = $request->input('ids');
-        if ($ids && is_string($ids)) {
-            $ids = explode(',', $ids);
-        }
-
-        if ($ids && is_array($ids)) {
-            return Excel::download(new OrdersExport(null, null, $ids), 'orders_export.xlsx');
-        }
-
-        // Otherwise export current filtered results
-        $query = Order::query();
-        $this->applyOrderSearch($query, $request->all());
-
-        return Excel::download(new OrdersExport($query), 'orders_filtered_export.xlsx');
-    }
-
-    private function getOrdersWithTotals(Request $request): array
-    {
-        $validated = $request->validate([
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'page' => ['nullable', 'integer', 'min:1'],
-            'q' => ['nullable', 'string', 'max:255'],
-            'search' => ['nullable', 'array'],
-            'search.code' => ['nullable', 'string', 'max:255'],
-            'search.external_code' => ['nullable', 'string', 'max:255'],
-            'search.receiver_name' => ['nullable', 'string', 'max:255'],
-            'search.phone' => ['nullable', 'string', 'max:30'],
-            'search.phone_2' => ['nullable', 'string', 'max:30'],
-            'search.address' => ['nullable', 'string', 'max:1000'],
-            'search.status' => ['nullable', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
-            'search.statuses' => ['nullable', 'array'],
-            'search.statuses.*' => [Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
-            'search.approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
-            'search.governorate_id' => ['nullable', 'integer', 'exists:governorates,id'],
-            'search.city_id' => ['nullable', 'integer', 'exists:cities,id'],
-            'search.shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'search.client_user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'search.allow_open' => ['nullable', 'boolean'],
-            'search.collection_state' => ['nullable', Rule::in(['not_collected', 'ready_to_collect', 'collected'])],
-            'search.is_in_shipper_collection' => ['nullable', 'boolean'],
-            'search.is_shipper_collected' => ['nullable', 'boolean'],
-            'search.is_in_client_settlement' => ['nullable', 'boolean'],
-            'search.is_client_settled' => ['nullable', 'boolean'],
-            'search.is_in_shipper_return' => ['nullable', 'boolean'],
-            'search.is_shipper_returned' => ['nullable', 'boolean'],
-            'search.is_in_client_return' => ['nullable', 'boolean'],
-            'search.is_client_returned' => ['nullable', 'boolean'],
-            'code' => ['nullable', 'string', 'max:255'],
-            'external_code' => ['nullable', 'string', 'max:255'],
-            'receiver_name' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'phone_2' => ['nullable', 'string', 'max:30'],
-            'address' => ['nullable', 'string', 'max:1000'],
-            'status' => ['nullable'],
-            'statuses' => ['nullable'],
-            'approval_status' => ['nullable'],
-            'governorate_id' => ['nullable', 'integer', 'exists:governorates,id'],
-            'city_id' => ['nullable', 'integer', 'exists:cities,id'],
-            'shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'client_user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'allow_open' => ['nullable', 'boolean'],
-            'collection_state' => ['nullable', Rule::in(['not_collected', 'ready_to_collect', 'collected'])],
-            'is_in_shipper_collection' => ['nullable', 'boolean'],
-            'is_shipper_collected' => ['nullable', 'boolean'],
-            'is_in_client_settlement' => ['nullable', 'boolean'],
-            'is_client_settled' => ['nullable', 'boolean'],
-            'is_in_shipper_return' => ['nullable', 'boolean'],
-            'is_shipper_returned' => ['nullable', 'boolean'],
-            'is_in_client_return' => ['nullable', 'boolean'],
-            'is_client_returned' => ['nullable', 'boolean'],
-            'trashed' => ['nullable', 'string', Rule::in(['with', 'only'])],
-        ]);
-
-        $perPage = $validated['per_page'] ?? 100;
-
-        $query = Order::query()
-            ->forUserRole()
-            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name', 'refusedReasons'])
-            ->orderByDesc('id');
-
-        if (isset($validated['trashed'])) {
-            if ($validated['trashed'] === 'only') {
-                $query->onlyTrashed();
-            } elseif ($validated['trashed'] === 'with') {
-                $query->withTrashed();
-            }
-        }
-
-        $this->applyOrderSearch($query, $validated);
-
-        // Calculate totals from the full filtered query BEFORE pagination
-        $summaryQuery = Order::query()->forUserRole();
-
-        if (isset($validated['trashed'])) {
-            if ($validated['trashed'] === 'only') {
-                $summaryQuery->onlyTrashed();
-            } elseif ($validated['trashed'] === 'with') {
-                $summaryQuery->withTrashed();
-            }
-        }
-
-        $this->applyOrderSearch($summaryQuery, $validated);
-        $totals = $summaryQuery->selectRaw('
-                SUM(total_amount) as total_amount,
-                SUM(shipping_fee) as shipping_fee,
-                SUM(commission_amount) as commission_amount,
-                SUM(company_amount) as company_amount,
-                SUM(cod_amount) as cod_amount
-            ')->first();
-
-        $orders = $query
-            ->paginate($perPage)
-            ->appends($request->query())
-            ->through(fn (Order $order): array => $this->filterVisibleColumns($request, $order));
-
-        return [
-            ...$orders->toArray(),
-            'totals' => [
-                'total_amount' => round((float) ($totals->total_amount ?? 0), 2),
-                'shipping_fee' => round((float) ($totals->shipping_fee ?? 0), 2),
-                'commission_amount' => round((float) ($totals->commission_amount ?? 0), 2),
-                'company_amount' => round((float) ($totals->company_amount ?? 0), 2),
-                'cod_amount' => round((float) ($totals->cod_amount ?? 0), 2),
-            ],
-        ];
-    }
-
     public function store(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'order.create');
@@ -296,78 +99,341 @@ class OrderController extends Controller
         ], 201);
     }
 
-    public function myOrders(Request $request): JsonResponse
+    public function show(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.page');
         $this->authorizePermission($request, 'order.view');
-        $this->authorizePermission($request, 'order.my-orders');
 
         $validated = $request->validate([
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'page' => ['nullable', 'integer', 'min:1'],
+            'include_history' => ['nullable', 'boolean'],
+            'history_per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $perPage = $validated['per_page'] ?? 100;
+        $order->load(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name']);
 
-        $orders = Order::query()
-            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
-            ->where('shipper_user_id', $request->user()?->id)
-            ->whereNotIn('status', self::FINAL_STATUSES)
-            ->orderByDesc('id')
-            ->paginate($perPage)
-            ->appends($request->query())
-            ->through(fn (Order $order): array => $this->formatMyOrderRow($order));
+        $payload = $this->filterVisibleColumns($request, $order);
 
-        return response()->json($orders);
+        if (($validated['include_history'] ?? false) === true) {
+            $historyPerPage = $validated['history_per_page'] ?? 20;
+
+            if (! $request->user()?->can('activity-log.view')) {
+                $payload['history'] = $order->history()
+                    ->where(function (Builder|QueryBuilder $query): void {
+                        $query
+                            ->where('action', 'created')
+                            ->orWhereNotNull('new_values->status')
+                            ->orWhereNotNull('old_values->status');
+                    })
+                    ->paginate($historyPerPage, ['*'], 'history_page')
+                    ->appends($request->query())
+                    ->through(fn ($log): array => $this->buildClientTimelineEntry($log))
+                    ->toArray();
+            } else {
+                $payload['history'] = $order->history()
+                    ->with([
+                        'user:id,name,username,phone',
+                        'loginSession:id,ip_address,country,city,device_name',
+                    ])
+                    ->paginate($historyPerPage, ['*'], 'history_page')
+                    ->appends($request->query())
+                    ->toArray();
+            }
+        }
+
+        return response()->json($payload);
     }
 
-    public function scan(Request $request): JsonResponse
+    public function update(Request $request, Order $order): JsonResponse
     {
-        $this->authorizePermission($request, 'order.page');
-        $this->authorizePermission($request, 'order.view');
+        $this->authorizePermission($request, 'order.update');
+        $this->authorizeNotShipperCollected($order);
+        $this->authorizeFinalStatusUpdate($request, $order);
 
         $data = $request->validate([
-            'code' => ['nullable', 'string'],
-            'external_code' => ['nullable', 'string'],
+            'external_code' => ['sometimes', 'nullable', 'string'],
+            'receiver_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'phone' => ['sometimes', 'required', 'string', 'max:30'],
+            'phone_2' => ['sometimes', 'nullable', 'string', 'max:30'],
+            'address' => ['sometimes', 'required', 'string'],
+            'governorate_id' => ['sometimes', 'required', 'exists:governorates,id'],
+            'city_id' => ['sometimes', 'required', 'exists:cities,id'],
+            'shipper_user_id' => ['sometimes', 'nullable', 'exists:users,id'],
+            'shipping_content_id' => ['sometimes', 'nullable', 'integer', 'exists:content,id'],
+            'total_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'status' => ['sometimes', 'required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'allow_open' => ['sometimes', 'boolean'],
+            'latest_status_note' => ['nullable', 'string'],
+            'order_note' => ['nullable', 'string'],
         ]);
 
-        $code = trim((string) ($data['code'] ?? ''));
-        $externalCode = trim((string) ($data['external_code'] ?? ''));
+        $this->authorizeEditableColumns($request, array_keys($data));
 
-        if ($code === '' && $externalCode === '') {
-            throw ValidationException::withMessages([
-                'code' => ['Please provide code or external_code.'],
-            ]);
+        if (array_key_exists('shipper_user_id', $data)) {
+            $this->authorizeShipperChangeAllowed($order);
         }
 
-        $order = Order::query()
-            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
-            ->where(function (Builder $query) use ($code, $externalCode): void {
-                if ($code !== '') {
-                    $query->where('code', $code);
-                }
+        $this->authorizeNoPriceEditOnFinalStatus($order, $data);
 
-                if ($externalCode !== '') {
-                    if ($code !== '') {
-                        $query->orWhere('external_code', $externalCode);
-                    } else {
-                        $query->where('external_code', $externalCode);
-                    }
-                }
-            })
-            ->first();
+        $data = $this->resolveDefaultShipper($data, $order);
 
-        if (! $order) {
-            throw ValidationException::withMessages([
-                'code' => ['Order not found for provided code/external_code.'],
-            ]);
+        if ($this->shouldRecalculateFinancials($data)) {
+            $data = $this->applyAutomaticFinancials($data, $order);
         }
+
+        if (array_key_exists('shipper_user_id', $data)) {
+            $data['shipper_date'] = $data['shipper_user_id'] ? now()->toDateString() : null;
+        }
+
+        $order->update($data);
 
         return response()->json([
-            'message' => 'Order scanned successfully.',
+            'message' => 'Order updated successfully.',
             'data' => $this->filterVisibleColumns($request, $order),
         ]);
     }
+
+    public function destroy(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.delete');
+        $this->authorizeNotShipperCollected($order);
+
+        $order->delete();
+
+        return response()->json([
+            'message' => 'Order deleted successfully.',
+        ]);
+    }
+
+    public function restore(Request $request, $id): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.delete');
+        $order = Order::onlyTrashed()->findOrFail($id);
+        $order->restore();
+
+        return response()->json([
+            'message' => 'Order restored successfully.',
+        ]);
+    }
+
+    public function forceDelete(Request $request, $id): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.delete');
+        $order = Order::onlyTrashed()->findOrFail($id);
+        $order->forceDelete();
+
+        return response()->json([
+            'message' => 'Order permanently deleted.',
+        ]);
+    }
+
+    // =========================================================================
+    // Workflow & Specialized Actions
+    // =========================================================================
+
+    public function changeStatus(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-status');
+        $this->authorizeNotShipperCollected($order);
+        $this->authorizeFinalStatusUpdate($request, $order);
+
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'reason' => ['nullable', 'string'],
+            'refused_reason_ids' => ['nullable', 'array'],
+            'refused_reason_ids.*' => ['integer', 'exists:refused_reasons,id'],
+            'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'has_return' => ['nullable', 'boolean'],
+        ]);
+
+        $reasonIds = $data['refused_reason_ids'] ?? [];
+        $refusedReasons = collect($reasonIds)
+            ->map(function ($id) {
+                return RefusedReason::query()->find($id);
+            })
+            ->filter();
+
+        $allowsEditAmount = $refusedReasons->contains('is_edit_amount', true);
+        $isClear = $refusedReasons->contains('is_clear', true);
+
+        $noteParts = [];
+        foreach ($refusedReasons as $rr) {
+            $noteParts[] = $rr->reason;
+        }
+        if (isset($data['reason']) && trim($data['reason']) !== '') {
+            $noteParts[] = $data['reason'];
+        }
+
+        $latestNote = implode(', ', $noteParts);
+
+        $payload = [
+            'status' => $data['status'],
+            'latest_status_note' => $latestNote,
+        ];
+
+        if ($isClear) {
+            $payload['total_amount'] = 0;
+            $payload['shipping_fee'] = 0;
+            $payload['commission_amount'] = 0;
+            $payload['company_amount'] = 0;
+            $payload['cod_amount'] = 0;
+        }
+
+        if (array_key_exists('has_return', $data)) {
+            $payload['has_return'] = (bool)$data['has_return'];
+            if ($payload['has_return']) {
+                $payload['has_return_at'] = now();
+            } else {
+                $payload['has_return_at'] = null;
+            }
+        }
+
+        if (!$isClear) {
+            if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
+                throw ValidationException::withMessages([
+                    'total_amount' => ['total_amount can only be edited when one of the selected reasons allows amount edit.'],
+                ]);
+            }
+
+            if ($allowsEditAmount && array_key_exists('total_amount', $data)) {
+                $payload['total_amount'] = $data['total_amount'];
+                $payload = $this->applyAutomaticFinancials($payload, $order);
+            }
+        }
+
+        $this->authorizeEditableColumns($request, array_keys($payload));
+
+        $order->update($payload);
+        $order->refusedReasons()->sync(array_unique($reasonIds));
+
+        return response()->json([
+            'message' => 'Order status updated successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function changeShipper(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-shipper');
+        $this->authorizeNotShipperCollected($order);
+        $this->authorizeShipperChangeAllowed($order);
+        $this->authorizeFinalStatusUpdate($request, $order);
+
+        $data = $request->validate([
+            'shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'commission_amount' => ['nullable', 'numeric', 'min:0'],
+            'shipper_date' => ['nullable', 'date'],
+        ]);
+
+        $payload = [
+            'shipper_user_id' => $data['shipper_user_id'] ?? null,
+        ];
+
+        $payload = $this->resolveDefaultShipper($payload, $order);
+        
+        if (array_key_exists('shipper_date', $data) && $data['shipper_date']) {
+            $payload['shipper_date'] = $data['shipper_date'];
+        } else {
+            $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
+        }
+
+        if (array_key_exists('commission_amount', $data) && $data['commission_amount'] !== null && $data['commission_amount'] !== '') {
+            $payload['commission_amount'] = $data['commission_amount'];
+            $payload['company_amount'] = ($order->total_amount ?? 0) - $payload['commission_amount'];
+        }
+
+        $payload = $this->applyAutomaticFinancials($payload, $order);
+
+        $order->update($payload);
+
+        return response()->json([
+            'message' => 'Shipper updated successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function changeNote(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-note');
+        $this->authorizeNotShipperCollected($order);
+        $this->authorizeFinalStatusUpdate($request, $order);
+
+        $data = $request->validate([
+            'order_note' => ['required', 'nullable', 'string'],
+        ]);
+
+        $order->update(['order_note' => $data['order_note']]);
+
+        return response()->json([
+            'message' => 'Order note updated successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function approve(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.approve');
+
+        $order->update([
+            'approval_status' => 'APPROVED',
+            'approved_at' => now(),
+            'approved_by' => $request->user()->id,
+        ]);
+
+        return response()->json([
+            'message' => 'Order approved successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function reject(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.reject');
+
+        $data = $request->validate([
+            'approval_note' => ['nullable', 'string'],
+        ]);
+
+        $order->update([
+            'approval_status' => 'REJECTED',
+            'rejected_at' => now(),
+            'rejected_by' => $request->user()->id,
+            'approval_note' => $data['approval_note'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => 'Order rejected successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    public function changeExternalCode(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.change-external-code');
+        $this->authorizeNotShipperCollected($order);
+
+        if (in_array($order->status, self::FINAL_STATUSES, true)) {
+            throw ValidationException::withMessages([
+                'status' => ['External code cannot be changed when order status is DELIVERED or UNDELIVERED.'],
+            ]);
+        }
+
+        $data = $request->validate([
+            'external_code' => ['required', 'nullable', 'string', 'max:255'],
+        ]);
+
+        $this->authorizeEditableColumns($request, ['external_code']);
+
+        $order->update(['external_code' => $data['external_code']]);
+
+        return response()->json([
+            'message' => 'Order external code updated successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
+        ]);
+    }
+
+    // =========================================================================
+    // Bulk Operations
+    // =========================================================================
 
     public function bulkChangeShipper(Request $request): JsonResponse
     {
@@ -516,382 +582,6 @@ class OrderController extends Controller
         ]);
     }
 
-    public function show(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.page');
-        $this->authorizePermission($request, 'order.view');
-
-        $validated = $request->validate([
-            'include_history' => ['nullable', 'boolean'],
-            'history_per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-        ]);
-
-        $order->load(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name']);
-
-        $payload = $this->filterVisibleColumns($request, $order);
-
-        if (($validated['include_history'] ?? false) === true) {
-            $historyPerPage = $validated['history_per_page'] ?? 20;
-
-            if (! $request->user()?->can('activity-log.view')) {
-                $payload['history'] = $order->history()
-                    ->where(function (Builder|QueryBuilder $query): void {
-                        $query
-                            ->where('action', 'created')
-                            ->orWhereNotNull('new_values->status')
-                            ->orWhereNotNull('old_values->status');
-                    })
-                    ->paginate($historyPerPage, ['*'], 'history_page')
-                    ->appends($request->query())
-                    ->through(fn ($log): array => $this->buildClientTimelineEntry($log))
-                    ->toArray();
-            } else {
-                $payload['history'] = $order->history()
-                    ->with([
-                        'user:id,name,username,phone',
-                        'loginSession:id,ip_address,country,city,device_name',
-                    ])
-                    ->paginate($historyPerPage, ['*'], 'history_page')
-                    ->appends($request->query())
-                    ->toArray();
-            }
-        }
-
-        return response()->json($payload);
-    }
-
-    public function history(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.page');
-        $this->authorizePermission($request, 'order.view');
-
-        $validated = $request->validate([
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'page' => ['nullable', 'integer', 'min:1'],
-        ]);
-
-        $perPage = $validated['per_page'] ?? 50;
-
-        if (! $request->user()?->can('activity-log.view')) {
-            $timeline = $order->history()
-                ->where(function (Builder|QueryBuilder $query): void {
-                    $query
-                        ->where('action', 'created')
-                        ->orWhereNotNull('new_values->status')
-                        ->orWhereNotNull('old_values->status');
-                })
-                ->paginate($perPage)
-                ->appends($request->query())
-                ->through(fn ($log): array => $this->buildClientTimelineEntry($log));
-
-            return response()->json($timeline);
-        }
-
-        $history = $order->history()
-            ->with([
-                'user:id,name,username,phone',
-                'loginSession:id,ip_address,country,city,device_name',
-            ])
-            ->paginate($perPage)
-            ->appends($request->query());
-
-        return response()->json($history);
-    }
-
-    public function shippingLabel(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.page');
-        $this->authorizePermission($request, 'order.view');
-
-        $order->load([
-            'client:id,name,phone',
-            'shippingContent:id,name',
-            'governorate:id,name',
-            'city:id,name',
-        ]);
-
-        $receiverPhones = array_values(array_filter([
-            $order->phone,
-            $order->phone_2,
-        ], static fn ($phone): bool => $phone !== null && $phone !== ''));
-
-        $formattedAddress = implode(' \\ ', array_values(array_filter([
-            $order->governorate?->name,
-            $order->city?->name,
-            $order->address,
-        ], static fn ($part): bool => $part !== null && $part !== '')));
-
-        return response()->json([
-            'order_id' => $order->id,
-            'code' => $order->code,
-            'client_name' => $order->client?->name,
-            'client_phone' => $order->client?->phone,
-            'receiver_name' => $order->receiver_name,
-            'receiver_phones' => $receiverPhones,
-            'receiver_phones_text' => implode(' - ', $receiverPhones),
-            'address' => $formattedAddress,
-            'total_amount' => $order->total_amount,
-            'cod' => $order->cod_amount,
-            'allow_open' => (bool) $order->allow_open,
-            'shipping_content' => $order->shippingContent?->name,
-        ]);
-    }
-
-    public function update(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.update');
-        $this->authorizeNotShipperCollected($order);
-        $this->authorizeFinalStatusUpdate($request, $order);
-
-        $data = $request->validate([
-            'external_code' => ['sometimes', 'nullable', 'string'],
-            'receiver_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'phone' => ['sometimes', 'required', 'string', 'max:30'],
-            'phone_2' => ['sometimes', 'nullable', 'string', 'max:30'],
-            'address' => ['sometimes', 'required', 'string'],
-            'governorate_id' => ['sometimes', 'required', 'exists:governorates,id'],
-            'city_id' => ['sometimes', 'required', 'exists:cities,id'],
-            'shipper_user_id' => ['sometimes', 'nullable', 'exists:users,id'],
-            'shipping_content_id' => ['sometimes', 'nullable', 'integer', 'exists:content,id'],
-            'total_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'status' => ['sometimes', 'required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
-            'allow_open' => ['sometimes', 'boolean'],
-            'latest_status_note' => ['nullable', 'string'],
-            'order_note' => ['nullable', 'string'],
-        ]);
-
-        $this->authorizeEditableColumns($request, array_keys($data));
-
-        if (array_key_exists('shipper_user_id', $data)) {
-            $this->authorizeShipperChangeAllowed($order);
-        }
-
-        $this->authorizeNoPriceEditOnFinalStatus($order, $data);
-
-        $data = $this->resolveDefaultShipper($data, $order);
-
-        if ($this->shouldRecalculateFinancials($data)) {
-            $data = $this->applyAutomaticFinancials($data, $order);
-        }
-
-        if (array_key_exists('shipper_user_id', $data)) {
-            $data['shipper_date'] = $data['shipper_user_id'] ? now()->toDateString() : null;
-        }
-
-        $order->update($data);
-
-        return response()->json([
-            'message' => 'Order updated successfully.',
-            'data' => $this->filterVisibleColumns($request, $order),
-        ]);
-    }
-
-    public function changeStatus(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.change-status');
-        $this->authorizeNotShipperCollected($order);
-        $this->authorizeFinalStatusUpdate($request, $order);
-
-        $data = $request->validate([
-            'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
-            'reason' => ['nullable', 'string'],
-            'refused_reason_ids' => ['nullable', 'array'],
-            'refused_reason_ids.*' => ['integer', 'exists:refused_reasons,id'],
-            'total_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'has_return' => ['nullable', 'boolean'],
-        ]);
-
-        $reasonIds = $data['refused_reason_ids'] ?? [];
-        // السماح بتكرار نفس السبب أكثر من مرة
-        $refusedReasons = collect($reasonIds)
-            ->map(function ($id) {
-                return RefusedReason::query()->find($id);
-            })
-            ->filter();
-
-        $allowsEditAmount = $refusedReasons->contains('is_edit_amount', true);
-        $isClear = $refusedReasons->contains('is_clear', true);
-
-        // Build note (يسمح بالتكرار)
-        $noteParts = [];
-        foreach ($refusedReasons as $rr) {
-            $noteParts[] = $rr->reason;
-        }
-        if (isset($data['reason']) && trim($data['reason']) !== '') {
-            $noteParts[] = $data['reason'];
-        }
-
-        $latestNote = implode(', ', $noteParts);
-
-        $payload = [
-            'status' => $data['status'],
-            'latest_status_note' => $latestNote,
-        ];
-
-        if ($isClear) {
-            $payload['total_amount'] = 0;
-            $payload['shipping_fee'] = 0;
-            $payload['commission_amount'] = 0;
-            $payload['company_amount'] = 0;
-            $payload['cod_amount'] = 0;
-        }
-
-        if (array_key_exists('has_return', $data)) {
-            $payload['has_return'] = (bool)$data['has_return'];
-            if ($payload['has_return']) {
-                $payload['has_return_at'] = now();
-            } else {
-                $payload['has_return_at'] = null;
-            }
-        }
-
-        if (!$isClear) {
-            if (! $allowsEditAmount && array_key_exists('total_amount', $data)) {
-                throw ValidationException::withMessages([
-                    'total_amount' => ['total_amount can only be edited when one of the selected reasons allows amount edit.'],
-                ]);
-            }
-
-            if ($allowsEditAmount && array_key_exists('total_amount', $data)) {
-                $payload['total_amount'] = $data['total_amount'];
-                // Financials need to be recalculated based on new total if edited
-                $payload = $this->applyAutomaticFinancials($payload, $order);
-            }
-        }
-
-        $this->authorizeEditableColumns($request, array_keys($payload));
-
-        $order->update($payload);
-        
-        // Sync the reasons actually selected (deduplicated)
-        $order->refusedReasons()->sync(array_unique($reasonIds));
-
-        return response()->json([
-            'message' => 'Order status updated successfully.',
-            'data' => $this->filterVisibleColumns($request, $order),
-        ]);
-    }
-
-    public function changeShipper(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.change-shipper');
-        $this->authorizeNotShipperCollected($order);
-        $this->authorizeShipperChangeAllowed($order);
-        $this->authorizeFinalStatusUpdate($request, $order);
-
-        $data = $request->validate([
-            'shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'commission_amount' => ['nullable', 'numeric', 'min:0'],
-            'shipper_date' => ['nullable', 'date'],
-        ]);
-
-        $payload = [
-            'shipper_user_id' => $data['shipper_user_id'] ?? null,
-        ];
-
-        $payload = $this->resolveDefaultShipper($payload, $order);
-        
-        if (array_key_exists('shipper_date', $data) && $data['shipper_date']) {
-            $payload['shipper_date'] = $data['shipper_date'];
-        } else {
-            $payload['shipper_date'] = $payload['shipper_user_id'] ? now()->toDateString() : null;
-        }
-
-        if (array_key_exists('commission_amount', $data) && $data['commission_amount'] !== null && $data['commission_amount'] !== '') {
-            $payload['commission_amount'] = $data['commission_amount'];
-            $payload['company_amount'] = ($order->total_amount ?? 0) - $payload['commission_amount'];
-        }
-
-        $payload = $this->applyAutomaticFinancials($payload, $order);
-
-        $order->update($payload);
-
-        return response()->json([
-            'message' => 'Shipper updated successfully.',
-            'data' => $this->filterVisibleColumns($request, $order),
-        ]);
-    }
-
-    public function changeNote(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.change-note');
-        $this->authorizeNotShipperCollected($order);
-        $this->authorizeFinalStatusUpdate($request, $order);
-
-        $data = $request->validate([
-            'order_note' => ['required', 'nullable', 'string'],
-        ]);
-
-        $order->update(['order_note' => $data['order_note']]);
-
-        return response()->json([
-            'message' => 'Order note updated successfully.',
-            'data' => $this->filterVisibleColumns($request, $order),
-        ]);
-    }
-
-    public function approve(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.approve');
-
-        $order->update([
-            'approval_status' => 'APPROVED',
-            'approved_at' => now(),
-            'approved_by' => $request->user()->id,
-        ]);
-
-        return response()->json([
-            'message' => 'Order approved successfully.',
-            'data' => $this->filterVisibleColumns($request, $order),
-        ]);
-    }
-
-    public function reject(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.reject');
-
-        $data = $request->validate([
-            'approval_note' => ['nullable', 'string'],
-        ]);
-
-        $order->update([
-            'approval_status' => 'REJECTED',
-            'rejected_at' => now(),
-            'rejected_by' => $request->user()->id,
-            'approval_note' => $data['approval_note'] ?? null,
-        ]);
-
-        return response()->json([
-            'message' => 'Order rejected successfully.',
-            'data' => $this->filterVisibleColumns($request, $order),
-        ]);
-    }
-
-    public function changeExternalCode(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.change-external-code');
-        $this->authorizeNotShipperCollected($order);
-
-        if (in_array($order->status, self::FINAL_STATUSES, true)) {
-            throw ValidationException::withMessages([
-                'status' => ['External code cannot be changed when order status is DELIVERED or UNDELIVERED.'],
-            ]);
-        }
-
-        $data = $request->validate([
-            'external_code' => ['required', 'nullable', 'string', 'max:255'],
-        ]);
-
-        $this->authorizeEditableColumns($request, ['external_code']);
-
-        $order->update(['external_code' => $data['external_code']]);
-
-        return response()->json([
-            'message' => 'Order external code updated successfully.',
-            'data' => $this->filterVisibleColumns($request, $order),
-        ]);
-    }
-
     public function bulkDestroy(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'order.delete');
@@ -975,17 +665,346 @@ class OrderController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, Order $order): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.delete');
-        $this->authorizeNotShipperCollected($order);
 
-        $order->delete();
+    // =========================================================================
+    // Order Visibility & Tools
+    // =========================================================================
+
+    public function myOrders(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+        $this->authorizePermission($request, 'order.my-orders');
+
+        $validated = $request->validate([
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $perPage = $validated['per_page'] ?? 100;
+
+        $orders = Order::query()
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
+            ->where('shipper_user_id', $request->user()?->id)
+            ->whereNotIn('status', self::FINAL_STATUSES)
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->appends($request->query())
+            ->through(fn (Order $order): array => $this->formatMyOrderRow($order));
+
+        return response()->json($orders);
+    }
+
+    public function scan(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+
+        $data = $request->validate([
+            'code' => ['nullable', 'string'],
+            'external_code' => ['nullable', 'string'],
+        ]);
+
+        $code = trim((string) ($data['code'] ?? ''));
+        $externalCode = trim((string) ($data['external_code'] ?? ''));
+
+        if ($code === '' && $externalCode === '') {
+            throw ValidationException::withMessages([
+                'code' => ['Please provide code or external_code.'],
+            ]);
+        }
+
+        $order = Order::query()
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
+            ->where(function (Builder $query) use ($code, $externalCode): void {
+                if ($code !== '') {
+                    $query->where('code', $code);
+                }
+
+                if ($externalCode !== '') {
+                    if ($code !== '') {
+                        $query->orWhere('external_code', $externalCode);
+                    } else {
+                        $query->where('external_code', $externalCode);
+                    }
+                }
+            })
+            ->first();
+
+        if (! $order) {
+            throw ValidationException::withMessages([
+                'code' => ['Order not found for provided code/external_code.'],
+            ]);
+        }
 
         return response()->json([
-            'message' => 'Order deleted successfully.',
+            'message' => 'Order scanned successfully.',
+            'data' => $this->filterVisibleColumns($request, $order),
         ]);
     }
+
+    public function history(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+
+        $validated = $request->validate([
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $perPage = $validated['per_page'] ?? 50;
+
+        if (! $request->user()?->can('activity-log.view')) {
+            $timeline = $order->history()
+                ->where(function (Builder|QueryBuilder $query): void {
+                    $query
+                        ->where('action', 'created')
+                        ->orWhereNotNull('new_values->status')
+                        ->orWhereNotNull('old_values->status');
+                })
+                ->paginate($perPage)
+                ->appends($request->query())
+                ->through(fn ($log): array => $this->buildClientTimelineEntry($log));
+
+            return response()->json($timeline);
+        }
+
+        $history = $order->history()
+            ->with([
+                'user:id,name,username,phone',
+                'loginSession:id,ip_address,country,city,device_name',
+            ])
+            ->paginate($perPage)
+            ->appends($request->query());
+
+        return response()->json($history);
+    }
+
+    public function shippingLabel(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+
+        $order->load([
+            'client:id,name,phone',
+            'shippingContent:id,name',
+            'governorate:id,name',
+            'city:id,name',
+        ]);
+
+        $receiverPhones = array_values(array_filter([
+            $order->phone,
+            $order->phone_2,
+        ], static fn ($phone): bool => $phone !== null && $phone !== ''));
+
+        $formattedAddress = implode(' \\ ', array_values(array_filter([
+            $order->governorate?->name,
+            $order->city?->name,
+            $order->address,
+        ], static fn ($part): bool => $part !== null && $part !== '')));
+
+        return response()->json([
+            'order_id' => $order->id,
+            'code' => $order->code,
+            'client_name' => $order->client?->name,
+            'client_phone' => $order->client?->phone,
+            'receiver_name' => $order->receiver_name,
+            'receiver_phones' => $receiverPhones,
+            'receiver_phones_text' => implode(' - ', $receiverPhones),
+            'address' => $formattedAddress,
+            'total_amount' => $order->total_amount,
+            'cod' => $order->cod_amount,
+            'allow_open' => (bool) $order->allow_open,
+            'shipping_content' => $order->shippingContent?->name,
+        ]);
+    }
+
+    // =========================================================================
+    // Data & Import/Export
+    // =========================================================================
+
+    public function import(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.create');
+        $this->checkWorkingHours('orders');
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,csv,xls'],
+        ]);
+
+        $import = new OrdersImport($request->user()->id);
+        Excel::import($import, $request->file('file'));
+
+        $results = $import->getResults();
+
+        return response()->json([
+            'message' => 'Import completed.',
+            'success_count' => $results['success_count'],
+            'errors' => $results['errors'],
+        ]);
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorizePermission($request, 'order.export');
+
+        $ids = $request->input('ids');
+        if ($ids && is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        if ($ids && is_array($ids)) {
+            return Excel::download(new OrdersExport(null, null, $ids), 'orders_export.xlsx');
+        }
+
+        $query = Order::query();
+        $this->applyOrderSearch($query, $request->all());
+
+        return Excel::download(new OrdersExport($query), 'orders_filtered_export.xlsx');
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new OrdersTemplateExport, 'orders_template.xlsx');
+    }
+
+    public function init(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.page');
+        $this->authorizePermission($request, 'order.view');
+
+        $metadata = [
+            'governorates' => Governorate::query()->select('id', 'name')->with('cities:id,governorate_id,name')->get(),
+            'shippers' => Shipper::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($s) {
+                return [
+                    'id' => $s->user_id,
+                    'name' => $s->user?->name ?? 'Unknown',
+                    'commission_rate' => $s->commission_rate,
+                ];
+            }),
+            'clients' => Client::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($c) {
+                return [
+                    'id' => $c->user_id,
+                    'name' => $c->user?->name ?? 'Unknown',
+                    'plan_id' => $c->plan_id,
+                    'shipping_content_id' => $c->shipping_content_id,
+                    'shipping_fee' => $c->shipping_fee,
+                ];
+            }),
+            'contents' => \App\Models\Content::query()->select('id', 'name')->get(),
+            'plans' => \App\Models\Plan::query()->with('prices')->get(),
+            'refused_reasons' => RefusedReason::query()->where('is_active', true)->get(),
+            'statuses' => self::STATUS_LABELS,
+            'working_hours' => \App\Models\Setting::query()->where('group', 'working_hours')->pluck('value', 'key')->all(),
+        ];
+
+        $orders = $this->getOrdersWithTotals($request);
+
+        return response()->json([
+            'metadata' => $metadata,
+            'orders' => $orders,
+        ]);
+    }
+
+    // =========================================================================
+    // Private Helpers & Logic
+    // =========================================================================
+
+    private function getOrdersWithTotals(Request $request): array
+    {
+        $validated = $request->validate([
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'search' => ['nullable', 'array'],
+            'search.code' => ['nullable', 'string', 'max:255'],
+            'search.external_code' => ['nullable', 'string', 'max:255'],
+            'search.receiver_name' => ['nullable', 'string', 'max:255'],
+            'search.phone' => ['nullable', 'string', 'max:30'],
+            'search.phone_2' => ['nullable', 'string', 'max:30'],
+            'search.address' => ['nullable', 'string', 'max:1000'],
+            'search.status' => ['nullable', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'search.statuses' => ['nullable', 'array'],
+            'search.statuses.*' => [Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'search.approval_status' => ['nullable', Rule::in(['PENDING', 'APPROVED', 'REJECTED'])],
+            'search.governorate_id' => ['nullable', 'integer', 'exists:governorates,id'],
+            'search.city_id' => ['nullable', 'integer', 'exists:cities,id'],
+            'search.shipper_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'search.client_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'search.allow_open' => ['nullable', 'boolean'],
+            'search.collection_state' => ['nullable', Rule::in(['not_collected', 'ready_to_collect', 'collected'])],
+            'search.is_in_shipper_collection' => ['nullable', 'boolean'],
+            'search.is_shipper_collected' => ['nullable', 'boolean'],
+            'search.is_in_client_settlement' => ['nullable', 'boolean'],
+            'search.is_client_settled' => ['nullable', 'boolean'],
+            'search.is_in_shipper_return' => ['nullable', 'boolean'],
+            'search.is_shipper_returned' => ['nullable', 'boolean'],
+            'search.is_in_client_return' => ['nullable', 'boolean'],
+            'search.is_client_returned' => ['nullable', 'boolean'],
+            'trashed' => ['nullable', 'string', Rule::in(['with', 'only'])],
+        ]);
+
+        $perPage = $validated['per_page'] ?? 100;
+
+        $query = Order::query()
+            ->forUserRole()
+            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name', 'refusedReasons'])
+            ->orderByDesc('id');
+
+        if (isset($validated['trashed'])) {
+            if ($validated['trashed'] === 'only') {
+                $query->onlyTrashed();
+            } elseif ($validated['trashed'] === 'with') {
+                $query->withTrashed();
+            }
+        }
+
+        $this->applyOrderSearch($query, $validated);
+
+        $summaryQuery = Order::query()->forUserRole();
+
+        if (isset($validated['trashed'])) {
+            if ($validated['trashed'] === 'only') {
+                $summaryQuery->onlyTrashed();
+            } elseif ($validated['trashed'] === 'with') {
+                $summaryQuery->withTrashed();
+            }
+        }
+
+        $this->applyOrderSearch($summaryQuery, $validated);
+        $totals = $summaryQuery->selectRaw('
+                SUM(total_amount) as total_amount,
+                SUM(shipping_fee) as shipping_fee,
+                SUM(commission_amount) as commission_amount,
+                SUM(company_amount) as company_amount,
+                SUM(cod_amount) as cod_amount
+            ')->first();
+
+        $orders = $query
+            ->paginate($perPage)
+            ->appends($request->query())
+            ->through(fn (Order $order): array => $this->filterVisibleColumns($request, $order));
+
+        return [
+            ...$orders->toArray(),
+            'totals' => [
+                'total_amount' => round((float) ($totals->total_amount ?? 0), 2),
+                'shipping_fee' => round((float) ($totals->shipping_fee ?? 0), 2),
+                'commission_amount' => round((float) ($totals->commission_amount ?? 0), 2),
+                'company_amount' => round((float) ($totals->company_amount ?? 0), 2),
+                'cod_amount' => round((float) ($totals->cod_amount ?? 0), 2),
+            ],
+        ];
+    }
+
+
+
+
+
+
+
+
 
     private function authorizePermission(Request $request, string $permission): void
     {
@@ -1509,25 +1528,5 @@ class OrderController extends Controller
     }
 
 
-    public function restore(Request $request, $id): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.delete');
-        $order = Order::onlyTrashed()->findOrFail($id);
-        $order->restore();
 
-        return response()->json([
-            'message' => 'Order restored successfully.',
-        ]);
-    }
-
-    public function forceDelete(Request $request, $id): JsonResponse
-    {
-        $this->authorizePermission($request, 'order.delete');
-        $order = Order::onlyTrashed()->findOrFail($id);
-        $order->forceDelete();
-
-        return response()->json([
-            'message' => 'Order permanently deleted.',
-        ]);
-    }
 }
