@@ -24,6 +24,8 @@ const isShipperModalVisible = ref(false)
 const editingOrderId = ref<number | null>(null)
 const selectedOrderForStatus = ref<any>(null)
 const selectedOrderForShipper = ref<any>(null)
+const selectedOrderForDetails = ref<any>(null)
+const isDetailsModalVisible = ref(false)
 const pageMetadata = ref<any>({})
 
 // Search & Filter State
@@ -542,22 +544,9 @@ const bulkForceDeleteOrders = async () => {
   }
 }
 
-// 👉 Order History Logic
-const isHistoryVisible = ref(false)
-const historyLogs = ref<any[]>([])
-const selectedOrder = ref<any>(null)
-const isFetchingHistory = ref(false)
-
-const openHistory = async (order: any) => {
-  selectedOrder.value = order
-  isHistoryVisible.value = true
-  isFetchingHistory.value = true
-  
-  const { data } = await useApi(`/orders/${order.id}/history`).get().json()
-  
-  // Handle paginated or flat data
-  historyLogs.value = data.value.data || data.value || []
-  isFetchingHistory.value = false
+const openDetails = (order: any) => {
+  selectedOrderForDetails.value = order
+  isDetailsModalVisible.value = true
 }
 
 const getLogIcon = (log: any) => {
@@ -1052,9 +1041,9 @@ searchClients()
                     <VDivider />
                     <VListItem
                       v-if="can('order.view' as any, 'all' as any)"
-                      prepend-icon="tabler-history"
-                      title="History"
-                      @click="openHistory(item)"
+                      prepend-icon="tabler-list-details"
+                      title="Show Details"
+                      @click="openDetails(item)"
                     />
                   </template>
                 </VList>
@@ -1097,65 +1086,11 @@ searchClients()
       @shipper-updated="() => { fetchOrders(); selectedOrders = [] }"
     />
 
-    <!-- 👉 History Modal -->
-    <VDialog
-      v-model="isHistoryVisible"
-      width="600"
-    >
-      <VCard title="سجل تحركات الأوردر (Timeline)">
-        <VCardText style="max-block-size: 500px; overflow-y: auto;">
-          <div v-if="isFetchingHistory" class="text-center py-10">
-            <VProgressCircular indeterminate color="primary" />
-          </div>
-          <div v-else-if="historyLogs.length === 0" class="text-center py-10 text-disabled">
-            لا توجد تحركات مسجلة لهذا الأوردر
-          </div>
-          <VTimeline
-            v-else
-            align="start"
-            truncate-line="both"
-            side="end"
-            density="compact"
-            line-thickness="1"
-            line-inset="6"
-            class="ps-2 v-timeline--variant-outlined fleet-timeline mt-4"
-          >
-            <VTimelineItem
-              v-for="log in historyLogs"
-              :key="log.id"
-              :icon="getLogIcon(log)"
-              dot-color="rgb(var(--v-theme-surface))"
-              :icon-color="getLogColor(log)"
-              fill-dot
-              size="20"
-              :elevation="0"
-            >
-              <div class="ps-1">
-                <div class="text-caption text-uppercase" :class="`text-${getLogColor(log)}`">
-                  {{ getLogActionLabel(log) }}
-                </div>
-                <div class="app-timeline-title font-weight-bold text-sm">
-                  {{ getLogMessage(log) }}
-                </div>
-                <div class="text-body-2 mt-1">
-                  {{ new Date(log.created_at).toLocaleString('ar-EG') }}
-                </div>
-                <div v-if="log.user" class="text-xs text-disabled mt-1 d-flex align-center gap-1">
-                  <VIcon icon="tabler-user-check" size="12" />
-                  <span>بواسطة: {{ log.user.name }}</span>
-                </div>
-                <div v-if="log.new_values?.latest_status_note" class="text-xs mt-1 text-info italic">
-                  ملاحظة: {{ log.new_values.latest_status_note }}
-                </div>
-              </div>
-            </VTimelineItem>
-          </VTimeline>
-        </VCardText>
-        <VCardText class="d-flex justify-end pr-6 pb-6">
-          <VBtn color="secondary" @click="isHistoryVisible = false">إغلاق</VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
+    <OrderDetailsModal
+      v-model:is-dialog-visible="isDetailsModalVisible"
+      :order="selectedOrderForDetails"
+      @print="id => printLabel(id)"
+    />
   </section>
 </template>
 

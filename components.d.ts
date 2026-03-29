@@ -74,6 +74,7 @@ declare module 'vue' {
     MaterialRequestList: typeof import('./resources/ts/views/apps/operations/material-request/MaterialRequestList.vue')['default']
     MoreBtn: typeof import('./resources/ts/@core/components/MoreBtn.vue')['default']
     Notifications: typeof import('./resources/ts/@core/components/Notifications.vue')['default']
+    OrderDetailsModal: typeof import('./resources/ts/views/apps/orders/components/OrderDetailsModal.vue')['default']
     OrderList: typeof import('./resources/ts/views/apps/orders/OrderList.vue')['default']
     OrderShipperModal: typeof import('./resources/ts/views/apps/orders/components/OrderShipperModal.vue')['default']
     OrdersHoldOutfordelivery: typeof import('./resources/ts/views/apps/orders/special-views/OrdersHoldOutfordelivery.vue')['default']
