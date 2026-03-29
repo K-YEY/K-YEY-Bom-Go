@@ -126,5 +126,16 @@ Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class
     Route::patch('client-returns/bulk-status', [ClientReturnController::class, 'bulkStatus']);
     Route::post('client-returns/bulk-scan', [ClientReturnController::class, 'bulkScan']);
     Route::apiResource('client-returns', ClientReturnController::class);
-    Route::apiResource('activity-logs', ActivityLogController::class)->only(['index', 'show']);
+    Route::get('activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('activity-logs/{activity_log}', [ActivityLogController::class, 'show']);
+
+    // Shipper App API (Dedicated for Representatives)
+    Route::prefix('shipper-app')->group(function () {
+        Route::get('init', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'init']);
+        Route::get('orders', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'index']);
+        Route::get('orders/{order}', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'show']);
+        Route::patch('orders/{order}/status', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'updateStatus']);
+        Route::post('scan', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'scan']);
+        Route::get('stats', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'statistics']);
+    });
 });
