@@ -11,6 +11,9 @@ interface Props {
       ip_address: string
       location: string
       last_activity: string
+      is_active: boolean
+      is_current: boolean
+      logout_at: string | null
     }[]
   }
 }
@@ -62,28 +65,58 @@ const recentDeviceHeader = [
   { title: 'DEVICE', key: 'device' },
   { title: 'LOCATION', key: 'location' },
   { title: 'RECENT ACTIVITY', key: 'activity' },
+  { title: 'ACTION', key: 'action', sortable: false },
 ]
 
 const resolveDeviceIcon = (platform: string) => {
-  if (platform.toLowerCase().includes('windows')) return { icon: 'tabler-brand-windows', color: 'info' }
-  if (platform.toLowerCase().includes('android')) return { icon: 'tabler-brand-android', color: 'success' }
-  if (platform.toLowerCase().includes('apple') || platform.toLowerCase().includes('ios') || platform.toLowerCase().includes('mac')) return { icon: 'tabler-brand-apple', color: 'secondary' }
+  const p = platform?.toLowerCase() || ''
+  if (p.includes('windows')) return { icon: 'tabler-brand-windows', color: 'info' }
+  if (p.includes('android')) return { icon: 'tabler-brand-android', color: 'success' }
+  if (p.includes('apple') || p.includes('ios') || p.includes('mac')) return { icon: 'tabler-brand-apple', color: 'secondary' }
   return { icon: 'tabler-device-laptop', color: 'primary' }
 }
 
-const recentDevices = computed(() => {
-  return props.userData.login_sessions.map(session => {
-    const { icon, color } = resolveDeviceIcon(session.device_type)
+const emit = defineEmits(['update'])
 
-    return {
-      browser: `${session.browser_name} on ${session.device_type}`,
-      icon,
-      color,
-      device: session.device_type,
-      location: session.location,
-      activity: session.last_activity,
+const logoutSession = async (sessionId: number) => {
+  try {
+    await $api(`/logout-session/${sessionId}`, { method: 'DELETE' })
+    emit('update')
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const recentDevices = computed(() => {
+  const sessions = props.userData.login_sessions || []
+  
+  // Only show active sessions and deduplicate by IP + Device
+  const uniqueSessions: any[] = []
+  const seen = new Set()
+
+  sessions.forEach(session => {
+    // Skip if logged out
+    if (session.logout_at && !session.is_active) return
+
+    const key = `${session.ip_address}-${session.device_type}-${session.browser_name}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      const { icon, color } = resolveDeviceIcon(session.device_type || 'Windows')
+      uniqueSessions.push({
+        id: session.id,
+        browser: `${session.browser_name || 'Unknown'} on ${session.device_type || 'Desktop'}`,
+        icon,
+        color,
+        device: session.device_type,
+        location: session.location || 'Unknown',
+        activity: session.last_activity || 'N/A',
+        ip: session.ip_address,
+        is_current: session.is_current
+      })
     }
   })
+
+  return uniqueSessions
 })
 </script>
 
@@ -175,11 +208,40 @@ const recentDevices = computed(() => {
                 :color="item.color"
                 :size="22"
               />
-              <div class="text-body-1 text-high-emphasis">
-                {{ item.browser }}
+              <div class="d-flex flex-column">
+                <div class="text-body-1 text-high-emphasis">
+                  {{ item.browser }}
+                </div>
+                <div class="text-xs text-disabled">
+                  IP: {{ item.ip }}
+                </div>
               </div>
+              <VChip
+                v-if="item.is_current"
+                color="success"
+                size="x-small"
+                label
+                class="ms-2"
+              >
+                Current
+              </VChip>
             </div>
           </template>
+
+          <template #item.action="{ item }">
+            <VBtn
+              v-if="!item.is_current"
+              icon="tabler-logout"
+              variant="text"
+              color="error"
+              size="small"
+              @click="logoutSession(item.id)"
+            >
+              <VIcon icon="tabler-logout" />
+              <VTooltip activator="parent">Log out device</VTooltip>
+            </VBtn>
+          </template>
+
           <!-- TODO Refactor this after vuetify provides proper solution for removing default footer -->
           <template #bottom />
         </VDataTable>

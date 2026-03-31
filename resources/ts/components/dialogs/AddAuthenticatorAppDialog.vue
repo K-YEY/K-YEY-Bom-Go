@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import themeselectionQr from '@images/pages/themeselection-qr.png'
 
 interface Emit {
   (e: 'update:isDialogVisible', value: boolean): void
@@ -50,13 +49,7 @@ const resetAuthCode = () => {
           Using an authenticator app like Google Authenticator, Microsoft Authenticator, Authy, or 1Password, scan the QR code. It will generate a 6 digit code for you to enter below.
         </p>
 
-        <div class="mb-6">
-          <VImg
-            width="150"
-            :src="themeselectionQr"
-            class="mx-auto"
-          />
-        </div>
+   
 
         <VAlert
           title="ASDLKNASDA9AHS678dGhASD78AB"

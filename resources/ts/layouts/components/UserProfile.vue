@@ -28,7 +28,8 @@ const userProfileList = computed(() => [
   { type: 'divider' },
   { 
     type: 'navItem', 
-    icon: 'tabler-user', 
+    icon: userData.value?.avatar ? null : 'tabler-user', 
+    avatar: userData.value?.avatar,
     title: 'Profile', 
     to: { name: 'apps-user-view-id', params: { id: userData.value?.id || userData.value?.user_id } } 
   },
@@ -118,7 +119,15 @@ const userProfileList = computed(() => [
                 :to="item.to"
               >
                 <template #prepend>
+                  <VAvatar
+                    v-if="item.avatar"
+                    size="22"
+                    class="me-2"
+                  >
+                    <VImg :src="item.avatar" />
+                  </VAvatar>
                   <VIcon
+                    v-else-if="item.icon"
                     :icon="item.icon"
                     size="22"
                   />

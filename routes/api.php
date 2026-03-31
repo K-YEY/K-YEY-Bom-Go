@@ -41,6 +41,7 @@ Route::get('/app-config', [SettingController::class, 'publicConfig']);
 // Protected routes (require auth:sanctum)
 Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class]], function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::delete('/logout-session/{session}', [AuthController::class, 'logoutSession']);
     Route::get('acl', [AclMatrixController::class, 'matrix']);
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
     Route::apiResource('expenses', ExpenseController::class);

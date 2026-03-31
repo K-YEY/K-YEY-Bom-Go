@@ -4,16 +4,14 @@ import ShipperCommissionEditDialog from '@/components/dialogs/ShipperCommissionE
 import { avatarText } from '@core/utils/formatters'
 
 // Avatars imports
-import avatar1 from '@images/avatars/avatar-1.png'
-import avatar2 from '@images/avatars/avatar-2.png'
-import avatar3 from '@images/avatars/avatar-3.png'
-import avatar4 from '@images/avatars/avatar-4.png'
-import avatar5 from '@images/avatars/avatar-5.png'
-import avatar6 from '@images/avatars/avatar-6.png'
-import avatar7 from '@images/avatars/avatar-7.png'
-import avatar8 from '@images/avatars/avatar-8.png'
+import avatar1 from '@images/avatars/avatar1.svg?url'
+import avatar2 from '@images/avatars/avatar2.svg?url'
+import avatar3 from '@images/avatars/avatar3.svg?url'
+import avatar4 from '@images/avatars/avatar4.svg?url'
+import avatar5 from '@images/avatars/avatar5.svg?url'
+import avatar6 from '@images/avatars/avatar6.svg?url'
 
-const avatars = [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6, avatar7, avatar8]
+const avatars = [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6]
 
 interface Props {
   userData: {
@@ -68,6 +66,13 @@ const selectAvatar = async (avatar: string | null) => {
       method: 'PUT',
       body: { avatar },
     })
+    
+    // Update local cookie if it's the current user
+    const currentUser = useCookie<any>('userData')
+    if (currentUser.value && (currentUser.value.id === props.userData.id || currentUser.value.user_id === props.userData.id)) {
+      currentUser.value.avatar = avatar
+    }
+
     emit('update')
   } catch (e) {
     // 
@@ -80,6 +85,13 @@ const resetAvatar = async () => {
       method: 'PUT',
       body: { avatar: null },
     })
+
+    // Update local cookie if it's the current user
+    const currentUser = useCookie<any>('userData')
+    if (currentUser.value && (currentUser.value.id === props.userData.id || currentUser.value.user_id === props.userData.id)) {
+      currentUser.value.avatar = null
+    }
+
     emit('update')
   } catch (e) {
     // 
@@ -88,10 +100,17 @@ const resetAvatar = async () => {
 
 const onUserInfoUpdate = async (updatedData: any) => {
   try {
-    await $api(`/users/${props.userData.id}`, {
+    const res = await $api(`/users/${props.userData.id}`, {
       method: 'PUT',
       body: updatedData,
     })
+
+    // Update local cookie if it's the current user
+    const currentUser = useCookie<any>('userData')
+    if (currentUser.value && (currentUser.value.id === props.userData.id || currentUser.value.user_id === props.userData.id)) {
+      Object.assign(currentUser.value, updatedData)
+    }
+
     emit('update')
     isUserInfoEditDialogVisible.value = false
     isChangePlanDialogVisible.value = false
@@ -145,7 +164,7 @@ const suspendUser = async () => {
               color="primary"
               size="x-small"
               class="position-absolute"
-              style="bottom: -10px; right: -10px;"
+              style="inset-block-end: -10px; inset-inline-end: -10px;"
             >
               <VIcon icon="tabler-camera" />
               <VMenu activator="parent" location="bottom end" :close-on-content-click="true">

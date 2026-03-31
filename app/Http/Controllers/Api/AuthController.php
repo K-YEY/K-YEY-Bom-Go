@@ -34,6 +34,31 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out successfully.']);
     }
 
+    public function logoutSession(Request $request, LoginSession $session): JsonResponse
+    {
+        $user = $request->user();
+        
+        // Authorization: User can logout their own session, or admin can logout any
+        if ($session->user_id !== $user->id && !$user->can('user.update')) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $session->update([
+            'logout_at' => now(),
+            'is_active' => false,
+            'is_current' => false,
+        ]);
+
+        // Revoke sanctum token
+        if ($session->session_id) {
+            \Illuminate\Support\Facades\DB::table('personal_access_tokens')
+                ->where('id', $session->session_id)
+                ->delete();
+        }
+
+        return response()->json(['message' => 'Session logged out successfully.']);
+    }
+
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
