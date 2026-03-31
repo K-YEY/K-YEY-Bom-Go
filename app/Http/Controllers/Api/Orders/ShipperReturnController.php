@@ -136,6 +136,9 @@ class ShipperReturnController extends Controller
             ->with(['shipper:id,name', 'client:id,name'])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->whereNotNull('shipper_user_id')
+            ->whereDoesntHave('shipperReturns', function ($q) {
+                $q->where('shipper_returns.status', '!=', 'CANCELLED');
+            })
             ->where('is_shipper_returned', false)
             ->when(
                 $validated['shipper_user_id'] ?? null,
@@ -417,12 +420,14 @@ class ShipperReturnController extends Controller
                 'id',
                 'shipper_user_id',
                 'status',
-                'is_in_shipper_return',
                 'is_shipper_returned',
             ])
             ->where('shipper_user_id', $shipperUserId)
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
+            ->whereDoesntHave('shipperReturns', function ($q) {
+                $q->where('shipper_returns.status', '!=', 'CANCELLED');
+            })
             ->where('is_shipper_returned', false)
             ->get();
 
@@ -546,6 +551,9 @@ class ShipperReturnController extends Controller
                     ->orWhere(function (Builder $q) {
                         $q->where('status', 'DELIVERED')->where('has_return', true);
                     });
+            })
+            ->whereDoesntHave('shipperReturns', function ($q) {
+                $q->where('shipper_returns.status', '!=', 'CANCELLED');
             })
             ->where('is_shipper_returned', false)
             ->get();

@@ -138,7 +138,9 @@ class ClientReturnController extends Controller
             ->with(['client:id,name', 'shipper:id,name'])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('is_shipper_returned', true)
-            ->where('is_shipper_returned', true)
+            ->whereDoesntHave('clientReturns', function ($q) {
+                $q->where('client_returns.status', '!=', 'CANCELLED');
+            })
             ->where('is_client_returned', false)
             ->when(
                 $validated['client_user_id'] ?? null,
@@ -432,6 +434,9 @@ class ClientReturnController extends Controller
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('is_shipper_returned', true)
+            ->whereDoesntHave('clientReturns', function ($q) {
+                $q->where('client_returns.status', '!=', 'CANCELLED');
+            })
             ->where('is_client_returned', false)
             ->get();
 
@@ -552,6 +557,9 @@ class ClientReturnController extends Controller
             // Client return needs has_return=true AND already returned by shipper
             ->where('has_return', true)
             ->where('is_shipper_returned', true)
+            ->whereDoesntHave('clientReturns', function ($q) {
+                $q->where('client_returns.status', '!=', 'CANCELLED');
+            })
             ->where('is_client_returned', false)
             ->get();
 

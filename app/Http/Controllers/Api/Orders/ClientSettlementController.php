@@ -200,6 +200,9 @@ class ClientSettlementController extends Controller
             ])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('is_client_settled', false)
+            ->whereDoesntHave('clientSettlements', function ($q) {
+                $q->where('client_settlements.status', '!=', 'CANCELLED');
+            })
             ->when(
                 $validated['client_user_id'] ?? null,
                 fn (Builder $query, int|string $clientUserId): Builder => $query->where('client_user_id', $clientUserId)
@@ -564,10 +567,17 @@ class ClientSettlementController extends Controller
                 'is_client_settled',
                 'is_shipper_collected',
             ])
+            ->whereNotNull('shipper_user_id')
+            ->whereDoesntHave('shipperCollections', function ($q) {
+                $q->where('shipper_collections.status', '!=', 'CANCELLED');
+            })
             ->where('client_user_id', $clientUserId)
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('is_client_settled', false)
+            ->whereDoesntHave('clientSettlements', function ($q) {
+                $q->where('client_settlements.status', '!=', 'CANCELLED');
+            })
             ->when(
                 $this->requiresShipperCollectionFirst($clientUserId),
                 fn (Builder $query): Builder => $query->where('is_shipper_collected', true)

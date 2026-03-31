@@ -1338,6 +1338,35 @@ class OrderController extends Controller
                 }
             }
         }
+
+        // 4. Handle removed flags via relationships
+        $dynamicRelationMap = [
+            'is_in_shipper_collection' => ['relation' => 'shipperCollections', 'table' => 'shipper_collections'],
+            'is_in_client_settlement'   => ['relation' => 'clientSettlements', 'table' => 'client_settlements'],
+            'is_in_shipper_return'      => ['relation' => 'shipperReturns', 'table' => 'shipper_returns'],
+            'is_in_client_return'       => ['relation' => 'clientReturns', 'table' => 'client_returns'],
+        ];
+
+        foreach ($dynamicRelationMap as $filter => $config) {
+            foreach ([$validated, $columnSearch] as $source) {
+                if (array_key_exists($filter, $source)) {
+                    $value = $source[$filter];
+                    if ($value === null || $value === '') {
+                        continue;
+                    }
+
+                    $isTrue = ($value === 'true' || $value === true || $value === '1' || $value === 1);
+                    $relation = $config['relation'];
+                    $table = $config['table'];
+
+                    if ($isTrue) {
+                        $query->whereHas($relation, fn ($q) => $q->where("{$table}.status", '!=', 'CANCELLED'));
+                    } else {
+                        $query->whereDoesntHave($relation, fn ($q) => $q->where("{$table}.status", '!=', 'CANCELLED'));
+                    }
+                }
+            }
+        }
     }
 
     private function resolveCollectionState(Order $order): string

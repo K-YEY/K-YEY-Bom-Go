@@ -170,6 +170,9 @@ class ShipperCollectionController extends Controller
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('approval_status', 'APPROVED')
             ->whereNotNull('shipper_user_id')
+            ->whereDoesntHave('shipperCollections', function ($q) {
+                $q->where('shipper_collections.status', '!=', 'CANCELLED');
+            })
             ->where('is_shipper_collected', false)
             ->when(
                 $validated['shipper_user_id'] ?? null,
@@ -522,6 +525,9 @@ class ShipperCollectionController extends Controller
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('is_shipper_collected', false)
+            ->whereDoesntHave('shipperCollections', function ($q) {
+                $q->where('shipper_collections.status', '!=', 'CANCELLED');
+            })
             ->get();
 
         if ($orders->count() !== count($orderIds)) {
