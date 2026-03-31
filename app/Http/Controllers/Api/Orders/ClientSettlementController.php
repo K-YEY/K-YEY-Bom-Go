@@ -190,7 +190,6 @@ class ClientSettlementController extends Controller
                 'status',
                 'client_user_id',
                 'shipper_user_id',
-                'is_in_client_settlement',
                 'is_client_settled',
                 'is_shipper_collected',
                 'shipper_collected_at',
@@ -200,7 +199,6 @@ class ClientSettlementController extends Controller
                 'shipper:id,name',
             ])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
-            ->where('is_in_client_settlement', false)
             ->where('is_client_settled', false)
             ->when(
                 $validated['client_user_id'] ?? null,
@@ -563,14 +561,12 @@ class ClientSettlementController extends Controller
                 'shipping_fee',
                 'cod_amount',
                 'status',
-                'is_in_client_settlement',
                 'is_client_settled',
                 'is_shipper_collected',
             ])
             ->where('client_user_id', $clientUserId)
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
-            ->where('is_in_client_settlement', false)
             ->where('is_client_settled', false)
             ->when(
                 $this->requiresShipperCollectionFirst($clientUserId),
@@ -619,7 +615,6 @@ class ClientSettlementController extends Controller
             Order::query()
                 ->whereIn('id', $orderIds)
                 ->update([
-                    'is_in_client_settlement' => false,
                     'is_client_settled' => false,
                     'client_settled_at' => null,
                 ]);
@@ -630,7 +625,6 @@ class ClientSettlementController extends Controller
         Order::query()
             ->whereIn('id', $orderIds)
             ->update([
-                'is_in_client_settlement' => true,
                 'is_client_settled' => $settlement->status === 'COMPLETED',
                 'client_settled_at' => $settlement->status === 'COMPLETED' ? $settlement->settlement_date : null,
             ]);
@@ -694,7 +688,6 @@ class ClientSettlementController extends Controller
 
                 // Reset order state
                 $order->update([
-                    'is_in_client_settlement' => false,
                     'is_client_settled' => false,
                     'client_settled_at' => null,
                 ]);

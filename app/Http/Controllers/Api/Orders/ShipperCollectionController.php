@@ -163,7 +163,6 @@ class ShipperCollectionController extends Controller
                 'shipper_user_id',
                 'client_user_id',
                 'approval_status',
-                'is_in_shipper_collection',
                 'is_shipper_collected',
                 'shipper_collected_at',
             ])
@@ -171,7 +170,6 @@ class ShipperCollectionController extends Controller
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('approval_status', 'APPROVED')
             ->whereNotNull('shipper_user_id')
-            ->where('is_in_shipper_collection', false)
             ->where('is_shipper_collected', false)
             ->when(
                 $validated['shipper_user_id'] ?? null,
@@ -518,13 +516,11 @@ class ShipperCollectionController extends Controller
                 'company_amount',
                 'shipping_fee',
                 'status',
-                'is_in_shipper_collection',
                 'is_shipper_collected',
             ])
             ->where('shipper_user_id', $shipperUserId)
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
-            ->where('is_in_shipper_collection', false)
             ->where('is_shipper_collected', false)
             ->get();
 
@@ -570,7 +566,6 @@ class ShipperCollectionController extends Controller
             Order::query()
                 ->whereIn('id', $orderIds)
                 ->update([
-                    'is_in_shipper_collection' => false,
                     'is_shipper_collected' => false,
                     'shipper_collected_at' => null,
                 ]);
@@ -581,7 +576,6 @@ class ShipperCollectionController extends Controller
         Order::query()
             ->whereIn('id', $orderIds)
             ->update([
-                'is_in_shipper_collection' => true,
                 'is_shipper_collected' => $collection->status === 'COMPLETED',
                 'shipper_collected_at' => $collection->status === 'COMPLETED' ? $collection->collection_date : null,
             ]);
@@ -618,7 +612,6 @@ class ShipperCollectionController extends Controller
 
                 // Reset order state
                 $order->update([
-                    'is_in_shipper_collection' => false,
                     'is_shipper_collected' => false,
                     'shipper_collected_at' => null,
                 ]);

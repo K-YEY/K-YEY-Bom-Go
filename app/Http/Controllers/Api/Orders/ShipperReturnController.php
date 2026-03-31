@@ -130,14 +130,12 @@ class ShipperReturnController extends Controller
                 'status',
                 'shipper_user_id',
                 'client_user_id',
-                'is_in_shipper_return',
                 'is_shipper_returned',
                 'shipper_returned_at',
             ])
             ->with(['shipper:id,name', 'client:id,name'])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->whereNotNull('shipper_user_id')
-            ->where('is_in_shipper_return', false)
             ->where('is_shipper_returned', false)
             ->when(
                 $validated['shipper_user_id'] ?? null,
@@ -425,7 +423,6 @@ class ShipperReturnController extends Controller
             ->where('shipper_user_id', $shipperUserId)
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
-            ->where('is_in_shipper_return', false)
             ->where('is_shipper_returned', false)
             ->get();
 
@@ -468,7 +465,6 @@ class ShipperReturnController extends Controller
             Order::query()
                 ->whereIn('id', $orderIds)
                 ->update([
-                    'is_in_shipper_return' => false,
                     'is_shipper_returned' => false,
                     'shipper_returned_at' => null,
                 ]);
@@ -479,7 +475,6 @@ class ShipperReturnController extends Controller
         Order::query()
             ->whereIn('id', $orderIds)
             ->update([
-                'is_in_shipper_return' => true,
                 'is_shipper_returned' => $return->status === 'COMPLETED',
                 'shipper_returned_at' => $return->status === 'COMPLETED' ? $return->return_date : null,
             ]);
@@ -509,7 +504,6 @@ class ShipperReturnController extends Controller
 
                 // Reset order state
                 $order->update([
-                    'is_in_shipper_return' => false,
                     'is_shipper_returned' => false,
                     'shipper_returned_at' => null,
                 ]);
@@ -553,7 +547,6 @@ class ShipperReturnController extends Controller
                         $q->where('status', 'DELIVERED')->where('has_return', true);
                     });
             })
-            ->where('is_in_shipper_return', false)
             ->where('is_shipper_returned', false)
             ->get();
 

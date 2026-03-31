@@ -132,14 +132,13 @@ class ClientReturnController extends Controller
                 'shipper_user_id',
                 'is_shipper_returned',
                 'shipper_returned_at',
-                'is_in_client_return',
                 'is_client_returned',
                 'client_returned_at',
             ])
             ->with(['client:id,name', 'shipper:id,name'])
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('is_shipper_returned', true)
-            ->where('is_in_client_return', false)
+            ->where('is_shipper_returned', true)
             ->where('is_client_returned', false)
             ->when(
                 $validated['client_user_id'] ?? null,
@@ -427,14 +426,12 @@ class ClientReturnController extends Controller
                 'client_user_id',
                 'status',
                 'is_shipper_returned',
-                'is_in_client_return',
                 'is_client_returned',
             ])
             ->where('client_user_id', $clientUserId)
             ->whereIn('id', $orderIds)
             ->whereIn('status', self::ELIGIBLE_ORDER_STATUSES)
             ->where('is_shipper_returned', true)
-            ->where('is_in_client_return', false)
             ->where('is_client_returned', false)
             ->get();
 
@@ -477,7 +474,6 @@ class ClientReturnController extends Controller
             Order::query()
                 ->whereIn('id', $orderIds)
                 ->update([
-                    'is_in_client_return' => false,
                     'is_client_returned' => false,
                     'client_returned_at' => null,
                 ]);
@@ -488,7 +484,6 @@ class ClientReturnController extends Controller
         Order::query()
             ->whereIn('id', $orderIds)
             ->update([
-                'is_in_client_return' => true,
                 'is_client_returned' => $return->status === 'COMPLETED',
                 'client_returned_at' => $return->status === 'COMPLETED' ? $return->return_date : null,
             ]);
@@ -518,7 +513,6 @@ class ClientReturnController extends Controller
 
                 // Reset order state
                 $order->update([
-                    'is_in_client_return' => false,
                     'is_client_returned' => false,
                     'client_returned_at' => null,
                 ]);
@@ -558,7 +552,6 @@ class ClientReturnController extends Controller
             // Client return needs has_return=true AND already returned by shipper
             ->where('has_return', true)
             ->where('is_shipper_returned', true)
-            ->where('is_in_client_return', false)
             ->where('is_client_returned', false)
             ->get();
 

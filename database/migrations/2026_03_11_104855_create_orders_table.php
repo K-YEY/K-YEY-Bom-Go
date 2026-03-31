@@ -64,19 +64,19 @@ return new class extends Migration
 
             $table->text('approval_note')->nullable();
 
-            $table->boolean('is_in_shipper_collection')->default(false)->index();
+
             $table->boolean('is_shipper_collected')->default(false)->index();
             $table->date('shipper_collected_at')->nullable()->index();
 
-            $table->boolean('is_in_client_settlement')->default(false)->index();
+
             $table->boolean('is_client_settled')->default(false)->index();
             $table->date('client_settled_at')->nullable()->index();
 
-            $table->boolean('is_in_shipper_return')->default(false)->index();
+
             $table->boolean('is_shipper_returned')->default(false)->index();
             $table->date('shipper_returned_at')->nullable()->index();
 
-            $table->boolean('is_in_client_return')->default(false)->index();
+
             $table->boolean('is_client_returned')->default(false)->index();
             $table->date('client_returned_at')->nullable()->index();
 

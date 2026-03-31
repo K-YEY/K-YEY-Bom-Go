@@ -44,16 +44,12 @@ class Order extends Model
         'rejected_by',
         'rejected_at',
         'approval_note',
-        'is_in_shipper_collection',
         'is_shipper_collected',
         'shipper_collected_at',
-        'is_in_client_settlement',
         'is_client_settled',
         'client_settled_at',
-        'is_in_shipper_return',
         'is_shipper_returned',
         'shipper_returned_at',
-        'is_in_client_return',
         'is_client_returned',
         'has_return',
         'has_return_at',
@@ -74,16 +70,12 @@ class Order extends Model
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
             'allow_open' => 'boolean',
-            'is_in_shipper_collection' => 'boolean',
             'is_shipper_collected' => 'boolean',
             'shipper_collected_at' => 'date',
-            'is_in_client_settlement' => 'boolean',
             'is_client_settled' => 'boolean',
             'client_settled_at' => 'date',
-            'is_in_shipper_return' => 'boolean',
             'is_shipper_returned' => 'boolean',
             'shipper_returned_at' => 'date',
-            'is_in_client_return' => 'boolean',
             'is_client_returned' => 'boolean',
             'has_return' => 'boolean',
             'has_return_at' => 'date',
@@ -167,6 +159,26 @@ class Order extends Model
     public function refusedReasons()
     {
         return $this->belongsToMany(RefusedReason::class, 'order_refused_reason');
+    }
+
+    public function shipperCollections()
+    {
+        return $this->belongsToMany(ShipperCollection::class, 'shipper_collection_orders');
+    }
+
+    public function clientSettlements()
+    {
+        return $this->belongsToMany(ClientSettlement::class, 'client_settlement_orders');
+    }
+
+    public function shipperReturns()
+    {
+        return $this->belongsToMany(ShipperReturn::class, 'shipper_return_orders');
+    }
+
+    public function clientReturns()
+    {
+        return $this->belongsToMany(ClientReturn::class, 'client_return_orders');
     }
 
 }

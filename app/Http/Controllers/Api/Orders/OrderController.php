@@ -935,13 +935,9 @@ class OrderController extends Controller
             'client_user_id' => ['nullable', 'integer'],
             'allow_open' => ['nullable'],
             'collection_state' => ['nullable', 'string'],
-            'is_in_shipper_collection' => ['nullable'],
             'is_shipper_collected' => ['nullable'],
-            'is_in_client_settlement' => ['nullable'],
             'is_client_settled' => ['nullable'],
-            'is_in_shipper_return' => ['nullable'],
             'is_shipper_returned' => ['nullable'],
-            'is_in_client_return' => ['nullable'],
             'is_client_returned' => ['nullable'],
             'has_return' => ['nullable'],
             'order_note' => ['nullable', 'string', 'max:255'],
@@ -963,13 +959,9 @@ class OrderController extends Controller
             'search.client_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'search.allow_open' => ['nullable', 'boolean'],
             'search.collection_state' => ['nullable', Rule::in(['not_collected', 'ready_to_collect', 'collected'])],
-            'search.is_in_shipper_collection' => ['nullable', 'boolean'],
             'search.is_shipper_collected' => ['nullable', 'boolean'],
-            'search.is_in_client_settlement' => ['nullable', 'boolean'],
             'search.is_client_settled' => ['nullable', 'boolean'],
-            'search.is_in_shipper_return' => ['nullable', 'boolean'],
             'search.is_shipper_returned' => ['nullable', 'boolean'],
-            'search.is_in_client_return' => ['nullable', 'boolean'],
             'search.is_client_returned' => ['nullable', 'boolean'],
             'trashed' => ['nullable', 'string', Rule::in(['with', 'only'])],
         ]);
@@ -1186,6 +1178,12 @@ class OrderController extends Controller
         $result['collection_state'] = $this->resolveCollectionState($order);
         $result['can_collect'] = ! (bool) $order->is_shipper_collected;
 
+        // Dynamically compute redundant flags from relationships
+        $result['is_in_shipper_collection'] ??= $order->shipperCollections()->where('shipper_collections.status', '!=', 'CANCELLED')->exists();
+        $result['is_in_client_settlement'] ??= $order->clientSettlements()->where('client_settlements.status', '!=', 'CANCELLED')->exists();
+        $result['is_in_shipper_return'] ??= $order->shipperReturns()->where('shipper_returns.status', '!=', 'CANCELLED')->exists();
+        $result['is_in_client_return'] ??= $order->clientReturns()->where('client_returns.status', '!=', 'CANCELLED')->exists();
+
         return $result;
     }
 
@@ -1224,10 +1222,14 @@ class OrderController extends Controller
         if ($collectionState !== null && $collectionState !== '') {
             match ($collectionState) {
                 'not_collected' => $query
-                    ->where('is_in_shipper_collection', false)
+                    ->whereDoesntHave('shipperCollections', function ($q) {
+                        $q->where('status', '!=', 'CANCELLED');
+                    })
                     ->where('is_shipper_collected', false),
                 'ready_to_collect' => $query
-                    ->where('is_in_shipper_collection', true)
+                    ->whereHas('shipperCollections', function ($q) {
+                        $q->where('status', '!=', 'CANCELLED');
+                    })
                     ->where('is_shipper_collected', false),
                 'collected' => $query->where('is_shipper_collected', true),
                 default => null,
@@ -1290,10 +1292,10 @@ class OrderController extends Controller
             'code', 'external_code', 'receiver_name', 'phone', 'phone_2',
             'address', 'governorate_id',
             'city_id', 'shipper_user_id', 'client_user_id', 'allow_open',
-            'has_return', 'is_in_shipper_collection', 'is_shipper_collected',
-            'is_in_client_settlement', 'is_client_settled',
-            'is_in_shipper_return', 'is_shipper_returned',
-            'is_in_client_return', 'is_client_returned',
+            'has_return', 'is_shipper_collected',
+            'is_client_settled',
+            'is_shipper_returned',
+            'is_client_returned',
             'order_note', 'shipper_date',
         ];
 
@@ -1344,7 +1346,7 @@ class OrderController extends Controller
             return 'collected';
         }
 
-        if ((bool) $order->is_in_shipper_collection) {
+        if ($order->shipperCollections()->where('shipper_collections.status', '!=', 'CANCELLED')->exists()) {
             return 'ready_to_collect';
         }
 

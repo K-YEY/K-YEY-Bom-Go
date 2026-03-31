@@ -221,7 +221,11 @@ watch(() => display, () => {
 
 .dark .nav-item {
   color: #ccc;
-  &:hover { background: rgba(255, 255, 255, 10%); color: white; }
+
+  &:hover {
+    background: rgba(255, 255, 255, 10%);
+    color: white;
+  }
 }
 
 /* Sidebar Styling */
@@ -244,7 +248,10 @@ watch(() => display, () => {
   text-decoration: none;
   transition: border 0.3s;
 
-  &:hover { border-color: rgb(var(--v-theme-primary)); color: rgb(var(--v-theme-primary)); }
+  &:hover {
+    border-color: rgb(var(--v-theme-primary));
+    color: rgb(var(--v-theme-primary));
+  }
 }
 
 .dark .mobile-nav-link { color: #eee; }
