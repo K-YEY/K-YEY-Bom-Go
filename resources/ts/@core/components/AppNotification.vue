@@ -13,9 +13,9 @@ const store = useNotificationStore()
   >
     <VAlert
       :type="store.color as any"
-      variant="tonal"
+      variant="elevated"
       density="compact"
-      class="ma-0"
+      class="ma-0 font-weight-bold"
       :text="store.message"
     />
   </VSnackbar>

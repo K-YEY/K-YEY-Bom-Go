@@ -38,6 +38,7 @@ const page = ref(1)
 // Detailed Filters
 const filters = ref({
   code: '',
+  shipper_date: '',
   receiver_name: '',
   address: '',
   order_note: '',
@@ -320,17 +321,8 @@ const fetchOrders = async () => {
         client_user_id: selectedClient.value,
         per_page: itemsPerPage.value,
         page: page.value,
-        // Column filters
-        code: filters.value.code,
-        receiver_name: filters.value.receiver_name,
-        address: filters.value.address,
-        order_note: filters.value.order_note,
-        is_shipper_collected: filters.value.is_shipper_collected,
-        is_shipper_returned: filters.value.is_shipper_returned,
-        has_return: filters.value.has_return,
-        is_client_settled: filters.value.is_client_settled,
-        is_client_returned: filters.value.is_client_returned,
         trashed: props.trashed,
+        ...filters.value,
         ...Object.fromEntries(
           Object.entries(props.fixedFilters || {}).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v])
         ),
@@ -363,6 +355,7 @@ const initializePage = async () => {
         per_page: itemsPerPage.value,
         page: page.value,
         trashed: props.trashed,
+        ...filters.value,
         ...Object.fromEntries(
           Object.entries(props.fixedFilters || {}).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v])
         ),
@@ -949,7 +942,7 @@ searchClients()
               variant="tonal"
               :color="['secondary', 'primary', 'info'][index % 3]"
               class="text-xs"
-              style="height: auto; min-height: 20px; white-space: normal; padding: 4px 8px;"
+              style="block-size: auto; min-block-size: 20px; padding-block: 4px; padding-inline: 8px; white-space: normal;"
             >
               {{ note.trim() }}
             </VChip>
@@ -1141,28 +1134,32 @@ searchClients()
   margin-block-end: 2px;
   text-align: center;
 }
-.filter-input-outlined :deep(.v-field__input) { 
+
+.filter-input-outlined :deep(.v-field__input) {
   background-color: rgb(var(--v-theme-surface));
-  color: var(--v-theme-primary) !important; 
-  font-size: 0.75rem !important; 
-  min-block-size: 28px !important; 
-  padding-block: 4px !important; 
+  color: var(--v-theme-primary) !important;
+  font-size: 0.75rem !important;
+  min-block-size: 28px !important;
+  padding-block: 4px !important;
 }
+
 .filter-input-outlined :deep(.v-field__outline) {
   --v-field-border-opacity: 0.15;
 }
-.filter-select-outlined :deep(.v-field__input) { 
+
+.filter-select-outlined :deep(.v-field__input) {
   background-color: rgb(var(--v-theme-surface));
-  padding-inline: 8px !important; 
-  color: var(--v-theme-primary); 
-  font-size: 0.75rem !important; 
-  min-block-size: 28px !important; 
+  color: var(--v-theme-primary);
+  font-size: 0.75rem !important;
+  min-block-size: 28px !important;
+  padding-inline: 8px !important;
 }
+
 .filter-select-outlined :deep(.v-field__outline) {
   --v-field-border-opacity: 0.15;
 }
 
-.filter-table :deep(td) { padding: 12px 8px !important; font-size: 0.8rem !important; }
+.filter-table :deep(td) { font-size: 0.8rem !important; padding-block: 12px !important; padding-inline: 8px !important; }
 .text-xs { font-size: 0.75rem !important; line-height: 1.2; }
 .text-sm { font-size: 0.875rem !important; }
 

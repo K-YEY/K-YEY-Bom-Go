@@ -29,7 +29,7 @@ class SettingController extends Controller
     public function publicConfig(): JsonResponse
     {
         $settings = Setting::query()
-            ->whereIn('group', ['site_identity', 'site_logos'])
+            ->whereIn('group', ['site_identity', 'site_logos', 'site_theme'])
             ->get(['group', 'key', 'value']);
 
         $grouped = $settings
@@ -45,22 +45,40 @@ class SettingController extends Controller
         $this->authorizePermission($request, 'setting.page');
 
         $data = $request->validate([
-            'settings' => ['required', 'array'],
+            'settings' => ['sometimes', 'array'],
             'settings.*' => ['nullable'],
         ]);
 
-        foreach ($data['settings'] as $key => $value) {
+        $settings = $data['settings'] ?? [];
+
+        // Handle file uploads for branding keys
+        $brandingKeys = [
+            'site_logo_32_light',
+            'site_logo_32_dark',
+            'site_logo_512_light',
+            'site_logo_512_dark',
+        ];
+
+        foreach ($brandingKeys as $key) {
+            if ($request->hasFile($key)) {
+                $file = $request->file($key);
+                $path = $file->store('branding', 'public');
+                $settings[$key] = '/storage/' . $path;
+            }
+        }
+
+        foreach ($settings as $key => $value) {
             Setting::query()
                 ->where('key', $key)
                 ->update(['value' => $value]);
         }
 
-        $settings = Setting::query()
+        $allSettings = Setting::query()
             ->orderBy('group')
             ->orderBy('key')
             ->get(['group', 'key', 'value']);
 
-        $grouped = $settings
+        $grouped = $allSettings
             ->groupBy('group')
             ->map(fn ($items): array => $items->pluck('value', 'key')->all())
             ->all();

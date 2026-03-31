@@ -83,7 +83,7 @@ class ClientController extends Controller
             }
         }
 
-        $perPage = $request->get('per_page', 20);
+        $perPage = $request->get('per_page', 5);
         $clients = $perPage == -1 
             ? $query->orderByDesc('id')->get()
             : $query->orderByDesc('id')->paginate($perPage);

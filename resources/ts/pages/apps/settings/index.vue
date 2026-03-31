@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { useNotificationStore } from '@/stores/useNotificationStore'
+
 const settingsData = ref<any>({})
 const activeTab = ref('site_identity')
 const plansList = ref<any[]>([])
+const notificationStore = useNotificationStore()
 
 definePage({
   meta: {
@@ -35,6 +38,7 @@ const welcomePlansArray = computed({
 })
 
 const updateSettings = async () => {
+  const isFormWithFiles = logos.value.icon || logos.value.logoLight || logos.value.logoDark
   const flatSettings: any = {}
   Object.values(settingsData.value).forEach((group: any) => {
     Object.assign(flatSettings, group)
@@ -46,23 +50,56 @@ const updateSettings = async () => {
   }
 
   try {
-    await $api('/settings', {
-      method: 'PUT',
-      body: { settings: flatSettings },
-    })
-    alert('Settings updated successfully!')
+    if (isFormWithFiles) {
+      const formData = new FormData()
+      Object.entries(flatSettings).forEach(([key, val]) => {
+        if (val !== null && val !== undefined) {
+           formData.append(`settings[${key}]`, String(val))
+        }
+      })
+
+      if (logos.value.icon) formData.append('site_logo_32_light', logos.value.icon)
+      if (logos.value.logoLight) formData.append('site_logo_512_light', logos.value.logoLight)
+      if (logos.value.logoDark) formData.append('site_logo_512_dark', logos.value.logoDark)
+
+      await $api('/settings', {
+        method: 'POST',
+        headers: { 'X-HTTP-Method-Override': 'PUT' },
+        body: formData,
+      })
+    } else {
+      await $api('/settings', {
+        method: 'PUT',
+        body: { settings: flatSettings },
+      })
+    }
+    notificationStore.success('تم تحديث الإعدادات بنجاح!')
     fetchSettings()
   } catch (error) {
-    alert('Failed to update settings.')
+    notificationStore.error('فشل في تحديث الإعدادات.')
+  }
+}
+
+// Logo state for upload
+const logos = ref({
+  icon: null as File | null,
+  logoLight: null as File | null,
+  logoDark: null as File | null,
+})
+
+const onFileChange = (e: Event, key: 'icon' | 'logoLight' | 'logoDark') => {
+  const files = (e.target as HTMLInputElement).files
+  if (files?.length) {
+    logos.value[key] = files[0]
   }
 }
 
 // Groups defined in model for UI organization
 const tabs = [
-  { title: 'Site Identity', value: 'site_identity', icon: 'tabler-info-circle' },
+  { title: 'Identity & Branding', value: 'site_identity', icon: 'tabler-info-circle' },
   { title: 'Working Hours', value: 'working_hours', icon: 'tabler-clock' },
   { title: 'Orders & Plans', value: 'orders', icon: 'tabler-shopping-cart' },
-  { title: 'Themes', value: 'site_theme', icon: 'tabler-palette' },
+  { title: 'Site Color (Primary)', value: 'site_theme', icon: 'tabler-palette' },
   { title: 'Social Media', value: 'social_media', icon: 'tabler-brand-facebook' },
 ]
 
@@ -104,18 +141,32 @@ onMounted(() => {
                 <VCol cols="12">
                   <h6 class="text-h6 mb-4">Site Information</h6>
                 </VCol>
-                <VCol cols="12">
-                  <AppTextField v-model="settingsData.site_identity.site_name" label="Site Name" />
+                <VCol cols="12" md="6">
+                   <AppTextField v-model="settingsData.site_identity.site_name" label="Site Name" />
                 </VCol>
                 <VCol cols="12" md="6">
-                  <AppTextField v-model="settingsData.site_identity.site_email" label="Site Email" />
+                   <AppTextField v-model="settingsData.site_identity.site_email" label="Site Email" />
                 </VCol>
                 <VCol cols="12" md="6">
-                  <AppTextField v-model="settingsData.site_identity.site_phone" label="Site Phone" />
+                   <AppTextField v-model="settingsData.site_identity.site_phone" label="Site Phone" />
                 </VCol>
+                <VCol cols="12" md="6">
+                   <AppTextField v-model="settingsData.site_identity.site_address" label="Site Address" />
+                </VCol>
+                
                 <VCol cols="12">
-                  <AppTextField v-model="settingsData.site_identity.site_address" label="Site Address" />
+                  <h6 class="text-h6 mt-4 mb-4">Site Branding (Logos)</h6>
                 </VCol>
+                <VCol cols="12" md="4">
+                   <VFileInput label="Site Icon (32x32)" @change="onFileChange($event, 'icon')" density="compact" />
+                </VCol>
+                <VCol cols="12" md="4">
+                   <VFileInput label="Light Logo (Black Text)" @change="onFileChange($event, 'logoLight')" density="compact" />
+                </VCol>
+                <VCol cols="12" md="4">
+                   <VFileInput label="Dark Logo (White Text)" @change="onFileChange($event, 'logoDark')" density="compact" />
+                </VCol>
+
                 <VCol cols="12">
                   <VSwitch
                     v-model="settingsData.site_identity.site_maintenance_mode"
@@ -201,28 +252,14 @@ onMounted(() => {
             <VWindowItem value="site_theme">
               <VRow>
                 <VCol cols="12">
-                  <h6 class="text-h6 mb-4">Colours (Light Mode)</h6>
+                   <h6 class="text-h6 mb-4">Primary Site Color</h6>
+                   <p class="text-body-2 mb-4">Control the primary theme color of your platform.</p>
                 </VCol>
-                <VCol cols="12" md="4">
-                  <AppTextField v-model="settingsData.site_theme.site_color_primary_light" label="Primary Color" type="color" />
+                <VCol cols="12" md="6">
+                   <AppTextField v-model="settingsData.site_theme.site_color_primary_light" label="Primary (Light Mode)" type="color" />
                 </VCol>
-                <VCol cols="12" md="4">
-                  <AppTextField v-model="settingsData.site_theme.site_color_secondary_light" label="Secondary Color" type="color" />
-                </VCol>
-                <VCol cols="12" md="4">
-                  <AppTextField v-model="settingsData.site_theme.site_color_text_light" label="Text Color" type="color" />
-                </VCol>
-                <VCol cols="12">
-                  <h6 class="text-h6 mt-4 mb-4">Colours (Dark Mode)</h6>
-                </VCol>
-                <VCol cols="12" md="4">
-                  <AppTextField v-model="settingsData.site_theme.site_color_primary_dark" label="Primary Color" type="color" />
-                </VCol>
-                <VCol cols="12" md="4">
-                  <AppTextField v-model="settingsData.site_theme.site_color_secondary_dark" label="Secondary Color" type="color" />
-                </VCol>
-                <VCol cols="12" md="4">
-                  <AppTextField v-model="settingsData.site_theme.site_color_text_dark" label="Text Color" type="color" />
+                <VCol cols="12" md="6">
+                   <AppTextField v-model="settingsData.site_theme.site_color_primary_dark" label="Primary (Dark Mode)" type="color" />
                 </VCol>
               </VRow>
             </VWindowItem>
@@ -276,3 +313,4 @@ onMounted(() => {
      <VProgressCircular indeterminate color="primary" />
   </div>
 </template>
+

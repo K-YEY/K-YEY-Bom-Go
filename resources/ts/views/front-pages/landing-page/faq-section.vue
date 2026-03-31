@@ -20,83 +20,87 @@ const faqData = [
 </script>
 
 <template>
-  <div id="faq">
+  <div id="faq-section" class="faq-wrapper py-16">
     <VContainer>
-      <!-- 👉 Header  -->
-      <div class="faq-section">
-        <div class="headers d-flex justify-center flex-column align-center">
-          <VChip
-            label
-            color="primary"
-            size="small"
-            class="mb-4"
-          >
-            الأسئلة الشائعة
-          </VChip>
-          <h4 class="d-flex align-center text-h4 mb-1 flex-wrap justify-center">
-            إليك إجابات لبعض 
-            <div class="position-relative ms-2">
-              <div class="section-title">
-                الأسئلة المتكررة
-              </div>
-            </div>
-          </h4>
-          <p class="text-body-1 mb-0 text-center">
-            تصفح الأسئلة الشائعة لتجد إجابات سريعة حول خدماتنا وكيفية العمل معنا.
-          </p>
-        </div>
-        <VRow>
-          <VCol
-            cols="12"
-            md="5"
-          >
-            <div class="pt-10 d-flex align-center justify-center h-100">
-               <VIcon icon="tabler-help-circle" size="180" color="primary" style="opacity: 0.1;" />
-            </div>
-          </VCol>
-          <VCol
-            cols="12"
-            md="7"
-          >
-            <VExpansionPanels class="pt-16">
-              <VExpansionPanel
-                v-for="faq in faqData"
-                :key="faq.question"
-              >
-                <VExpansionPanelTitle>
-                  {{ faq.question }}
-                </VExpansionPanelTitle>
-                <VExpansionPanelText>
-                  {{ faq.answer }}
-                </VExpansionPanelText>
-              </VExpansionPanel>
-            </VExpansionPanels>
-          </VCol>
-        </VRow>
+      <div class="headers d-flex justify-center flex-column align-center mb-12">
+        <VChip variant="tonal" color="primary" class="mb-4">دعم العملاء</VChip>
+        <h2 class="section-headline text-center mb-4">الأسئلة الشائعة</h2>
+        <p class="section-subline text-center">كل ما تود معرفته عن خدمات المنصة وكيفية البدء.</p>
       </div>
+
+      <VRow class="justify-center">
+        <VCol cols="12" md="8">
+          <VExpansionPanels elevation="0" variant="accordion" class="custom-panels">
+            <VExpansionPanel
+              v-for="faq in faqData"
+              :key="faq.question"
+              class="mb-4 glass-panel"
+            >
+              <VExpansionPanelTitle class="font-weight-bold text-h6 py-6">
+                {{ faq.question }}
+              </VExpansionPanelTitle>
+              <VExpansionPanelText class="text-body-1 opacity-70 pb-6">
+                {{ faq.answer }}
+              </VExpansionPanelText>
+            </VExpansionPanel>
+          </VExpansionPanels>
+        </VCol>
+      </VRow>
     </VContainer>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.faq-section {
-  margin-block: 5.25rem;
+@import "https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Cairo:wght@400;700;900&display=swap";
+
+.faq-wrapper {
+  background: white;
+  font-family: Cairo, Outfit, sans-serif;
 }
 
-@media (max-width: 600px) {
-  .faq-section {
-    margin-block: 4rem;
+.dark .faq-wrapper { background: #0f172a; }
+
+.section-headline {
+  color: #1e293b;
+  font-size: 2.25rem;
+  font-weight: 900;
+}
+.dark .section-headline { color: white; }
+
+.section-subline {
+  color: #64748b;
+  font-size: 1.1rem;
+  max-inline-size: 600px;
+}
+
+.custom-panels {
+  background: transparent !important;
+}
+
+.glass-panel {
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 3%) !important;
+  border-radius: 20px !important;
+  background: rgba(248, 250, 252, 80%) !important;
+  transition: all 0.3s ease;
+
+  &::before { display: none; }
+
+  &:hover {
+    border-color: rgba(var(--v-theme-primary), 0.2) !important;
+    background: white !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 3%) !important;
   }
 }
 
-#faq {
-  border-radius: 3.75rem 3.75rem 0 0;
-  background-color: rgba(var(--v-theme-background));
+.dark .glass-panel {
+  border: 1px solid rgba(255, 255, 255, 5%) !important;
+  background: rgba(30, 41, 59, 30%) !important;
+  &:hover { background: rgba(30, 41, 59, 50%) !important; }
 }
 
-.section-title {
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 36px;
+:deep(.v-expansion-panel-title__overlay) {
+  display: none;
 }
 </style>
+

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useWindowScroll } from '@vueuse/core'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { useDisplay } from 'vuetify'
+import { useDisplay, useTheme } from 'vuetify'
 
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
 
@@ -9,6 +9,7 @@ const { data } = await useApi<any>('/landing-page')
 const site = computed(() => data.value?.site ?? { name: 'Shipya', logo: '' })
 
 const display = useDisplay()
+const theme = useTheme()
 const { y } = useWindowScroll()
 const route = useRoute()
 const sidebar = ref(false)
@@ -25,24 +26,25 @@ watch(() => display, () => {
     width="275"
     data-allow-mismatch
     disable-resize-watcher
+    class="sidebar-glass"
   >
     <PerfectScrollbar
       :options="{ wheelPropagation: false }"
       class="h-100"
     >
-      <div class="pa-4">
-        <div class="d-flex align-center gap-x-2 mb-8">
-          <VAvatar v-if="site.logo" :image="site.logo" size="32" />
+      <div class="pa-6">
+        <div class="d-flex align-center gap-x-3 mb-10">
+          <VAvatar v-if="site.logo" :image="site.logo" size="40" class="logo-shadow" />
           <VIcon v-else icon="tabler-truck" size="32" color="primary" />
-          <h1 class="text-h1 font-weight-bold" style="font-size: 1.25rem;">{{ site.name }}</h1>
+          <h1 class="text-h1 font-weight-black gradient-text" style="font-size: 1.5rem;">{{ site.name }}</h1>
         </div>
 
-        <div class="d-flex flex-column gap-y-4">
+        <div class="d-flex flex-column gap-y-6">
           <RouterLink
-            v-for="(item, index) in [{t: 'الرئيسية', h: 'home'}, {t: 'المميزات', h: 'features'}, {t: 'فريقنا', h: 'team'}, {t: 'الأسئلة الشائعة', h: 'faq-section'}]"
+            v-for="(item, index) in [{t: 'الرئيسية', h: 'home'}, {t: 'المميزات', h: 'features'}, {t: 'الأسئلة الشائعة', h: 'faq-section'}]"
             :key="index"
             :to="{ name: 'root', hash: `#${item.h}` }"
-            class="nav-link font-weight-medium"
+            class="mobile-nav-link"
           >
             {{ item.t }}
           </RouterLink>
@@ -50,11 +52,12 @@ watch(() => display, () => {
           <VBtn
             block
             color="primary"
-            variant="elevated"
+            elevation="0"
+            size="large"
             :to="{ name: 'pages-authentication-login-v1' }"
-            class="mt-4"
+            class="mt-6 premium-btn"
           >
-            تسجيل الدخول / حساب جديد
+            دخول / تسجيل جديد
           </VBtn>
         </div>
       </div>
@@ -63,20 +66,17 @@ watch(() => display, () => {
       <VIcon
         id="navigation-drawer-close-btn"
         icon="tabler-x"
-        size="20"
+        size="24"
+        class="ma-4"
         @click="sidebar = !sidebar"
       />
     </PerfectScrollbar>
   </VNavigationDrawer>
 
   <!-- 👉 Navbar for desktop devices  -->
-  <div class="front-page-navbar">
-    <div class="front-page-navbar">
-      <VAppBar
-        :color="$vuetify.theme.current.dark ? 'rgba(var(--v-theme-surface),0.38)' : 'rgba(var(--v-theme-surface), 0.38)'"
-        :class="y > 10 ? 'app-bar-scrolled' : [$vuetify.theme.current.dark ? 'app-bar-dark' : 'app-bar-light', 'elevation-0']"
-        class="navbar-blur"
-      >
+  <div class="navbar-wrapper" :class="{ 'scrolled': y > 20 }">
+    <div class="container-narrow">
+      <nav class="glass-navbar">
         <!-- toggle icon for mobile device -->
         <IconBtn
           id="vertical-nav-toggle-btn"
@@ -86,110 +86,183 @@ watch(() => display, () => {
           <VIcon
             size="26"
             icon="tabler-menu-2"
-            color="rgba(var(--v-theme-on-surface))"
           />
         </IconBtn>
 
-        <!-- Title and Landing page sections -->
-        <div class="d-flex align-center">
-          <RouterLink
-            :to="{ name: 'root' }"
-            class="d-flex align-center gap-x-2 me-6"
-          >
-            <VAvatar v-if="site.logo" :image="site.logo" size="28" />
-            <VIcon v-else icon="tabler-truck" size="28" color="primary" />
-            <h1 class="app-logo-title font-weight-bold" style="font-size: 1.25rem; color: rgba(var(--v-theme-on-surface))">
-              {{ site.name }}
-            </h1>
-          </RouterLink>
+        <!-- Logo and Branding -->
+        <RouterLink
+          :to="{ name: 'root' }"
+          class="d-flex align-center gap-x-3 me-8 brand-link"
+        >
+          <VAvatar v-if="site.logo" :image="site.logo" size="32" class="logo-shadow" />
+          <VIcon v-else icon="tabler-truck-delivery" size="32" color="primary" />
+          <h1 class="nav-logo-title font-weight-black">
+            {{ site.name }}
+          </h1>
+        </RouterLink>
 
-          <div class="text-base align-center d-none d-md-flex">
+        <!-- Navigation Links -->
+        <div class="d-none d-md-flex align-center flex-grow-1 justify-center">
+          <div class="nav-links-pill">
             <RouterLink
-              v-for="(item, index) in [{t: 'الرئيسية', h: 'home'}, {t: 'الخدمات', h: 'features'}, {t: 'من نحن', h: 'team'}, {t: 'الدعم الشائع', h: 'faq-section'}]"
+              v-for="(item, index) in [{t: 'الرئيسية', h: 'home'}, {t: 'الخدمات', h: 'features'}, {t: 'الدعم', h: 'faq-section'}]"
               :key="index"
               :to="{ name: 'root', hash: `#${item.h}` }"
-              class="nav-link font-weight-medium py-2 px-2 px-lg-4"
+              class="nav-item"
             >
               {{ item.t }}
             </RouterLink>
           </div>
         </div>
 
-        <VSpacer />
-
-        <div class="d-flex gap-x-4 align-center">
-          <NavbarThemeSwitcher />
+        <!-- Actions -->
+        <div class="d-flex gap-x-4 align-center ms-auto">
+          <div class="d-none d-sm-flex">
+            <NavbarThemeSwitcher />
+          </div>
 
           <VBtn
-            variant="elevated"
+            variant="flat"
             color="primary"
-            class="font-weight-bold"
+            class="font-weight-bold rounded-pill px-6 login-btn"
             :to="{ name: 'pages-authentication-login-v1' }"
           >
-            دخول / تسجيل
+            ابدأ الآن
           </VBtn>
         </div>
-      </VAppBar>
+      </nav>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.nav-link {
-  text-decoration: none;
-  &:not(:hover) {
-    color: rgb(var(--v-theme-on-surface));
+@import "https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Cairo:wght@400;700;900&display=swap";
+
+.navbar-wrapper {
+  position: fixed;
+  z-index: 1000;
+  font-family: Cairo, Outfit, sans-serif;
+  inset-block-start: 0;
+  inset-inline: 0;
+  padding-block: 1.5rem;
+  padding-inline: 1rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.scrolled {
+    padding-block: 0.75rem;
+    padding-inline: 1rem;
   }
+}
+
+.container-narrow {
+  margin-block: 0;
+  margin-inline: auto;
+  max-inline-size: 1200px;
+}
+
+.glass-navbar {
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 40%);
+  border-radius: 100px;
+  backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(255, 255, 255, 70%);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 10%);
+  padding-block: 0.5rem;
+  padding-inline: 1.5rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.dark .glass-navbar {
+  border: 1px solid rgba(255, 255, 255, 10%);
+  background: rgba(15, 23, 42, 60%);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 30%);
+}
+
+.nav-logo-title {
+  background: linear-gradient(135deg, rgb(var(--v-theme-primary)), #ffd600);
+  background-clip: text;
+  font-size: 1.5rem;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-link { text-decoration: none; }
+
+/* Desktop Navigation Items */
+.nav-links-pill {
+  display: flex;
+  padding: 0.25rem;
+  border-radius: 50px;
+  background: rgba(0, 0, 0, 5%);
+  gap: 0.5rem;
+}
+
+.dark .nav-links-pill { background: rgba(255, 255, 255, 5%); }
+
+.nav-item {
+  border-radius: 50px;
+  color: #444;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding-block: 0.5rem;
+  padding-inline: 1.25rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+
   &:hover {
+    background: rgba(255, 255, 255, 60%);
+    color: rgb(var(--v-theme-primary));
+  }
+
+  &.router-link-active {
     color: rgb(var(--v-theme-primary));
   }
 }
 
-.front-page-navbar {
-  .v-toolbar {
-    max-inline-size: 1200px;
-  }
+.dark .nav-item {
+  color: #ccc;
+  &:hover { background: rgba(255, 255, 255, 10%); color: white; }
 }
 
-@media (min-width: 1920px) {
-  .front-page-navbar {
-    .v-toolbar {
-      max-inline-size: calc(1440px - 32px);
-    }
-  }
+/* Sidebar Styling */
+.sidebar-glass {
+  backdrop-filter: blur(20px) !important;
+  background: rgba(255, 255, 255, 80%) !important;
 }
 
-.app-bar-light {
-  border: 1px solid rgba(var(--v-theme-surface), 68%);
-  border-radius: 0.5rem;
-  background-color: rgba(var(--v-theme-surface), 38%);
+.dark .sidebar-glass {
+  background: rgba(15, 23, 42, 90%) !important;
 }
 
-.app-bar-dark {
-  border: 1px solid rgba(var(--v-theme-surface), 68%);
-  border-radius: 0.5rem;
-  background-color: rgba(255, 255, 255, 4%);
+.mobile-nav-link {
+  border-block-end: 2px solid transparent;
+  color: #333;
+  font-size: 1.25rem;
+  font-weight: 800;
+  padding-block: 0.5rem;
+  padding-inline: 0;
+  text-decoration: none;
+  transition: border 0.3s;
+
+  &:hover { border-color: rgb(var(--v-theme-primary)); color: rgb(var(--v-theme-primary)); }
 }
 
-.app-bar-scrolled {
-  border: 1px solid rgb(var(--v-theme-surface));
-  border-radius: 0.5rem;
-  background-color: rgb(var(--v-theme-surface)) !important;
+.dark .mobile-nav-link { color: #eee; }
+
+.logo-shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 10%)); }
+
+.premium-btn {
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff5000, #ff8000) !important;
+  color: white !important;
+  font-weight: 900;
 }
 
-.front-page-navbar::after {
-  position: fixed;
-  z-index: 2;
-  backdrop-filter: saturate(100%) blur(6px);
-  block-size: 5rem;
-  content: "";
-  inline-size: 100%;
-}
-
-#navigation-drawer-close-btn {
-  position: absolute;
-  cursor: pointer;
-  inset-block-start: 1rem;
-  inset-inline-end: 1rem;
+.login-btn {
+  background: rgb(var(--v-theme-primary)) !important;
+  box-shadow: 0 4px 15px rgba(var(--v-theme-primary), 30%) !important;
+  color: white !important;
+  &:hover { transform: scale(1.05); }
 }
 </style>
+

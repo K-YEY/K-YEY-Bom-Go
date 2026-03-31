@@ -876,14 +876,14 @@ class OrderController extends Controller
 
         $metadata = [
             'governorates' => Governorate::query()->select('id', 'name')->with('cities:id,governorate_id,name')->get(),
-            'shippers' => Shipper::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($s) {
+            'shippers' => Shipper::query()->with('user:id,name')->orderByDesc('id')->take(5)->get()->map(function ($s) {
                 return [
                     'id' => $s->user_id,
                     'name' => $s->user?->name ?? 'Unknown',
                     'commission_rate' => $s->commission_rate,
                 ];
             }),
-            'clients' => Client::query()->with('user:id,name')->orderByDesc('id')->take(20)->get()->map(function ($c) {
+            'clients' => Client::query()->with('user:id,name')->orderByDesc('id')->take(5)->get()->map(function ($c) {
                 return [
                     'id' => $c->user_id,
                     'name' => $c->user?->name ?? 'Unknown',
@@ -917,6 +917,35 @@ class OrderController extends Controller
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
             'q' => ['nullable', 'string', 'max:255'],
+            
+            // Allow top-level filters for compatibility
+            'code' => ['nullable', 'string', 'max:255'],
+            'external_code' => ['nullable', 'string', 'max:255'],
+            'receiver_name' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'phone_2' => ['nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:1000'],
+            'status' => ['nullable', 'string'], // Handles comma separated too
+            'statuses' => ['nullable', 'array'],
+            'approval_status' => ['nullable', 'string'],
+            'approval_statuses' => ['nullable', 'array'],
+            'governorate_id' => ['nullable', 'integer'],
+            'city_id' => ['nullable', 'integer'],
+            'shipper_user_id' => ['nullable', 'integer'],
+            'client_user_id' => ['nullable', 'integer'],
+            'allow_open' => ['nullable'],
+            'collection_state' => ['nullable', 'string'],
+            'is_in_shipper_collection' => ['nullable'],
+            'is_shipper_collected' => ['nullable'],
+            'is_in_client_settlement' => ['nullable'],
+            'is_client_settled' => ['nullable'],
+            'is_in_shipper_return' => ['nullable'],
+            'is_shipper_returned' => ['nullable'],
+            'is_in_client_return' => ['nullable'],
+            'is_client_returned' => ['nullable'],
+            'has_return' => ['nullable'],
+            'order_note' => ['nullable', 'string', 'max:255'],
+            'shipper_date' => ['nullable', 'date'],
             'search' => ['nullable', 'array'],
             'search.code' => ['nullable', 'string', 'max:255'],
             'search.external_code' => ['nullable', 'string', 'max:255'],
@@ -1265,6 +1294,7 @@ class OrderController extends Controller
             'is_in_client_settlement', 'is_client_settled',
             'is_in_shipper_return', 'is_shipper_returned',
             'is_in_client_return', 'is_client_returned',
+            'order_note', 'shipper_date',
         ];
 
         foreach ($directFilters as $filter) {

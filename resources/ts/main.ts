@@ -25,7 +25,7 @@ registerPlugins(app)
 // Initializing the stores with configuration data from Settings
 import { useSettingsStore } from '@core/stores/settings'
 const settingsStore = useSettingsStore(store)
-settingsStore.fetchSettings()
+await settingsStore.fetchSettings()
 
 // 👉 Override window.alert to use our global notification system
 import { useNotificationStore } from '@/stores/useNotificationStore'
