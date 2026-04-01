@@ -18,6 +18,7 @@ class ShipperAppController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $this->authorizePermission($request, 'order.my-orders');
         $validated = $request->validate([
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
             'status' => ['nullable', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
@@ -42,6 +43,7 @@ class ShipperAppController extends Controller
      */
     public function show(Request $request, Order $order): JsonResponse
     {
+        $this->authorizePermission($request, 'order.view');
         if ($order->shipper_user_id !== $request->user()->id) {
             abort(403, 'This order is not assigned to you.');
         }
@@ -56,6 +58,7 @@ class ShipperAppController extends Controller
      */
     public function updateStatus(Request $request, Order $order): JsonResponse
     {
+        $this->authorizePermission($request, 'order.change-status');
         if ($order->shipper_user_id !== $request->user()->id) {
             abort(403, 'This order is not assigned to you.');
         }
@@ -115,6 +118,7 @@ class ShipperAppController extends Controller
      */
     public function scan(Request $request): JsonResponse
     {
+        $this->authorizePermission($request, 'order.view');
         $request->validate([
             'code' => ['required', 'string'],
         ]);
@@ -140,6 +144,7 @@ class ShipperAppController extends Controller
      */
     public function statistics(Request $request): JsonResponse
     {
+        $this->authorizePermission($request, 'order.view');
         $userId = $request->user()->id;
 
         $stats = [
@@ -161,10 +166,16 @@ class ShipperAppController extends Controller
     /**
      * Initial data for the app (reasons).
      */
-    public function init(): JsonResponse
+    public function init(Request $request): JsonResponse
     {
+        $this->authorizePermission($request, 'order.view');
         return response()->json([
             'refused_reasons' => RefusedReason::where('is_active', true)->get(),
         ]);
+    }
+
+    private function authorizePermission(Request $request, string $permission): void
+    {
+        abort_unless($request->user()?->can($permission), 403, "Missing permission: {$permission}");
     }
 }
