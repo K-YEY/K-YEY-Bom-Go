@@ -1193,26 +1193,15 @@ class OrderController extends Controller
 
         if ($generalSearch !== '') {
             $query->where(function (Builder $builder) use ($generalSearch): void {
-                if (is_numeric($generalSearch)) {
-                    // Optimized for numeric searches (phone, code IDs)
-                    $generalSearch = '%'.$generalSearch.'%';
-                    $builder->where('code', 'like', $generalSearch)
-                        ->orWhere('external_code', 'like', $generalSearch)
-                        ->orWhere('total_amount', 'like', $generalSearch)
-                        ->orWhere('cod_amount', 'like', $generalSearch)
-                        ->orWhere('phone', 'like', $generalSearch)
-                        ->orWhere('phone_2', 'like', $generalSearch);
-                } else {
-                    $like = $generalSearch.'%'; // Use prefix search where possible for better index stability
-                    $anyLike = '%'.$generalSearch.'%';
-
-                    $builder
-                        ->where('code', 'like', $like)
-                        ->orWhere('external_code', 'like', $like)
-                        ->orWhere('receiver_name', 'like', $anyLike)
-                        ->orWhere('address', 'like', $anyLike);
-                        
-                }
+                $anyLike = '%' . $generalSearch . '%';
+                $builder->where('code', 'like', $anyLike)
+                    ->orWhere('external_code', 'like', $anyLike)
+                    ->orWhere('total_amount', 'like', $anyLike)
+                    ->orWhere('cod_amount', 'like', $anyLike)
+                    ->orWhere('phone', 'like', $anyLike)
+                    ->orWhere('phone_2', 'like', $anyLike)
+                    ->orWhere('receiver_name', 'like', $anyLike)
+                    ->orWhere('address', 'like', $anyLike);
             });
         }
 
@@ -1296,7 +1285,7 @@ class OrderController extends Controller
             'is_client_settled',
             'is_shipper_returned',
             'is_client_returned',
-            'order_note', 'shipper_date',
+            'order_note', 'shipper_date', 'total_amount',
         ];
 
         foreach ($directFilters as $filter) {
@@ -1319,10 +1308,10 @@ class OrderController extends Controller
                         $value = explode(',', $value);
                     }
 
-                    // If it's a string search, use prefix matching for performance
-                    if (in_array($filter, ['code', 'receiver_name', 'phone'])) {
+                    // If it's a string search, use wildcard matching
+                    if (in_array($filter, ['code', 'external_code', 'receiver_name', 'phone', 'total_amount'])) {
                         if (is_string($value)) {
-                            $query->where($filter, 'like', $value.'%');
+                            $query->where($filter, 'like', '%' . $value . '%');
 
                             continue;
                         }

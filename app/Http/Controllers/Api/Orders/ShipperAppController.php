@@ -22,6 +22,7 @@ class ShipperAppController extends Controller
         $validated = $request->validate([
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
             'status' => ['nullable', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
+            'q' => ['nullable', 'string', 'max:255'],
         ]);
 
         $perPage = $validated['per_page'] ?? 20;
@@ -30,6 +31,17 @@ class ShipperAppController extends Controller
             ->forUserRole()
             ->when($validated['status'] ?? null, function ($query, $status) {
                 return $query->where('status', $status);
+            })
+            ->when($validated['q'] ?? null, function ($query, $search) {
+                $anyLike = '%' . $search . '%';
+                return $query->where(function ($q) use ($anyLike) {
+                    $q->where('code', 'like', $anyLike)
+                      ->orWhere('external_code', 'like', $anyLike)
+                      ->orWhere('total_amount', 'like', $anyLike)
+                      ->orWhere('receiver_name', 'like', $anyLike)
+                      ->orWhere('phone', 'like', $anyLike)
+                      ->orWhere('phone_2', 'like', $anyLike);
+                });
             })
             ->with(['governorate:id,name', 'city:id,name', 'shippingContent:id,name'])
             ->orderByDesc('id')
