@@ -35,6 +35,9 @@ To view the technical handover and user guides locally:
     ```
 
 2. **Start the documentation server**:
+    npm run docs:dev: لتشغيل التوثيق في وضع التطوير (معاينة حية).
+    npm run docs:build: لبناء نسخة الإنتاج من التوثيق.
+    npm run docs:preview: لمعاينة النسخة المبنية.
 
     ```bash
     npm run docs:dev
