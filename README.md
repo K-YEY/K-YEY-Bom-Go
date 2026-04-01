@@ -1,33 +1,93 @@
-# vue
+# K-YEY Logistics Platform 🚀
 
-This template should help get you started developing with Vue 3 in Vite.
+A comprehensive delivery management system with a Laravel 12 API, Vue 3 Dashboard, and Flutter Mobile Application.
 
-## Recommended IDE Setup
+---
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## 🛠 Tech Stack
 
-## Type Support for `.vue` Imports in TS
+- **Backend**: Laravel 12, Sanctum, Spatie Permissions.
+- **Frontend**: Vue 3 (Composition API), TypeScript, Vuetify, Casl RBAC.
+- **Mobile**: Flutter, Cubit State Management, Dio.
+- **Database**: MySQL / PostgreSQL (Supports Laravel standard).
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+---
 
-## Customize configuration
+## 📖 Documentation
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+We have a complete professional documentation system built with **VitePress**. This documentation covers:
 
-## Project Setup
+- **Project Overview**: Terminology, Business Goals, and Stakeholders.
+- **Developer Handover**: Backend architecture, Frontend logic, and Mobile app engine.
+- **Mobile Handover**: In-depth guide to Flutter + Cubit.
+- **Maintenance**: Troubleshooting, Deployment, and Onboarding Checklists.
 
-```sh
-pnpm install
+### How to Run the Documentation
+
+To view the technical handover and user guides locally:
+
+1. **Install dependencies** (if not already done):
+
+    ```bash
+    npm install
+    # OR
+    pnpm install
+    ```
+
+2. **Start the documentation server**:
+
+    ```bash
+    npm run docs:dev
+    ```
+
+3. **Open in your browser**:
+    The documentation will be available at [http://localhost:5173](http://localhost:5173).
+
+---
+
+## 🚀 Getting Started (Main Project)
+
+### 1. Backend Setup
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan db:seed --class=SyncPermissionsSeeder
 ```
 
-### Compile and Hot-Reload for Development
+### 2. Frontend Setup
 
-```sh
-pnpm dev
+```bash
+npm install
+npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+### 3. Mobile Setup
 
-```sh
-pnpm build
+```bash
+cd mobile_app_directory
+flutter pub get
+flutter run
 ```
+
+---
+
+## 🛡 Security & RBAC
+
+The system uses a strict **Role-Based Access Control (RBAC)** system:
+
+- **Backend**: Enforced via `authorizePermission` in controllers and `forUserRole()` scopes in Eloquent queries.
+- **Frontend**: Managed via **Casl** rules fetched from the `/acl` endpoint.
+- **Super Admin**: Bypasses all gate checks for complete system visibility.
+
+---
+
+## 🤝 Project Handover
+
+For a successful project handover, please refer to the **Maintenance & Handover** section in the [VitePress Docs](docs/maintenance/checklist.md). It contains a detailed checklist for new developers.
+
+---
+
+**Developed with ❤️ for K-YEY Logistics.**

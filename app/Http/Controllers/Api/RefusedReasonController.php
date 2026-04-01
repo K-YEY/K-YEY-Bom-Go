@@ -34,7 +34,6 @@ class RefusedReasonController extends Controller
             'status' => ['required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'is_active' => ['nullable', 'boolean'],
             'is_clear' => ['nullable', 'boolean'],
-            'is_return' => ['nullable', 'boolean'],
             'is_edit_amount' => ['nullable', 'boolean'],
         ]);
 
@@ -65,7 +64,6 @@ class RefusedReasonController extends Controller
             'status' => ['sometimes', 'required', Rule::in(['OUT_FOR_DELIVERY', 'DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'is_active' => ['nullable', 'boolean'],
             'is_clear' => ['nullable', 'boolean'],
-            'is_return' => ['nullable', 'boolean'],
             'is_edit_amount' => ['nullable', 'boolean'],
         ]);
 

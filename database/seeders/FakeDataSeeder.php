@@ -197,7 +197,6 @@ class FakeDataSeeder extends Seeder
                     'status' => $status,
                     'is_active' => true,
                     'is_clear' => $faker->boolean(20),
-                    'is_return' => $faker->boolean(60),
                     'is_edit_amount' => $faker->boolean(25),
                 ]
             );

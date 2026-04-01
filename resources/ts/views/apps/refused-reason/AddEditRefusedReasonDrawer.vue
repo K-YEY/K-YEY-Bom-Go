@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { useApi } from '@/composables/useApi'
+import { requiredValidator } from '@/@core/utils/validators'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import type { VForm } from 'vuetify/components/VForm'
-import { requiredValidator } from '@/@core/utils/validators'
 
 interface Props {
   isDrawerOpen: boolean
@@ -26,7 +25,6 @@ const reason = ref('')
 const status = ref('UNDELIVERED')
 const isActive = ref(true)
 const isClear = ref(false)
-const isReturn = ref(false)
 const isEditAmount = ref(false)
 
 const statusOptions = [
@@ -44,7 +42,6 @@ watch(() => props.isDrawerOpen, (isOpen) => {
       status.value = props.refusedReason.status
       isActive.value = !!props.refusedReason.is_active
       isClear.value = !!props.refusedReason.is_clear
-      isReturn.value = !!props.refusedReason.is_return
       isEditAmount.value = !!props.refusedReason.is_edit_amount
     } else {
       id.value = null
@@ -52,7 +49,6 @@ watch(() => props.isDrawerOpen, (isOpen) => {
       status.value = 'UNDELIVERED'
       isActive.value = true
       isClear.value = false
-      isReturn.value = false
       isEditAmount.value = false
     }
   }
@@ -75,7 +71,6 @@ const onSubmit = async () => {
     status: status.value,
     is_active: isActive.value,
     is_clear: isClear.value,
-    is_return: isReturn.value,
     is_edit_amount: isEditAmount.value,
   }
 
@@ -164,13 +159,6 @@ const handleDrawerModelValueUpdate = (val: boolean) => {
                 />
               </VCol>
 
-              <VCol cols="12">
-                <VSwitch
-                  v-model="isReturn"
-                  label="Is Return"
-                  density="compact"
-                />
-              </VCol>
 
               <VCol cols="12">
                 <VSwitch

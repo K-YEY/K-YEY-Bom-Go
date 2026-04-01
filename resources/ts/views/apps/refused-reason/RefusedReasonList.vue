@@ -9,7 +9,6 @@ const headers = [
   { title: 'Status Map', key: 'status' },
   { title: 'Active', key: 'is_active' },
   { title: 'Clear', key: 'is_clear' },
-  { title: 'Return', key: 'is_return' },
   { title: 'Edit Amount', key: 'is_edit_amount' },
   { title: 'Actions', key: 'actions', sortable: false },
 ]
@@ -25,7 +24,6 @@ const columnPermissions: Record<string, string> = {
   status: 'operations.refused-reason.column.status.view',
   is_active: 'operations.refused-reason.column.is_active.view',
   is_clear: 'operations.refused-reason.column.is_clear.view',
-  is_return: 'operations.refused-reason.column.is_return.view',
   is_edit_amount: 'operations.refused-reason.column.is_edit_amount.view',
 }
 
@@ -180,12 +178,6 @@ const resolveStatusVariant = (status: string) => {
           />
         </template>
         
-        <template #item.is_return="{ item }: { item: any }">
-          <VIcon
-            :icon="item.is_return ? 'tabler-check' : 'tabler-x'"
-            :color="item.is_return ? 'success' : 'error'"
-          />
-        </template>
         
         <template #item.is_edit_amount="{ item }: { item: any }">
           <VIcon
