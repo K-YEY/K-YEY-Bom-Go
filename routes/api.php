@@ -139,5 +139,8 @@ Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class
         Route::patch('orders/{order}/status', [ShipperAppController::class, 'updateStatus']);
         Route::post('scan', [ShipperAppController::class, 'scan']);
         Route::get('stats', [ShipperAppController::class, 'statistics']);
+        Route::get('collections', [ShipperAppController::class, 'collections']);
+        Route::get('collections/{collection}', [ShipperAppController::class, 'collectionDetails']);
+        Route::get('pending-orders', [ShipperAppController::class, 'pendingOrders']);
     });
 });

@@ -177,10 +177,66 @@ class ShipperAppController extends Controller
             'pending_collection' => $query->clone()
                 ->where('status', 'DELIVERED')
                 ->where('is_shipper_collected', false)
+                ->whereDoesntHave('shipperCollections', function ($q) {
+                    $q->where('shipper_collections.status', '!=', 'CANCELLED');
+                })
                 ->sum('cod_amount'),
         ];
 
         return response()->json($stats);
+    }
+
+    /**
+     * Get collections related to the current shipper.
+     */
+    public function collections(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.view');
+        
+        $collections = \App\Models\ShipperCollection::query()
+            ->where('shipper_user_id', $request->user()->id)
+            ->withCount('orders')
+            ->orderByDesc('id')
+            ->paginate($request->input('per_page', 20));
+
+        return response()->json($collections);
+    }
+
+    /**
+     * Get details of a specific collection.
+     */
+    public function collectionDetails(Request $request, \App\Models\ShipperCollection $collection): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.view');
+        
+        if ($collection->shipper_user_id !== $request->user()->id && !$request->user()->hasAnyRole(['admin', 'super-admin'])) {
+            abort(403, 'This collection is not yours.');
+        }
+
+        $collection->load(['orders.client:id,name', 'orders.governorate:id,name', 'orders.city:id,name']);
+
+        return response()->json($collection);
+    }
+
+    /**
+     * Get orders that are delivered but not yet collected.
+     */
+    public function pendingOrders(Request $request): JsonResponse
+    {
+        $this->authorizePermission($request, 'order.view');
+
+        $orders = Order::query()
+            ->where('shipper_user_id', $request->user()->id)
+            ->where('status', 'DELIVERED')
+            ->where('is_shipper_collected', false)
+            ->whereDoesntHave('shipperCollections', function ($q) {
+                $q->where('shipper_collections.status', '!=', 'CANCELLED');
+            })
+            ->with(['governorate:id,name', 'city:id,name', 'client:id,name'])
+            ->orderByDesc('id')
+            ->paginate($request->input('per_page', 20));
+
+        return response()->json($orders);
     }
 
     /**
