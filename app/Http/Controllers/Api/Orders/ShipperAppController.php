@@ -93,7 +93,7 @@ class ShipperAppController extends Controller
             if ($reasonId) {
                 $reason = RefusedReason::find($reasonId);
                 if ($reason) {
-                    $updateData['latest_status_note'] = $reason->name . ($note ? " - " . $note : "");
+                    $updateData['latest_status_note'] = $reason->reason . ($note ? " - " . $note : "");
                 }
             }
 

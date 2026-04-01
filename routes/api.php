@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\Users\ProfileController;
 use App\Http\Controllers\Api\Users\ShipperController;
 use App\Http\Controllers\Api\Users\UserController;
 use App\Http\Controllers\Api\Public\LandingPageController;
+use App\Http\Controllers\Api\Orders\ShipperAppController;
 use App\Http\Middleware\UpdateLoginSessionLastSeen;
 use Illuminate\Support\Facades\Route;
 
@@ -131,12 +132,12 @@ Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class
     Route::get('activity-logs/{activity_log}', [ActivityLogController::class, 'show']);
 
     // Shipper App API (Dedicated for Representatives)
-    Route::prefix('shipper-app')->group(function () {
-        Route::get('init', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'init']);
-        Route::get('orders', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'index']);
-        Route::get('orders/{order}', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'show']);
-        Route::patch('orders/{order}/status', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'updateStatus']);
-        Route::post('scan', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'scan']);
-        Route::get('stats', [\App\Http\Controllers\Api\Orders\ShipperAppController::class, 'statistics']);
+    Route::group(['prefix' => 'shipper-app'], function () {
+        Route::get('init', [ShipperAppController::class, 'init']);
+        Route::get('orders', [ShipperAppController::class, 'index']);
+        Route::get('orders/{order}', [ShipperAppController::class, 'show']);
+        Route::patch('orders/{order}/status', [ShipperAppController::class, 'updateStatus']);
+        Route::post('scan', [ShipperAppController::class, 'scan']);
+        Route::get('stats', [ShipperAppController::class, 'statistics']);
     });
 });

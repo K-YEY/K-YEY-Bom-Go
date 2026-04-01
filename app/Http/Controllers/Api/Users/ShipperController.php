@@ -34,7 +34,9 @@ class ShipperController extends Controller
                 $query->whereHas('orders', function ($q) {
                     $q->whereIn('status', \App\Http\Controllers\Api\Orders\ShipperCollectionController::ELIGIBLE_ORDER_STATUSES)
                       ->where('approval_status', 'APPROVED')
-                      ->where('is_in_shipper_collection', false)
+                      ->whereDoesntHave('shipperCollections', function ($sq) {
+                          $sq->where('shipper_collections.status', '!=', 'CANCELLED');
+                      })
                       ->where('is_shipper_collected', false)
                       ->where(function ($qq) {
                           $qq->where('total_amount', '>', 0)
@@ -45,7 +47,9 @@ class ShipperController extends Controller
             } elseif ($type === 'return') {
                 $query->whereHas('orders', function ($q) {
                     $q->whereIn('status', \App\Http\Controllers\Api\Orders\ShipperReturnController::ELIGIBLE_ORDER_STATUSES)
-                      ->where('is_in_shipper_return', false)
+                      ->whereDoesntHave('shipperReturns', function ($sq) {
+                          $sq->where('shipper_returns.status', '!=', 'CANCELLED');
+                      })
                       ->where('is_shipper_returned', false);
                 });
             }

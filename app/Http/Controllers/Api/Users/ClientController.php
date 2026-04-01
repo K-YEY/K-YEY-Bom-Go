@@ -58,7 +58,9 @@ class ClientController extends Controller
 
                 $query->whereHas('orders', function ($q) use ($eligibleStatuses) {
                     $q->whereIn('status', $eligibleStatuses)
-                      ->where('is_in_client_settlement', false)
+                      ->whereDoesntHave('clientSettlements', function ($sq) {
+                          $sq->where('client_settlements.status', '!=', 'CANCELLED');
+                      })
                       ->where('is_client_settled', false);
                 });
 
@@ -67,7 +69,9 @@ class ClientController extends Controller
                         $q->where('can_settle_before_shipper_collected', true)
                           ->orWhereHas('orders', function ($sq) use ($eligibleStatuses) {
                               $sq->whereIn('status', $eligibleStatuses)
-                                ->where('is_in_client_settlement', false)
+                                ->whereDoesntHave('clientSettlements', function ($ssq) {
+                                    $ssq->where('client_settlements.status', '!=', 'CANCELLED');
+                                })
                                 ->where('is_client_settled', false)
                                 ->where('is_shipper_collected', true);
                           });
@@ -77,7 +81,9 @@ class ClientController extends Controller
                 $query->whereHas('orders', function ($q) {
                     $q->whereIn('status', \App\Http\Controllers\Api\Orders\ClientReturnController::ELIGIBLE_ORDER_STATUSES)
                       ->where('is_shipper_returned', true)
-                      ->where('is_in_client_return', false)
+                      ->whereDoesntHave('clientReturns', function ($sq) {
+                          $sq->where('client_returns.status', '!=', 'CANCELLED');
+                      })
                       ->where('is_client_returned', false);
                 });
             }

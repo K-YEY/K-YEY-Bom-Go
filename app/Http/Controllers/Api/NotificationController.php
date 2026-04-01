@@ -19,10 +19,10 @@ class NotificationController extends Controller
 
         $notifications = $query->orderByDesc('created_at')->paginate(20);
 
-        return response()->json([
-            'notifications' => $notifications,
-            'unread_count' => $request->user()->unreadNotifications()->count(),
-        ]);
+        return response()->json(array_merge(
+            $notifications->toArray(),
+            ['unread_count' => $request->user()->unreadNotifications()->count()]
+        ));
     }
 
     public function markAsRead(Request $request, string $notificationId): JsonResponse
