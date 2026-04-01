@@ -684,10 +684,10 @@ class OrderController extends Controller
         $perPage = $validated['per_page'] ?? 100;
 
         $orders = Order::query()
-            ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
-            ->where('shipper_user_id', $request->user()?->id)
-            ->whereNotIn('status', self::FINAL_STATUSES)
-            ->orderByDesc('id')
+        ->forUserRole()
+        ->with(['governorate:id,name', 'city:id,name', 'shipper:id,name', 'client:id,name', 'shippingContent:id,name'])
+        ->whereNotIn('status', self::FINAL_STATUSES)
+        ->orderByDesc('id')
             ->paginate($perPage)
             ->appends($request->query())
             ->through(fn (Order $order): array => $this->formatMyOrderRow($order));

@@ -155,7 +155,14 @@ class AclMatrixController extends Controller
     private function getFlatPermissionList(\App\Models\User $user): array
     {
         if ($user->id === 1 || $user->hasRole('super-admin')) {
-            return \App\Models\Permission::pluck('name')->toArray();
+            $all = \App\Models\Permission::pluck('name')->toArray();
+            
+            // Add a wildcard for CASL or frontend logic that might need it
+            if (!in_array('*', $all)) {
+                $all[] = '*';
+            }
+            
+            return $all;
         }
 
         return $user->getAllPermissions()->pluck('name')->toArray();
@@ -168,9 +175,10 @@ class AclMatrixController extends Controller
     private function permissionState(object $user, array $permissions): array
     {
         $result = [];
+        $isSuperAdmin = $user->id === 1 || ($user instanceof \App\Models\User && $user->hasRole('super-admin'));
 
         foreach ($permissions as $permission) {
-            $result[$permission] = $user->can($permission);
+            $result[$permission] = $isSuperAdmin ? true : $user->can($permission);
         }
 
         return $result;

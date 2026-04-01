@@ -27,7 +27,7 @@ class ShipperAppController extends Controller
         $perPage = $validated['per_page'] ?? 20;
 
         $orders = Order::query()
-            ->where('shipper_user_id', $request->user()->id)
+            ->forUserRole()
             ->when($validated['status'] ?? null, function ($query, $status) {
                 return $query->where('status', $status);
             })
@@ -44,7 +44,7 @@ class ShipperAppController extends Controller
     public function show(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.view');
-        if ($order->shipper_user_id !== $request->user()->id) {
+        if ($order->shipper_user_id !== $request->user()->id && !$request->user()->hasAnyRole(['admin', 'super-admin'])) {
             abort(403, 'This order is not assigned to you.');
         }
 
@@ -59,7 +59,7 @@ class ShipperAppController extends Controller
     public function updateStatus(Request $request, Order $order): JsonResponse
     {
         $this->authorizePermission($request, 'order.change-status');
-        if ($order->shipper_user_id !== $request->user()->id) {
+        if ($order->shipper_user_id !== $request->user()->id && !$request->user()->hasAnyRole(['admin', 'super-admin'])) {
             abort(403, 'This order is not assigned to you.');
         }
 
@@ -124,7 +124,7 @@ class ShipperAppController extends Controller
         ]);
 
         $order = Order::query()
-            ->where('shipper_user_id', $request->user()->id)
+            ->forUserRole()
             ->where(function($q) use ($request) {
                 $q->where('code', $request->code)
                   ->orWhere('external_code', $request->code);
@@ -145,16 +145,16 @@ class ShipperAppController extends Controller
     public function statistics(Request $request): JsonResponse
     {
         $this->authorizePermission($request, 'order.view');
-        $userId = $request->user()->id;
+        $query = Order::query()->forUserRole();
 
         $stats = [
-            'total_assigned' => Order::where('shipper_user_id', $userId)->count(),
-            'out_for_delivery' => Order::where('shipper_user_id', $userId)->where('status', 'OUT_FOR_DELIVERY')->count(),
-            'delivered_today' => Order::where('shipper_user_id', $userId)
+            'total_assigned' => $query->clone()->count(),
+            'out_for_delivery' => $query->clone()->where('status', 'OUT_FOR_DELIVERY')->count(),
+            'delivered_today' => $query->clone()
                 ->where('status', 'DELIVERED')
                 ->whereDate('updated_at', now())
                 ->count(),
-            'pending_collection' => Order::where('shipper_user_id', $userId)
+            'pending_collection' => $query->clone()
                 ->where('status', 'DELIVERED')
                 ->where('is_shipper_collected', false)
                 ->sum('cod_amount'),

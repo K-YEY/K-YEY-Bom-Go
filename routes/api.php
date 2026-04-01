@@ -132,7 +132,7 @@ Route::group(['middleware' => ['auth:sanctum', UpdateLoginSessionLastSeen::class
     Route::get('activity-logs/{activity_log}', [ActivityLogController::class, 'show']);
 
     // Shipper App API (Dedicated for Representatives)
-    Route::group(['prefix' => 'shipper-app', 'middleware' => ['role:shipper']], function () {
+    Route::group(['prefix' => 'shipper-app', 'middleware' => ['role:super-admin|admin|shipper']], function () {
         Route::get('init', [ShipperAppController::class, 'init']);
         Route::get('orders', [ShipperAppController::class, 'index']);
         Route::get('orders/{order}', [ShipperAppController::class, 'show']);

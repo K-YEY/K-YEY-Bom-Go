@@ -59,8 +59,13 @@ const buildAbilityRulesFromAcl = (acl: any) => {
   // { action: permission, subject: 'all' } -> Used by many page components
   const rules: any[] = []
   grantedPermissions.forEach((permission: string) => {
-    rules.push({ action: 'manage', subject: permission })
-    rules.push({ action: permission, subject: 'all' })
+    if (permission === '*') {
+      rules.push({ action: 'manage', subject: 'all' })
+    }
+    else {
+      rules.push({ action: 'manage', subject: permission })
+      rules.push({ action: permission, subject: 'all' })
+    }
   })
   
   return rules
