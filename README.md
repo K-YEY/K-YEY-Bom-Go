@@ -9,7 +9,7 @@ A comprehensive delivery management system with a Laravel 12 API, Vue 3 Dashboar
 - **Backend**: Laravel 12, Sanctum, Spatie Permissions.
 - **Frontend**: Vue 3 (Composition API), TypeScript, Vuetify, Casl RBAC.
 - **Mobile**: Flutter, Cubit State Management, Dio.
-- **Database**: MySQL / PostgreSQL (Supports Laravel standard).
+- **Database**: MySQL.
 
 ---
 
