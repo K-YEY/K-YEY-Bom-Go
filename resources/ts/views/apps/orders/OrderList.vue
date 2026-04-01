@@ -739,7 +739,7 @@ searchClients()
       <VCardText class="pb-2">
         <VRow align="center">
           <VCol cols="12" md="2">
-            <AppTextField v-model="searchQuery" :placeholder="t('Quick Search...')" prepend-inner-icon="tabler-search" density="compact" hide-details />
+            <AppTextField v-model="searchQuery" :placeholder="t('Quick Search...')" prepend-inner-icon="solar:magnifer-bold" density="compact" hide-details />
           </VCol>
           <VCol cols="12" md="2">
             <AppSelect
@@ -982,19 +982,19 @@ searchClients()
               color="default"
               variant="text"
             >
-              <VIcon icon="tabler-dots-vertical" />
+              <VIcon icon="solar:menu-dots-vertical-bold" />
               <VMenu activator="parent">
                 <VList density="compact">
                   <template v-if="props.trashed === 'only'">
                     <VListItem
                       v-if="can('order.delete' as any, 'all' as any)"
-                      prepend-icon="tabler-refresh"
+                      prepend-icon="solar:refresh-bold"
                       title="Restore"
                       @click="restoreOrder(item.id)"
                     />
                     <VListItem
                       v-if="can('order.delete' as any, 'all' as any)"
-                      prepend-icon="tabler-trash-x"
+                      prepend-icon="solar:trash-bin-minimalistic-bold"
                       title="Force Delete"
                       color="error"
                       @click="forceDeleteOrder(item.id)"
@@ -1003,30 +1003,30 @@ searchClients()
                   <template v-else>
                     <VListItem
                       v-if="!item.is_shipper_collected && can('order.update' as any, 'all' as any)"
-                      prepend-icon="tabler-edit"
+                      prepend-icon="solar:pen-bold"
                       title="Edit"
                       @click="editOrder(item.id)"
                     />
                     <VListItem
                       v-if="can('order.view' as any, 'all' as any)"
-                      prepend-icon="tabler-file-invoice"
+                      prepend-icon="solar:bill-list-bold"
                       title="Shipping Label"
                       @click="printLabel(item.id)"
                     />
                     <VListItem
                       v-if="!item.is_shipper_collected && can('order.delete' as any, 'all' as any)"
-                      prepend-icon="tabler-trash"
+                      prepend-icon="solar:trash-bin-trash-bold"
                       title="Delete"
                       color="error"
                       @click="deleteOrder(item.id)"
                     />
                     <VListItem
-                      prepend-icon="tabler-copy"
+                      prepend-icon="solar:copy-bold"
                       title="Copy Details"
                       @click="copyOrderToClipboard(item)"
                     />
                     <VListItem
-                      prepend-icon="tabler-brand-whatsapp"
+                      prepend-icon="solar:whatsapp-bold"
                       title="Send WhatsApp"
                       color="success"
                       @click="sendToWhatsApp(item)"
@@ -1034,7 +1034,7 @@ searchClients()
                     <VDivider />
                     <VListItem
                       v-if="can('order.view' as any, 'all' as any)"
-                      prepend-icon="tabler-list-details"
+                      prepend-icon="solar:clipboard-list-bold"
                       title="Show Details"
                       @click="openDetails(item)"
                     />

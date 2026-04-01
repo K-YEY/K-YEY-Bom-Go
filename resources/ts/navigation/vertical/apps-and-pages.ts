@@ -2,7 +2,7 @@ export default [
   { heading: 'Home' },
   {
     title: 'Operations',
-    icon: { icon: 'tabler-truck' },
+    icon: { icon: 'solar:delivery-bold-duotone' },
     children: [
       { title: 'Order List', to: 'apps-orders', action: 'manage', subject: 'order.page' },
       { title: 'Scan Orders', to: 'apps-orders-scan', action: 'manage', subject: 'order.scan.page' },
@@ -11,7 +11,7 @@ export default [
   },
   {
     title: 'Tools & Filters',
-    icon: { icon: 'tabler-filter' },
+    icon: { icon: 'solar:filter-bold-duotone' },
     children: [
       { title: 'HOLD & Out For Delivery', to: 'apps-orders-hold-outfordelivery', action: 'manage', subject: 'order.page' },
       { title: 'Uncollected Client', to: 'apps-orders-uncollectedclient', action: 'manage', subject: 'order.page' },
@@ -24,7 +24,7 @@ export default [
   },
   {
     title: 'Logistics',
-    icon: { icon: 'tabler-box' },
+    icon: { icon: 'solar:box-bold-duotone' },
     children: [
       { title: 'Pickups', to: 'apps-operations-pickups', action: 'manage', subject: 'pickup-request.page' },
       { title: 'Visits', to: 'apps-operations-visits', action: 'manage', subject: 'visit.page' },
@@ -34,7 +34,7 @@ export default [
   },
   {
     title: 'Financials',
-    icon: { icon: 'tabler-currency-dollar' },
+    icon: { icon: 'solar:dollar-minimalistic-bold-duotone' },
     children: [
       { title: 'Shipper Collections', to: 'apps-orders-shipper-collections', action: 'manage', subject: 'shipper-collection.page' },
       { title: 'Shipper Returns', to: 'apps-orders-shipper-returns', action: 'manage', subject: 'shipper-return.page' },
@@ -46,7 +46,7 @@ export default [
   },
   {
     title: 'Users & CRM',
-    icon: { icon: 'tabler-users' },
+    icon: { icon: 'solar:users-group-rounded-bold-duotone' },
     children: [
       { title: 'Clients', to: 'apps-user-clients', action: 'manage', subject: 'client.page' },
       { title: 'Shippers', to: 'apps-user-shippers', action: 'manage', subject: 'shipper.page' },
@@ -55,7 +55,7 @@ export default [
   },
   {
     title: 'Management',
-    icon: { icon: 'tabler-settings-automation' },
+    icon: { icon: 'solar:settings-bold-duotone' },
     children: [
       { title: 'Areas', to: 'apps-area', action: 'manage', subject: 'area.page' },
       { title: 'Shipping Content', to: 'apps-content', action: 'manage', subject: 'content.page' },
@@ -65,7 +65,7 @@ export default [
   },
   {
     title: 'System Settings',
-    icon: { icon: 'tabler-lock' },
+    icon: { icon: 'solar:lock-bold-duotone' },
     children: [
       { title: 'Settings', to: 'apps-settings', action: 'manage', subject: 'setting.page' },
       { title: 'Roles & Permissions', to: 'apps-roles', action: 'manage', subject: 'user.page' },

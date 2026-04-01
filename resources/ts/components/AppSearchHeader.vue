@@ -48,7 +48,7 @@ const props = withDefaults(defineProps<Props>(), {
             class="search-header-input mx-auto my-4"
             :placeholder="props.placeholder"
             :density="props.density"
-            prepend-inner-icon="tabler-search"
+            prepend-inner-icon="solar:magnifer-bold"
           />
         </div>
       </div>

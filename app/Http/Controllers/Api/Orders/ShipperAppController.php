@@ -73,11 +73,13 @@ class ShipperAppController extends Controller
             'status' => ['required', Rule::in(['DELIVERED', 'HOLD', 'UNDELIVERED'])],
             'reason_id' => ['nullable', 'exists:refused_reasons,id'],
             'note' => ['nullable', 'string', 'max:500'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $status = $validated['status'];
         $reasonId = $validated['reason_id'] ?? null;
         $note = $validated['note'] ?? null;
+        $totalAmount = $validated['total_amount'] ?? null;
 
         // Validation for reasons
         if (in_array($status, ['HOLD', 'UNDELIVERED']) && !$reasonId && !$note) {
@@ -86,18 +88,36 @@ class ShipperAppController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($order, $status, $reasonId, $note) {
+        DB::transaction(function () use ($order, $status, $reasonId, $note, $totalAmount) {
             $updateData = ['status' => $status];
             
-            if ($note) {
-                $updateData['latest_status_note'] = $note;
-            }
-
             if ($reasonId) {
                 $reason = RefusedReason::find($reasonId);
                 if ($reason) {
                     $updateData['latest_status_note'] = $reason->reason . ($note ? " - " . $note : "");
+
+                    // Handle Partial Delivery (Edit Amount)
+                    if ($reason->is_edit_amount && $totalAmount !== null) {
+                        $updateData['total_amount'] = $totalAmount;
+                    }
+
+                    // Handle Clearing
+                    if ($reason->is_clear) {
+                        $updateData['total_amount'] = 0;
+                        $updateData['shipping_fee'] = 0;
+                        $updateData['commission_amount'] = 0;
+                        $updateData['company_amount'] = 0;
+                        $updateData['cod_amount'] = 0;
+                    }
+
+                    // If amount was edited, re-apply automatic calculations
+                    if (isset($updateData['total_amount']) && !$reason->is_clear) {
+                        // We use the same service logic or manual re-calc
+                        $updateData = $this->recalcFinancialsForOrder($updateData, $order);
+                    }
                 }
+            } elseif ($note) {
+                $updateData['latest_status_note'] = $note;
             }
 
             $order->update($updateData);
@@ -172,6 +192,59 @@ class ShipperAppController extends Controller
         return response()->json([
             'refused_reasons' => RefusedReason::where('is_active', true)->get(),
         ]);
+    }
+
+    private function recalcFinancialsForOrder(array $data, Order $order): array
+    {
+        $clientUserId = $order->client_user_id;
+        $governorateId = $order->governorate_id;
+        $shipperUserId = $order->shipper_user_id;
+        $totalAmount = $data['total_amount'] ?? $order->total_amount;
+
+        $shippingFee = $this->resolveShippingFee((int) $clientUserId, (int) $governorateId);
+        $commissionAmount = $this->resolveCommissionAmount($shipperUserId ? (int) $shipperUserId : null);
+
+        if ($shippingFee === null && $shipperUserId !== null) {
+            $shippingFee = $commissionAmount;
+        }
+
+        $total = round((float) $totalAmount, 2);
+
+        $data['total_amount'] = $total;
+        $data['shipping_fee'] = round((float) ($shippingFee ?? 0), 2);
+        $data['commission_amount'] = round((float) ($commissionAmount ?? 0), 2);
+        $data['company_amount'] = round($data['shipping_fee'] - $data['commission_amount'], 2);
+        $data['cod_amount'] = round($total - $data['shipping_fee'], 2);
+
+        return $data;
+    }
+
+    private function resolveShippingFee(int $clientUserId, int $governorateId): ?float
+    {
+        $client = \App\Models\User::find($clientUserId);
+        if (!$client || !$client->clientPlan) {
+            return null;
+        }
+
+        $fee = $client->clientPlan->governorates()
+            ->where('governorate_id', $governorateId)
+            ->first()?->pivot->fee;
+
+        return $fee !== null ? (float) $fee : null;
+    }
+
+    private function resolveCommissionAmount(?int $shipperUserId): float
+    {
+        if ($shipperUserId === null) {
+            return 0;
+        }
+
+        $shipper = \App\Models\User::find($shipperUserId);
+        if (!$shipper || $shipper->shipper_commission_fee === null) {
+            return 0;
+        }
+
+        return (float) $shipper->shipper_commission_fee;
     }
 
     private function authorizePermission(Request $request, string $permission): void

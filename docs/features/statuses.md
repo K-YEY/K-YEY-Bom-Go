@@ -7,20 +7,23 @@ This guide explains how the **Shipya** platform handles order status transitions
 The lifecycle of an order is strictly governed by its `status` field. For representatives (Shippers) using the mobile app, the primary transitions are:
 
 - **OUT_FOR_DELIVERY**: The starting state for the representative.
-- **DELIVERED**: Successfully completed shipment. Usually triggers financial calculations.
+- **DELIVERED**: Successfully completed shipment. Selectable reasons (like **Partial Delivery**) can further refine this state and its financial impact.
 - **HOLD**: Temporary delay (e.g., client not answering, requested later date).
 - **UNDELIVERED**: Final failure to deliver (e.g., wrong address, client refused).
 
 ## Status Reasons (Refused Reasons)
 
-To maintain high data quality, certain status updates **require** a reason. This allows the system to provide detailed feedback to the Client and generate reports on why deliveries are failing.
+To maintain high data quality, the system allows (and sometimes requires) linking a "Reason" to a status update. This is available for **DELIVERED**, **HOLD**, and **UNDELIVERED**.
 
-### Mandatory Reasons
+### Force Selection & Logic
 
-When a Shipper updates an order to `HOLD` or `UNDELIVERED`, the system enforces a check:
+### 1. Mandatory for Failure
 
-- A `reason_id` (from the `refused_reasons` table) must be provided.
-- **OR** a manual `note` must be written.
+When a Shipper updates an order to `HOLD` or `UNDELIVERED`, a `reason_id` or `note` is **Required**.
+
+### 2. Selection for Delivered
+
+Even when choosing **DELIVERED**, the representative can select a status reason. This is primarily used for **Partial Delivery (تسلم جزئي)**, where the representative took a different amount than planned.
 
 ## Advanced Reason Behavior (Flags)
 

@@ -87,11 +87,11 @@ const handleFormSubmit = () => {
 }
 
 const resolveStatusVariant = (status: string) => {
-  if (status === 'OUT_FOR_DELIVERY') return { color: 'info', icon: 'tabler-truck' }
-  if (status === 'DELIVERED') return { color: 'success', icon: 'tabler-circle-check' }
-  if (status === 'HOLD') return { color: 'warning', icon: 'tabler-clock' }
-  if (status === 'UNDELIVERED') return { color: 'error', icon: 'tabler-circle-x' }
-  return { color: 'secondary', icon: 'tabler-help' }
+  if (status === 'OUT_FOR_DELIVERY') return { color: 'info', icon: 'solar:delivery-bold-duotone' }
+  if (status === 'DELIVERED') return { color: 'success', icon: 'solar:check-circle-bold-duotone' }
+  if (status === 'HOLD') return { color: 'warning', icon: 'solar:clock-circle-bold-duotone' }
+  if (status === 'UNDELIVERED') return { color: 'error', icon: 'solar:close-circle-bold-duotone' }
+  return { color: 'secondary', icon: 'solar:question-square-bold-duotone' }
 }
 </script>
 
@@ -110,7 +110,7 @@ const resolveStatusVariant = (status: string) => {
 
           <VBtn
             v-if="can('operations.refused-reason.create' as any, 'all' as any)"
-            prepend-icon="tabler-plus"
+            prepend-icon="solar:plus-bold"
             @click="openAddDrawer"
           >
             Add Reason
@@ -120,7 +120,7 @@ const resolveStatusVariant = (status: string) => {
           <VMenu :close-on-content-click="false">
             <template #activator="{ props }">
               <VBtn icon variant="tonal" color="secondary" v-bind="props">
-                <VIcon icon="tabler-layout-columns" />
+                <VIcon icon="solar:list-bold-duotone" />
               </VBtn>
             </template>
             <VList class="pa-2">
@@ -166,14 +166,14 @@ const resolveStatusVariant = (status: string) => {
         <!-- Switches -->
         <template #item.is_active="{ item }: { item: any }">
           <VIcon
-            :icon="item.is_active ? 'tabler-check' : 'tabler-x'"
+            :icon="item.is_active ? 'solar:check-circle-bold' : 'solar:close-circle-bold'"
             :color="item.is_active ? 'success' : 'error'"
           />
         </template>
         
         <template #item.is_clear="{ item }: { item: any }">
           <VIcon
-            :icon="item.is_clear ? 'tabler-check' : 'tabler-x'"
+            :icon="item.is_clear ? 'solar:check-circle-bold' : 'solar:close-circle-bold'"
             :color="item.is_clear ? 'success' : 'error'"
           />
         </template>
@@ -181,7 +181,7 @@ const resolveStatusVariant = (status: string) => {
         
         <template #item.is_edit_amount="{ item }: { item: any }">
           <VIcon
-            :icon="item.is_edit_amount ? 'tabler-check' : 'tabler-x'"
+            :icon="item.is_edit_amount ? 'solar:check-circle-bold' : 'solar:close-circle-bold'"
             :color="item.is_edit_amount ? 'success' : 'error'"
           />
         </template>
@@ -194,7 +194,7 @@ const resolveStatusVariant = (status: string) => {
               size="small" 
               @click="openEditDrawer(item)"
             >
-              <VIcon icon="tabler-edit" />
+              <VIcon icon="solar:pen-bold" />
               <VTooltip activator="parent">Edit Reason</VTooltip>
             </IconBtn>
             <IconBtn 
@@ -202,7 +202,7 @@ const resolveStatusVariant = (status: string) => {
               size="small" 
               @click="deleteRefusedReason(item.id)"
             >
-              <VIcon icon="tabler-trash" />
+              <VIcon icon="solar:trash-bin-trash-bold" />
               <VTooltip activator="parent">Delete Reason</VTooltip>
             </IconBtn>
           </div>

@@ -2,7 +2,7 @@ export default [
   { heading: 'Dashboard' },
   {
     title: 'Dashboard',
-    icon: { icon: 'tabler-smart-home' },
+    icon: { icon: 'solar:widget-bold-duotone' },
     to: 'dashboards-orders',
   },
 ]
